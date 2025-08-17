@@ -190,23 +190,26 @@ const TradingRoutine = () => {
         margin: '0 auto',
         padding: '2rem 2rem 1rem'
       }}>
-        <h1 style={{ 
-          margin: '0 0 2rem 0', 
-          fontSize: '2rem', 
-          fontWeight: '700', 
-          color: '#f8fafc',
-          textAlign: 'center'
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+          marginBottom: '2rem',
+          padding: '1rem',
+          backgroundColor: '#1e293b',
+          borderRadius: '0.5rem',
+          border: '1px solid #334155'
         }}>
-          🕐 Trading Routine
-        </h1>
-        <p style={{ 
-          margin: '0 0 2rem 0', 
-          color: '#94a3b8', 
-          fontSize: '1rem',
-          textAlign: 'center'
-        }}>
-          Daily & Weekly Trading Workflows
-        </p>
+          <Clock style={{ width: '2rem', height: '2rem', color: '#3b82f6' }} />
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
+              Trading Routine
+            </h1>
+            <p style={{ margin: '0.5rem 0 0 0', color: '#94a3b8', fontSize: '0.875rem' }}>
+              Daily & Weekly Trading Workflows
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Content */}

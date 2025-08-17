@@ -280,7 +280,7 @@ const TradePlanning = ({ onNavigate }) => {
           <Target style={{ width: '2rem', height: '2rem', color: '#3b82f6' }} />
           <div>
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
-              🎯 Trade Planning
+              Trade Planning
             </h1>
             <p style={{ margin: '0.5rem 0 0 0', color: '#94a3b8', fontSize: '0.875rem' }}>
               Plan & Execute Trading Strategies

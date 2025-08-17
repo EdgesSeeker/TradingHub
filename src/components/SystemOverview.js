@@ -297,92 +297,32 @@ const SystemOverview = () => {
       color: '#f8fafc',
       fontFamily: 'Inter, sans-serif'
     }}>
-      {/* Header */}
-      <div style={{
-        backgroundColor: '#1e293b',
-        padding: '2rem',
-        borderBottom: '1px solid #334155'
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center'
-        }}>
-          <button
-            onClick={() => setShowLog(!showLog)}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: showLog ? '#ef4444' : '#3b82f6',
-              border: 'none',
-              borderRadius: '0.5rem',
-              color: '#ffffff',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            <History size={16} />
-            {showLog ? 'Hide Log' : 'Show Log'}
-          </button>
-        </div>
-      </div>
-
-      {/* System Log */}
-      {showLog && (
-        <div style={{
-          backgroundColor: '#1e293b',
-          padding: '1rem',
-          borderBottom: '1px solid #334155'
-        }}>
-          <h3 style={{ color: '#f8fafc', marginBottom: '1rem' }}>System Change Log</h3>
-          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-            {systemLog.map((entry, index) => (
-              <div key={index} style={{
-                padding: '0.5rem',
-                backgroundColor: '#334155',
-                borderRadius: '0.25rem',
-                marginBottom: '0.5rem',
-                fontSize: '0.875rem'
-              }}>
-                <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
-                  {new Date(entry.timestamp).toLocaleString()}
-                </div>
-                <div style={{ color: '#f8fafc' }}>{entry.action}</div>
-                <div style={{ color: '#94a3b8' }}>{entry.details}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Page Header */}
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto',
         padding: '2rem 2rem 1rem'
       }}>
-        <h1 style={{ 
-          margin: '0 0 2rem 0', 
-          fontSize: '2rem', 
-          fontWeight: '700', 
-          color: '#f8fafc',
-          textAlign: 'center'
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+          marginBottom: '2rem',
+          padding: '1rem',
+          backgroundColor: '#1e293b',
+          borderRadius: '0.5rem',
+          border: '1px solid #334155'
         }}>
-          ⚡ System Overview
-        </h1>
-        <p style={{ 
-          margin: '0 0 2rem 0', 
-          color: '#94a3b8', 
-          fontSize: '1rem',
-          textAlign: 'center'
-        }}>
-          Swing Trading System & Mission Rules
-        </p>
+          <Target style={{ width: '2rem', height: '2rem', color: '#3b82f6' }} />
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
+              System Overview
+            </h1>
+            <p style={{ margin: '0.5rem 0 0 0', color: '#94a3b8', fontSize: '0.875rem' }}>
+              Swing Trading System & Mission Rules
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Content */}
