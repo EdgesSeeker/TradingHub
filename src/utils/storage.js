@@ -2,7 +2,7 @@
 class TradingStorage {
   constructor() {
     this.dbName = 'TradingJournalDB';
-    this.dbVersion = 5;
+    this.dbVersion = 6;
     this.db = null;
   }
 
@@ -56,6 +56,14 @@ class TradingStorage {
           const dailyReviewsStore = db.createObjectStore('dailyReviews', { keyPath: 'id' });
           dailyReviewsStore.createIndex('date', 'date', { unique: false });
           dailyReviewsStore.createIndex('createdAt', 'createdAt', { unique: false });
+        }
+
+        // Weekly Reviews Store
+        if (!db.objectStoreNames.contains('weeklyReviews')) {
+          const weeklyReviewsStore = db.createObjectStore('weeklyReviews', { keyPath: 'id' });
+          weeklyReviewsStore.createIndex('weekNumber', 'weekNumber', { unique: false });
+          weeklyReviewsStore.createIndex('year', 'year', { unique: false });
+          weeklyReviewsStore.createIndex('createdAt', 'createdAt', { unique: false });
         }
 
         // PnL Sales Store
@@ -877,6 +885,78 @@ class TradingStorage {
     });
   }
 
+  // Weekly Reviews speichern
+  async saveWeeklyReviews(reviews) {
+    if (!this.db) {
+      await this.init();
+    }
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['weeklyReviews'], 'readwrite');
+      const store = transaction.objectStore('weeklyReviews');
+
+      // Alle bestehenden Reviews löschen
+      const clearRequest = store.clear();
+      
+      clearRequest.onsuccess = () => {
+        // Neue Reviews hinzufügen
+        let completed = 0;
+        const total = reviews.length;
+
+        if (total === 0) {
+          resolve();
+          return;
+        }
+
+        reviews.forEach(review => {
+          const addRequest = store.add(review);
+          
+          addRequest.onsuccess = () => {
+            completed++;
+            if (completed === total) {
+              resolve();
+            }
+          };
+          
+          addRequest.onerror = () => {
+            reject(new Error(`Fehler beim Speichern des Weekly Reviews: ${addRequest.error}`));
+          };
+        });
+      };
+      
+      clearRequest.onerror = () => {
+        reject(new Error('Fehler beim Löschen der bestehenden Weekly Reviews'));
+      };
+    });
+  }
+
+  // Weekly Reviews laden
+  async getWeeklyReviews() {
+    if (!this.db) {
+      await this.init();
+    }
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['weeklyReviews'], 'readonly');
+      const store = transaction.objectStore('weeklyReviews');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const reviews = request.result || [];
+        // Sortiere nach Jahr und Woche (neueste zuerst)
+        reviews.sort((a, b) => {
+          if (b.year !== a.year) return b.year - a.year;
+          return b.weekNumber - a.weekNumber;
+        });
+        resolve(reviews);
+      };
+      
+      request.onerror = () => {
+        reject(new Error('Fehler beim Laden der Weekly Reviews'));
+      };
+    });
+  }
+
   // Datenbank löschen
   async clearAll() {
     if (!this.db) {
@@ -884,22 +964,24 @@ class TradingStorage {
     }
     
     return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction(['trades', 'settings', 'journal', 'tradePlans', 'dailyReviews'], 'readwrite');
+      const transaction = this.db.transaction(['trades', 'settings', 'journal', 'tradePlans', 'dailyReviews', 'weeklyReviews'], 'readwrite');
       
       const tradesStore = transaction.objectStore('trades');
       const settingsStore = transaction.objectStore('settings');
       const journalStore = transaction.objectStore('journal');
       const tradePlansStore = transaction.objectStore('tradePlans');
       const dailyReviewsStore = transaction.objectStore('dailyReviews');
+      const weeklyReviewsStore = transaction.objectStore('weeklyReviews');
 
       const tradesRequest = tradesStore.clear();
       const settingsRequest = settingsStore.clear();
       const journalRequest = journalStore.clear();
       const tradePlansRequest = tradePlansStore.clear();
       const dailyReviewsRequest = dailyReviewsStore.clear();
+      const weeklyReviewsRequest = weeklyReviewsStore.clear();
 
       let completed = 0;
-      const total = 5;
+      const total = 6;
 
       const checkComplete = () => {
         completed++;
@@ -913,12 +995,14 @@ class TradingStorage {
       journalRequest.onsuccess = checkComplete;
       tradePlansRequest.onsuccess = checkComplete;
       dailyReviewsRequest.onsuccess = checkComplete;
+      weeklyReviewsRequest.onsuccess = checkComplete;
 
       tradesRequest.onerror = () => reject(new Error('Fehler beim Löschen der Trades'));
       settingsRequest.onerror = () => reject(new Error('Fehler beim Löschen der Einstellungen'));
       journalRequest.onerror = () => reject(new Error('Fehler beim Löschen der Journal-Einträge'));
       tradePlansRequest.onerror = () => reject(new Error('Fehler beim Löschen der Trade Plans'));
       dailyReviewsRequest.onerror = () => reject(new Error('Fehler beim Löschen der Daily Reviews'));
+      weeklyReviewsRequest.onerror = () => reject(new Error('Fehler beim Löschen der Weekly Reviews'));
     });
   }
 }
