@@ -8,7 +8,7 @@ class TradingStorage {
 
   async init() {
     return new Promise(async (resolve, reject) => {
-      const request = indexedDB.open(this.dbName, this.dbVersion + 2);
+      const request = indexedDB.open(this.dbName, this.dbVersion);
 
       request.onerror = () => {
         reject(new Error('Fehler beim Öffnen der Datenbank'));
@@ -669,20 +669,46 @@ class TradingStorage {
       await this.init();
     }
     
-    return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction(['trash'], 'readwrite');
-      const store = transaction.objectStore('trash');
-      
-      const tradeWithMetadata = {
-        ...trade,
-        deletedAt: new Date().toISOString(),
-        originalId: trade.id
-      };
-      
-      const request = store.add(tradeWithMetadata);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(new Error('Fehler beim Verschieben in den Papierkorb'));
+    return new Promise(async (resolve, reject) => {
+      try {
+        // Zuerst den Trade in den Papierkorb verschieben
+        const trashTransaction = this.db.transaction(['trash'], 'readwrite');
+        const trashStore = trashTransaction.objectStore('trash');
+        
+        const tradeWithMetadata = {
+          ...trade,
+          deletedAt: new Date().toISOString(),
+          originalId: trade.id
+        };
+        
+        const addRequest = trashStore.add(tradeWithMetadata);
+        
+        addRequest.onsuccess = async () => {
+          try {
+            // Dann den Trade aus dem ursprünglichen Store entfernen
+            const tradesTransaction = this.db.transaction(['trades'], 'readwrite');
+            const tradesStore = tradesTransaction.objectStore('trades');
+            
+            const deleteRequest = tradesStore.delete(trade.id);
+            
+            deleteRequest.onsuccess = () => {
+              resolve();
+            };
+            
+            deleteRequest.onerror = () => {
+              reject(new Error('Fehler beim Entfernen des Trades aus der Hauptdatenbank'));
+            };
+          } catch (error) {
+            reject(new Error(`Fehler beim Entfernen des Trades: ${error.message}`));
+          }
+        };
+        
+        addRequest.onerror = () => {
+          reject(new Error('Fehler beim Verschieben in den Papierkorb'));
+        };
+      } catch (error) {
+        reject(new Error(`Fehler beim Verschieben des Trades: ${error.message}`));
+      }
     });
   }
 
