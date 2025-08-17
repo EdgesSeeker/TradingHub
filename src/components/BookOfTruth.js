@@ -201,9 +201,15 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
 
   // Calculate revenue per trade based on rule adherence
   const calculateRevenuePerTrade = (rulesFollowed) => {
+    // Debug: Log all closed trades and their ruleAdherence
+    console.log('All closed trades:', closedTrades);
+    console.log('Closed trades with ruleAdherence:', closedTrades.filter(trade => trade.ruleAdherence !== undefined));
+    
     const relevantTrades = closedTrades.filter(trade => 
       trade.ruleAdherence === rulesFollowed
     );
+    
+    console.log(`Trades with rulesFollowed=${rulesFollowed}:`, relevantTrades);
     
     if (relevantTrades.length === 0) return 0;
     
@@ -211,7 +217,10 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
       sum + parseFloat(trade.pnl || 0), 0
     );
     
-    return totalRevenue / relevantTrades.length;
+    const average = totalRevenue / relevantTrades.length;
+    console.log(`Average revenue for rulesFollowed=${rulesFollowed}:`, average);
+    
+    return average;
   };
 
   return (
@@ -319,7 +328,7 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
             borderRadius: '0.5rem',
             minWidth: '120px'
           }}>
-            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Revenue per Trade (Rules Followed)</div>
+            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>RevenueRulesFollowed</div>
             <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#10b981' }}>
               {formatCurrency(calculateRevenuePerTrade(true))}
             </div>
@@ -332,7 +341,7 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
             borderRadius: '0.5rem',
             minWidth: '120px'
           }}>
-            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Revenue per Trade (Rules Violated)</div>
+            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>RevenueRulesViolated</div>
             <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#ef4444' }}>
               {formatCurrency(calculateRevenuePerTrade(false))}
             </div>
