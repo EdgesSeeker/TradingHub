@@ -1,7 +1,9 @@
-import React from 'react';
-import { BarChart3, Briefcase, BookOpen, Calendar, Settings, ArrowLeft, Plus, TrendingDown, Target, Brain, BarChart, Zap, Clock, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { BarChart3, Briefcase, BookOpen, Calendar, Settings, ArrowLeft, Plus, TrendingDown, Target, Brain, BarChart, Zap, Clock, Trash2, ChevronDown, FileText } from 'lucide-react';
 
 const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, children, renderContent }) => {
+  const [reviewsDropdownOpen, setReviewsDropdownOpen] = useState(false);
+  
   const tabs = [
     { id: 'portfolio', label: 'Dashboard', icon: Briefcase },
     { id: 'system-overview', label: 'System Overview', icon: Zap },
@@ -12,12 +14,26 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
     { id: 'profit-taking', label: 'Profit Taking', icon: TrendingDown },
     { id: 'book-of-truth', label: 'Book of Truth', icon: BookOpen },
     { id: 'trading-metrics', label: 'Trading Metrics', icon: BarChart },
-    { id: 'journal', label: 'Journal', icon: Calendar },
+    { id: 'reviews', label: 'Reviews', icon: FileText, hasDropdown: true },
     { id: 'trash', label: 'Papierkorb', icon: Trash2 },
     { id: 'settings', label: 'Einstellungen', icon: Settings }
   ];
 
+  const reviewSubTabs = [
+    { id: 'daily-review', label: 'Daily Review', icon: Calendar },
+    { id: 'weekly-review', label: 'Weekly Review', icon: BarChart3 },
+    { id: 'monthly-review', label: 'Monthly Review', icon: TrendingDown },
+    { id: 'yearly-review', label: 'Yearly Review', icon: Target }
+  ];
+
   const getCurrentPageTitle = () => {
+    // Check if it's a review sub-tab first
+    const currentReviewTab = reviewSubTabs.find(tab => tab.id === activeTab);
+    if (currentReviewTab) {
+      return currentReviewTab.label;
+    }
+    
+    // Then check main tabs
     const currentTab = tabs.find(tab => tab.id === activeTab);
     return currentTab ? currentTab.label : 'Dashboard';
   };
@@ -78,7 +94,89 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
         <nav style={{ padding: '0 0.5rem' }}>
           {tabs.map(tab => {
             const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+            const isActive = activeTab === tab.id || 
+              (tab.hasDropdown && reviewSubTabs.some(subTab => activeTab === subTab.id));
+            
+            if (tab.hasDropdown) {
+              return (
+                <div key={tab.id}>
+                  <button
+                    onClick={() => setReviewsDropdownOpen(!reviewsDropdownOpen)}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem 1rem',
+                      marginBottom: '0.25rem',
+                      borderRadius: '0.5rem',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      transition: 'all 0.2s',
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: isActive ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'transparent',
+                      color: isActive ? '#ffffff' : '#94a3b8'
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem'
+                    }}>
+                      <Icon size={20} />
+                      {tab.label}
+                    </div>
+                    <ChevronDown 
+                      size={16} 
+                      style={{ 
+                        transform: reviewsDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s'
+                      }} 
+                    />
+                  </button>
+                  
+                  {/* Dropdown Menu */}
+                  {reviewsDropdownOpen && (
+                    <div style={{
+                      marginLeft: '1rem',
+                      marginBottom: '0.25rem'
+                    }}>
+                      {reviewSubTabs.map(subTab => {
+                        const SubIcon = subTab.icon;
+                        const isSubActive = activeTab === subTab.id;
+                        
+                        return (
+                          <button
+                            key={subTab.id}
+                            onClick={() => onTabChange(subTab.id)}
+                            style={{
+                              width: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              padding: '0.5rem 1rem',
+                              marginBottom: '0.25rem',
+                              borderRadius: '0.5rem',
+                              fontWeight: '500',
+                              fontSize: '0.875rem',
+                              transition: 'all 0.2s',
+                              border: 'none',
+                              cursor: 'pointer',
+                              background: isSubActive ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'transparent',
+                              color: isSubActive ? '#ffffff' : '#94a3b8'
+                            }}
+                          >
+                            <SubIcon size={18} />
+                            {subTab.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
             
             return (
               <button

@@ -7,7 +7,10 @@ import TradePlanning from './components/TradePlanning';
 import SystemOverview from './components/SystemOverview';
 import TradingRoutine from './components/TradingRoutine';
 import BookOfTruth from './components/BookOfTruth';
-import Journal from './components/Journal';
+import DailyReview from './components/DailyReview';
+import WeeklyReview from './components/WeeklyReview';
+import MonthlyReview from './components/MonthlyReview';
+import YearlyReview from './components/YearlyReview';
 import AIAgents from './components/AIAgents';
 import TradingMetrics from './components/TradingMetrics';
 import Trash from './components/Trash';
@@ -234,9 +237,21 @@ function App() {
           return (
             <BookOfTruth trades={trades} onTradeUpdated={handleTradeAdded} />
           );
-        case 'journal':
+        case 'daily-review':
           return (
-            <Journal trades={trades} onTradeUpdated={handleTradeAdded} />
+            <DailyReview trades={trades} onTradeUpdated={handleTradeAdded} />
+          );
+        case 'weekly-review':
+          return (
+            <WeeklyReview trades={trades} onTradeUpdated={handleTradeAdded} />
+          );
+        case 'monthly-review':
+          return (
+            <MonthlyReview trades={trades} onTradeUpdated={handleTradeAdded} />
+          );
+        case 'yearly-review':
+          return (
+            <YearlyReview trades={trades} onTradeUpdated={handleTradeAdded} />
           );
         case 'ai-agents':
           return (

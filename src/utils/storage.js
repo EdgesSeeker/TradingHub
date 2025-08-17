@@ -51,6 +51,13 @@ class TradingStorage {
           journalStore.createIndex('date', 'date', { unique: false });
         }
 
+        // Daily Reviews Store
+        if (!db.objectStoreNames.contains('dailyReviews')) {
+          const dailyReviewsStore = db.createObjectStore('dailyReviews', { keyPath: 'id' });
+          dailyReviewsStore.createIndex('date', 'date', { unique: false });
+          dailyReviewsStore.createIndex('createdAt', 'createdAt', { unique: false });
+        }
+
         // PnL Sales Store
         if (!db.objectStoreNames.contains('pnlSales')) {
           db.createObjectStore('pnlSales', { keyPath: 'id' });
@@ -801,6 +808,75 @@ class TradingStorage {
     });
   }
 
+  // Daily Reviews speichern
+  async saveDailyReviews(reviews) {
+    if (!this.db) {
+      await this.init();
+    }
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['dailyReviews'], 'readwrite');
+      const store = transaction.objectStore('dailyReviews');
+
+      // Alle bestehenden Reviews löschen
+      const clearRequest = store.clear();
+      
+      clearRequest.onsuccess = () => {
+        // Neue Reviews hinzufügen
+        let completed = 0;
+        const total = reviews.length;
+
+        if (total === 0) {
+          resolve();
+          return;
+        }
+
+        reviews.forEach(review => {
+          const addRequest = store.add(review);
+          
+          addRequest.onsuccess = () => {
+            completed++;
+            if (completed === total) {
+              resolve();
+            }
+          };
+          
+          addRequest.onerror = () => {
+            reject(new Error(`Fehler beim Speichern des Daily Reviews: ${addRequest.error}`));
+          };
+        });
+      };
+      
+      clearRequest.onerror = () => {
+        reject(new Error('Fehler beim Löschen der bestehenden Reviews'));
+      };
+    });
+  }
+
+  // Daily Reviews laden
+  async getDailyReviews() {
+    if (!this.db) {
+      await this.init();
+    }
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['dailyReviews'], 'readonly');
+      const store = transaction.objectStore('dailyReviews');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const reviews = request.result || [];
+        // Sortiere nach Datum (neueste zuerst)
+        reviews.sort((a, b) => new Date(b.date) - new Date(a.date));
+        resolve(reviews);
+      };
+      
+      request.onerror = () => {
+        reject(new Error('Fehler beim Laden der Daily Reviews'));
+      };
+    });
+  }
+
   // Datenbank löschen
   async clearAll() {
     if (!this.db) {
@@ -808,20 +884,22 @@ class TradingStorage {
     }
     
     return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction(['trades', 'settings', 'journal', 'tradePlans'], 'readwrite');
+      const transaction = this.db.transaction(['trades', 'settings', 'journal', 'tradePlans', 'dailyReviews'], 'readwrite');
       
       const tradesStore = transaction.objectStore('trades');
       const settingsStore = transaction.objectStore('settings');
       const journalStore = transaction.objectStore('journal');
       const tradePlansStore = transaction.objectStore('tradePlans');
+      const dailyReviewsStore = transaction.objectStore('dailyReviews');
 
       const tradesRequest = tradesStore.clear();
       const settingsRequest = settingsStore.clear();
       const journalRequest = journalStore.clear();
       const tradePlansRequest = tradePlansStore.clear();
+      const dailyReviewsRequest = dailyReviewsStore.clear();
 
       let completed = 0;
-      const total = 4;
+      const total = 5;
 
       const checkComplete = () => {
         completed++;
@@ -834,11 +912,13 @@ class TradingStorage {
       settingsRequest.onsuccess = checkComplete;
       journalRequest.onsuccess = checkComplete;
       tradePlansRequest.onsuccess = checkComplete;
+      dailyReviewsRequest.onsuccess = checkComplete;
 
       tradesRequest.onerror = () => reject(new Error('Fehler beim Löschen der Trades'));
       settingsRequest.onerror = () => reject(new Error('Fehler beim Löschen der Einstellungen'));
       journalRequest.onerror = () => reject(new Error('Fehler beim Löschen der Journal-Einträge'));
       tradePlansRequest.onerror = () => reject(new Error('Fehler beim Löschen der Trade Plans'));
+      dailyReviewsRequest.onerror = () => reject(new Error('Fehler beim Löschen der Daily Reviews'));
     });
   }
 }
