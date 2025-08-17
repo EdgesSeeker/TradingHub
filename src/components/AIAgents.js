@@ -590,30 +590,49 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                             </div>
                   </div>
                   
-                          {/* Status Badge */}
-                       <div style={{
-                            padding: '0.25rem 0.75rem',
-                            borderRadius: '9999px',
-                         fontSize: '0.75rem',
-                            fontWeight: '600',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            ...(plan.status === 'approved' ? {
-                              backgroundColor: '#10b981',
-                              color: '#ffffff'
-                            } : plan.status === 'rejected' ? {
-                              backgroundColor: '#ef4444',
-                              color: '#ffffff'
-                            } : plan.status === 'executed' ? {
-                              backgroundColor: '#3b82f6',
-                              color: '#ffffff'
-                            } : {
-                              backgroundColor: '#f59e0b',
-                              color: '#ffffff'
-                            })
-                          }}>
-                            {plan.status}
-                       </div>
+                          {/* Status and Ranking */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                            {/* AI Rating Badge */}
+                            {aiResults[plan.id] && (
+                              <div style={{
+                                padding: '0.25rem 0.75rem',
+                                borderRadius: '9999px',
+                                fontSize: '0.875rem',
+                                fontWeight: '700',
+                                backgroundColor: aiResults[plan.id].isApproved ? '#10b981' : '#ef4444',
+                                color: '#ffffff',
+                                textAlign: 'center',
+                                minWidth: '60px'
+                              }}>
+                                {aiResults[plan.id].overallRating}/10
+                              </div>
+                            )}
+                            
+                            {/* Status Badge */}
+                            <div style={{
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '9999px',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              ...(plan.status === 'approved' ? {
+                                backgroundColor: '#10b981',
+                                color: '#ffffff'
+                              } : plan.status === 'rejected' ? {
+                                backgroundColor: '#ef4444',
+                                color: '#ffffff'
+                              } : plan.status === 'executed' ? {
+                                backgroundColor: '#3b82f6',
+                                color: '#ffffff'
+                              } : {
+                                backgroundColor: '#f59e0b',
+                                color: '#ffffff'
+                              })
+                            }}>
+                              {plan.status}
+                            </div>
+                          </div>
                         </div>
                         
                         {/* Plan Details */}
@@ -688,7 +707,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                        </button>
                      )}
                      
-                                          <button
+                     <button
                        onClick={() => runAIReview(plan)}
                        disabled={isReviewing}
                        style={{
@@ -705,9 +724,32 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                          gap: '0.25rem'
                        }}
                      >
-                            {isReviewing ? <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <MessageSquare size={16} />}
-                            {isReviewing ? 'Reviewing...' : 'Review'}
+                            {isReviewing ? <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Brain size={16} />}
+                            {isReviewing ? 'Evaluating...' : 'Evaluate'}
                      </button>
+                     
+                     {/* AI Review Button - only show if evaluation exists */}
+                     {aiResults[plan.id] && (
+                       <button
+                         onClick={() => setSelectedPlan(plan)}
+                         style={{
+                           padding: '0.5rem 1rem',
+                           backgroundColor: '#10b981',
+                           border: 'none',
+                           borderRadius: '0.375rem',
+                           color: '#ffffff',
+                           cursor: 'pointer',
+                           fontSize: '0.875rem',
+                           fontWeight: '500',
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.25rem'
+                         }}
+                       >
+                         <MessageSquare size={16} />
+                         AI Review
+                       </button>
+                     )}
                    </div>
               </div>
             ))}
@@ -719,7 +761,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
         )}
       </div>
 
-      {/* AI Review Modal */}
+      {/* AI Review Dashboard Modal */}
       {selectedPlan && (
         <div style={{
           position: 'fixed',
@@ -734,304 +776,352 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
           zIndex: 1000
         }}>
           <div style={{
-            backgroundColor: '#1e293b',
+            backgroundColor: '#0f172a',
             borderRadius: '0.75rem',
             padding: '2rem',
-            maxWidth: '800px',
-            width: '90%',
-            maxHeight: '90vh',
+            maxWidth: '1200px',
+            width: '95%',
+            maxHeight: '95vh',
             overflow: 'auto',
             border: '1px solid #334155'
           }}>
-                         <div style={{
-               display: 'flex',
-               justifyContent: 'space-between',
-               alignItems: 'center',
-              marginBottom: '1.5rem'
-             }}>
-              <h2 style={{
-                fontSize: '1.5rem',
-                 fontWeight: '600',
-                 color: '#f8fafc',
-                 margin: 0
-               }}>
-                AI Review: {selectedPlan.symbol}
-              </h2>
-                 <button
-                   onClick={() => setSelectedPlan(null)}
-                   style={{
-                     background: 'none',
-                     border: 'none',
-                     color: '#94a3b8',
-                     cursor: 'pointer',
-                  padding: '0.5rem'
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '2rem',
+              paddingBottom: '1rem',
+              borderBottom: '1px solid #334155'
+            }}>
+              <div>
+                <h2 style={{
+                  fontSize: '2rem',
+                  fontWeight: '700',
+                  color: '#f8fafc',
+                  margin: '0 0 0.5rem 0'
+                }}>
+                  🤖 AI Review Dashboard
+                </h2>
+                <p style={{
+                  fontSize: '1.125rem',
+                  color: '#94a3b8',
+                  margin: 0
+                }}>
+                  {selectedPlan.symbol} - {selectedPlan.setup || 'Setup'} Analysis
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedPlan(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '0.5rem',
+                  fontSize: '2rem'
                 }}
               >
-                <XCircle size={24} />
-                 </button>
-             </div>
+                ✕
+              </button>
+            </div>
 
-            {/* Plan Details */}
-                <div style={{
-                  backgroundColor: '#334155',
-                  padding: '1rem',
-              borderRadius: '0.5rem',
-              marginBottom: '1.5rem'
+            {/* Main Content Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '2rem',
+              marginBottom: '2rem'
             }}>
-              <h3 style={{
-                fontSize: '1.125rem',
-                fontWeight: '600',
-                color: '#f8fafc',
-                marginBottom: '1rem'
-              }}>
-                Trade Plan Details
-              </h3>
+              {/* Left Column - Trade Plan Details */}
               <div style={{
+                backgroundColor: '#1e293b',
+                padding: '1.5rem',
+                borderRadius: '0.75rem',
+                border: '1px solid #334155'
+              }}>
+                <h3 style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '600',
+                  color: '#f8fafc',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  📋 Trade Plan Details
+                </h3>
+                
+                <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                   gap: '1rem'
                 }}>
                   <div>
-                  <label style={{
-                       fontSize: '0.875rem',
-                    color: '#94a3b8',
-                    fontWeight: '500'
-                  }}>
-                    Symbol
-                  </label>
-                     <div style={{ 
-                    fontSize: '1rem',
-                    color: '#f8fafc',
-                    fontWeight: '600'
-                  }}>
-                    {selectedPlan.symbol}
-                     </div>
-                   </div>
-                <div>
-                  <label style={{
-                    fontSize: '0.875rem',
-                    color: '#94a3b8',
-                    fontWeight: '500'
-                  }}>
-                    Setup
-                  </label>
+                    <label style={{
+                      fontSize: '0.875rem',
+                      color: '#94a3b8',
+                      fontWeight: '500',
+                      display: 'block',
+                      marginBottom: '0.5rem'
+                    }}>
+                      Symbol & Setup
+                    </label>
                     <div style={{
-                    fontSize: '1rem',
+                      fontSize: '1.125rem',
                       color: '#f8fafc',
-                    fontWeight: '600'
-                  }}>
-                    {selectedPlan.setup || 'N/A'}
+                      fontWeight: '600',
+                      padding: '0.75rem',
+                      backgroundColor: '#334155',
+                      borderRadius: '0.5rem'
+                    }}>
+                      {selectedPlan.symbol} - {selectedPlan.setup || 'Setup'}
                     </div>
                   </div>
-                <div>
-                  <label style={{
-                    fontSize: '0.875rem',
-                    color: '#94a3b8',
-                    fontWeight: '500'
-                  }}>
-                    Direction
-                  </label>
+                  
+                  <div>
+                    <label style={{
+                      fontSize: '0.875rem',
+                      color: '#94a3b8',
+                      fontWeight: '500',
+                      display: 'block',
+                      marginBottom: '0.5rem'
+                    }}>
+                      Direction
+                    </label>
                     <div style={{
-                    fontSize: '1rem',
-                    color: '#f8fafc',
-                    fontWeight: '600'
-                  }}>
-                    {selectedPlan.direction || 'N/A'}
-                      </div>
-                      </div>
-                <div>
-                  <label style={{
-                    fontSize: '0.875rem',
-                    color: '#94a3b8',
-                    fontWeight: '500'
-                  }}>
-                    Entry Price
-                  </label>
-                      <div style={{
-                    fontSize: '1rem',
-                    color: '#f8fafc',
-                    fontWeight: '600'
-                  }}>
-                    {selectedPlan.entryPrice ? `$${selectedPlan.entryPrice}` : 'N/A'}
-                      </div>
+                      fontSize: '1.125rem',
+                      color: '#f8fafc',
+                      fontWeight: '600',
+                      padding: '0.75rem',
+                      backgroundColor: '#334155',
+                      borderRadius: '0.5rem'
+                    }}>
+                      {selectedPlan.direction || 'N/A'}
                     </div>
-                <div>
-                  <label style={{
-                    fontSize: '0.875rem',
-                    color: '#94a3b8',
-                    fontWeight: '500'
-                  }}>
-                    Stop Loss
-                  </label>
-                      <div style={{
-                    fontSize: '1rem',
-                    color: '#f8fafc',
-                    fontWeight: '600'
-                  }}>
-                    {selectedPlan.stopLoss ? `$${selectedPlan.stopLoss}` : 'N/A'}
-                      </div>
-                    </div>
-                <div>
-                  <label style={{
-                    fontSize: '0.875rem',
-                    color: '#94a3b8',
-                    fontWeight: '500'
-                  }}>
-                    Risk Amount
-                  </label>
-                       <div style={{
-                    fontSize: '1rem',
-                    color: '#f8fafc',
-                    fontWeight: '600'
-                  }}>
-                    {selectedPlan.riskAmount ? `$${selectedPlan.riskAmount}` : 'N/A'}
                   </div>
-                       </div>
-                     </div>
-                     
-              {selectedPlan.thesis && (
-                <div style={{ marginTop: '1rem' }}>
-                  <label style={{
-                    fontSize: '0.875rem',
-                    color: '#94a3b8',
-                    fontWeight: '500'
-                  }}>
-                    Thesis
-                  </label>
-                       <div style={{
-                    fontSize: '0.875rem',
-                    color: '#f8fafc',
-                    lineHeight: '1.5',
-                    marginTop: '0.25rem',
-                    padding: '0.75rem',
-                    backgroundColor: '#1e293b',
-                    borderRadius: '0.375rem',
-                    border: '1px solid #475569'
-                  }}>
-                    {selectedPlan.thesis}
-                       </div>
+                  
+                  {selectedPlan.entryPrice && (
+                    <div>
+                      <label style={{
+                        fontSize: '0.875rem',
+                        color: '#94a3b8',
+                        fontWeight: '500',
+                        display: 'block',
+                        marginBottom: '0.5rem'
+                      }}>
+                        Entry Price
+                      </label>
+                      <div style={{
+                        fontSize: '1.125rem',
+                        color: '#f8fafc',
+                        fontWeight: '600',
+                        padding: '0.75rem',
+                        backgroundColor: '#334155',
+                        borderRadius: '0.5rem'
+                      }}>
+                        ${selectedPlan.entryPrice}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedPlan.stopLoss && (
+                    <div>
+                      <label style={{
+                        fontSize: '0.875rem',
+                        color: '#94a3b8',
+                        fontWeight: '500',
+                        display: 'block',
+                        marginBottom: '0.5rem'
+                      }}>
+                        Stop Loss
+                      </label>
+                      <div style={{
+                        fontSize: '1.125rem',
+                        color: '#f8fafc',
+                        fontWeight: '600',
+                        padding: '0.75rem',
+                        backgroundColor: '#334155',
+                        borderRadius: '0.5rem'
+                      }}>
+                        ${selectedPlan.stopLoss}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedPlan.thesis && (
+                    <div>
+                      <label style={{
+                        fontSize: '0.875rem',
+                        color: '#94a3b8',
+                        fontWeight: '500',
+                        display: 'block',
+                        marginBottom: '0.5rem'
+                      }}>
+                        Thesis
+                      </label>
+                      <div style={{
+                        fontSize: '0.875rem',
+                        color: '#f8fafc',
+                        lineHeight: '1.6',
+                        padding: '0.75rem',
+                        backgroundColor: '#334155',
+                        borderRadius: '0.5rem',
+                        whiteSpace: 'pre-wrap'
+                      }}>
+                        {selectedPlan.thesis}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-                     </div>
-                     
-                        {/* AI Review Results */}
-            {aiResults[selectedPlan.id] && (
+              </div>
+
+              {/* Right Column - AI Analysis Results */}
               <div style={{
-                backgroundColor: '#334155',
-                padding: '1rem',
-                borderRadius: '0.5rem',
-                marginBottom: '1.5rem'
+                backgroundColor: '#1e293b',
+                padding: '1.5rem',
+                borderRadius: '0.75rem',
+                border: '1px solid #334155'
               }}>
                 <h3 style={{
-                  fontSize: '1.125rem',
+                  fontSize: '1.5rem',
                   fontWeight: '600',
                   color: '#f8fafc',
-                  marginBottom: '1rem'
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  AI Analysis Results
+                  🧠 AI Analysis Results
                 </h3>
                 
-                {/* Overall Rating */}
-                <div style={{
-                  backgroundColor: '#1e293b',
-                  padding: '1rem',
-                  borderRadius: '0.5rem',
-                  marginBottom: '1rem',
-                  textAlign: 'center'
-                }}>
-                  <div style={{
-                    fontSize: '0.875rem',
-                    color: '#94a3b8',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Overall Rating
-                  </div>
-                  <div style={{
-                    fontSize: '2rem',
-                    fontWeight: '700',
-                    color: aiResults[selectedPlan.id].isApproved ? '#10b981' : '#ef4444'
-                  }}>
-                    {aiResults[selectedPlan.id].overallRating}/10
-                  </div>
-                  <div style={{
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    color: aiResults[selectedPlan.id].isApproved ? '#10b981' : '#ef4444',
-                    marginTop: '0.5rem'
-                  }}>
-                    {aiResults[selectedPlan.id].isApproved ? '✅ APPROVED' : '❌ REJECTED'}
-                  </div>
-                </div>
-                
-                {/* Individual Agent Results */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                  gap: '1rem'
-                }}>
-                  {Object.entries(aiResults[selectedPlan.id].agents).map(([agentName, result]) => (
-                    <div key={agentName} style={{
-                      backgroundColor: '#1e293b',
-                      padding: '1rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #475569'
+                {aiResults[selectedPlan.id] ? (
+                  <>
+                    {/* Overall Rating */}
+                    <div style={{
+                      backgroundColor: '#334155',
+                      padding: '1.5rem',
+                      borderRadius: '0.75rem',
+                      marginBottom: '1.5rem',
+                      textAlign: 'center',
+                      border: `2px solid ${aiResults[selectedPlan.id].isApproved ? '#10b981' : '#ef4444'}`
                     }}>
                       <div style={{
                         fontSize: '1rem',
-                        fontWeight: '600',
-                        color: '#f8fafc',
-                        marginBottom: '0.5rem'
-                      }}>
-                        {agentName}
-                      </div>
-                      <div style={{
-                        fontSize: '1.5rem',
-                        fontWeight: '700',
-                        color: '#3b82f6',
-                        marginBottom: '0.5rem'
-                      }}>
-                        {result.rating}/10
-                      </div>
-                      <div style={{
-                        fontSize: '0.875rem',
                         color: '#94a3b8',
-                        lineHeight: '1.5'
+                        marginBottom: '0.75rem'
                       }}>
-                        {result.feedback}
+                        Overall AI Rating
+                      </div>
+                      <div style={{
+                        fontSize: '3rem',
+                        fontWeight: '800',
+                        color: aiResults[selectedPlan.id].isApproved ? '#10b981' : '#ef4444',
+                        marginBottom: '0.5rem'
+                      }}>
+                        {aiResults[selectedPlan.id].overallRating}/10
+                      </div>
+                      <div style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '700',
+                        color: aiResults[selectedPlan.id].isApproved ? '#10b981' : '#ef4444',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                      }}>
+                        {aiResults[selectedPlan.id].isApproved ? '✅ APPROVED' : '❌ REJECTED'}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
                     
+                    {/* Individual Agent Results */}
+                    <div style={{
+                      display: 'grid',
+                      gap: '1rem'
+                    }}>
+                      {Object.entries(aiResults[selectedPlan.id].agents).map(([agentName, result]) => (
+                        <div key={agentName} style={{
+                          backgroundColor: '#334155',
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '0.75rem'
+                          }}>
+                            <div style={{
+                              fontSize: '1rem',
+                              fontWeight: '600',
+                              color: '#f8fafc'
+                            }}>
+                              {agentName}
+                            </div>
+                            <div style={{
+                              fontSize: '1.5rem',
+                              fontWeight: '800',
+                              color: '#3b82f6',
+                              backgroundColor: '#1e293b',
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '0.5rem',
+                              minWidth: '60px',
+                              textAlign: 'center'
+                            }}>
+                              {result.rating}/10
+                            </div>
+                          </div>
+                          <div style={{
+                            fontSize: '0.875rem',
+                            color: '#94a3b8',
+                            lineHeight: '1.5',
+                            fontStyle: 'italic'
+                          }}>
+                            "{result.feedback}"
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '3rem 1rem',
+                    color: '#94a3b8'
+                  }}>
+                    <Brain size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+                    <p>No AI evaluation yet. Click "Evaluate" to run the AI analysis.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Action Buttons */}
-                      <div style={{
+            <div style={{
               display: 'flex',
               gap: '1rem',
-              justifyContent: 'flex-end'
+              justifyContent: 'center',
+              paddingTop: '1rem',
+              borderTop: '1px solid #334155'
             }}>
-                  <button
+              <button
                 onClick={() => setSelectedPlan(null)}
-                    style={{
-                      padding: '0.75rem 1.5rem',
+                style={{
+                  padding: '1rem 2rem',
                   backgroundColor: '#475569',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      color: '#f8fafc',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  color: '#f8fafc',
                   cursor: 'pointer',
-                      fontSize: '0.875rem',
+                  fontSize: '1rem',
                   fontWeight: '500'
-                    }}
-                  >
-                Close
-                  </button>
+                }}
+              >
+                Close Dashboard
+              </button>
               
-              {selectedPlan.status === 'pending' && (
+              {selectedPlan.status === 'pending' && aiResults[selectedPlan.id] && (
                 <>
                   <button
                     onClick={() => {
-                      // Approve plan logic
                       const updatedPlans = tradePlans.map(p => 
                         p.id === selectedPlan.id ? { ...p, status: 'approved' } : p
                       );
@@ -1039,23 +1129,22 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                       setSelectedPlan(null);
                     }}
                     style={{
-                      padding: '0.75rem 1.5rem',
+                      padding: '1rem 2rem',
                       backgroundColor: '#10b981',
                       border: 'none',
                       borderRadius: '0.5rem',
                       color: '#ffffff',
                       cursor: 'pointer',
-                      fontSize: '0.875rem',
+                      fontSize: '1rem',
                       fontWeight: '500'
                     }}
                   >
-                    <CheckCircle size={16} style={{ marginRight: '0.5rem' }} />
-                    Approve
+                    <CheckCircle size={20} style={{ marginRight: '0.5rem' }} />
+                    Approve Trade Plan
                   </button>
                   
                   <button
                     onClick={() => {
-                      // Reject plan logic
                       const updatedPlans = tradePlans.map(p => 
                         p.id === selectedPlan.id ? { ...p, status: 'rejected' } : p
                       );
@@ -1063,18 +1152,18 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                       setSelectedPlan(null);
                     }}
                     style={{
-                      padding: '0.75rem 1.5rem',
+                      padding: '1rem 2rem',
                       backgroundColor: '#ef4444',
                       border: 'none',
                       borderRadius: '0.5rem',
                       color: '#ffffff',
                       cursor: 'pointer',
-                      fontSize: '0.875rem',
+                      fontSize: '1rem',
                       fontWeight: '500'
                     }}
                   >
-                    <XCircle size={16} style={{ marginRight: '0.5rem' }} />
-                    Reject
+                    <XCircle size={20} style={{ marginRight: '0.5rem' }} />
+                    Reject Trade Plan
                   </button>
                 </>
               )}
