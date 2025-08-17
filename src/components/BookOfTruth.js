@@ -206,16 +206,13 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
       color: '#f8fafc',
       fontFamily: 'Inter, sans-serif'
     }}>
-      {/* Header */}
+      {/* Page Header */}
       <div style={{
-        backgroundColor: '#1e293b',
-        padding: '2rem',
-        borderBottom: '1px solid #334155'
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '2rem 2rem 1rem'
       }}>
-        {/* Page Header */}
         <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
           display: 'flex',
           alignItems: 'center',
           gap: '1rem',
@@ -225,76 +222,78 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
           borderRadius: '0.5rem',
           border: '1px solid #334155'
         }}>
+          <BookOpen style={{ width: '2rem', height: '2rem', color: '#3b82f6' }} />
           <div>
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
-              📚 Book of Truth
+              Book of Truth
             </h1>
             <p style={{ margin: '0.5rem 0 0 0', color: '#94a3b8', fontSize: '0.875rem' }}>
               Your complete trading history and analysis
             </p>
           </div>
+        </div>
+        
+        {/* Key Metrics */}
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '2rem'
+        }}>
+          <div style={{
+            textAlign: 'center',
+            padding: '1rem',
+            backgroundColor: '#334155',
+            borderRadius: '0.5rem',
+            minWidth: '120px'
+          }}>
+            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Total P&L</div>
+            <div style={{ 
+              fontSize: '1.5rem', 
+              fontWeight: '600', 
+              color: getPnlColor(totalPnL)
+            }}>
+              {formatCurrency(totalPnL)}
+            </div>
           </div>
           
           <div style={{
-            display: 'flex',
-            gap: '1rem',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%'
+            textAlign: 'center',
+            padding: '1rem',
+            backgroundColor: '#334155',
+            borderRadius: '0.5rem',
+            minWidth: '120px'
           }}>
-            <div style={{
-              textAlign: 'center',
-              padding: '1rem',
-              backgroundColor: '#334155',
-              borderRadius: '0.5rem',
-              minWidth: '120px'
-            }}>
-              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Total P&L</div>
-              <div style={{ 
-                fontSize: '1.5rem', 
-                fontWeight: '600', 
-                color: getPnlColor(totalPnL)
-              }}>
-                {formatCurrency(totalPnL)}
-              </div>
+            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Win Rate</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
+            {(winRate * 100).toFixed(1)}%
             </div>
-            
-            <div style={{
-              textAlign: 'center',
-              padding: '1rem',
-              backgroundColor: '#334155',
-              borderRadius: '0.5rem',
-              minWidth: '120px'
-            }}>
-              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Win Rate</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
-              {(winRate * 100).toFixed(1)}%
-              </div>
+          </div>
+          
+          <div style={{
+            textAlign: 'center',
+            padding: '1rem',
+            backgroundColor: '#334155',
+            borderRadius: '0.5rem',
+            minWidth: '120px'
+          }}>
+            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Open Trades</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
+              {openTrades.length}
             </div>
-            
-            <div style={{
-              textAlign: 'center',
-              padding: '1rem',
-              backgroundColor: '#334155',
-              borderRadius: '0.5rem',
-              minWidth: '120px'
-            }}>
-              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Open Trades</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
-                {openTrades.length}
-              </div>
-            </div>
-            
-            <div style={{
-              textAlign: 'center',
-              padding: '1rem',
-              backgroundColor: '#334155',
-              borderRadius: '0.5rem',
-              minWidth: '120px'
-            }}>
-              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>A-Game Trades</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#10b981' }}>
-                {aGradeTrades.length}
+          </div>
+          
+          <div style={{
+            textAlign: 'center',
+            padding: '1rem',
+            backgroundColor: '#334155',
+            borderRadius: '0.5rem',
+            minWidth: '120px'
+          }}>
+            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>A-Game Trades</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#10b981' }}>
+              {aGradeTrades.length}
             </div>
           </div>
         </div>

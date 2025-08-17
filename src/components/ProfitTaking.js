@@ -380,6 +380,34 @@ const ProfitTaking = ({ trades, onTradeUpdated }) => {
       color: '#f8fafc',
       fontFamily: 'Inter, sans-serif'
     }}>
+      {/* Page Header */}
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '2rem 2rem 1rem'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+          marginBottom: '2rem',
+          padding: '1rem',
+          backgroundColor: '#1e293b',
+          borderRadius: '0.5rem',
+          border: '1px solid #334155'
+        }}>
+          <TrendingUp style={{ width: '2rem', height: '2rem', color: '#3b82f6' }} />
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
+              Profit Taking
+            </h1>
+            <p style={{ margin: '0.5rem 0 0 0', color: '#94a3b8', fontSize: '0.875rem' }}>
+              Manage Profit Taking & Exit Strategies
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Alerts Section */}
       {alerts.length > 0 && (
         <div style={{
