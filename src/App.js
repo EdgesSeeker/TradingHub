@@ -167,16 +167,16 @@ function App() {
         throw new Error('Trade nicht gefunden');
       }
       
-      // Move trade to trash instead of deleting it
-      await storage.moveTradeToTrash(tradeToDelete);
+      // Delete trade directly from database
+      await storage.deleteTrade(tradeId);
       
       // Remove from local state
       setTrades(prev => prev.filter(trade => trade.id !== tradeId));
       
       setError('');
     } catch (error) {
-      console.error('Error moving trade to trash:', error);
-      setError('Fehler beim Verschieben des Trades in den Papierkorb: ' + error.message);
+      console.error('Error deleting trade:', error);
+      setError('Fehler beim Löschen des Trades: ' + error.message);
     }
   };
 
