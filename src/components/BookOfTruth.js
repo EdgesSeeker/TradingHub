@@ -644,21 +644,20 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                          )}
                        </div>
                        
-                       {/* Trading Statistics - Second Row */}
-                       <div style={{
-                         display: 'flex',
-                         alignItems: 'center',
-                         gap: '2rem',
-                         fontSize: '0.875rem',
-                         color: '#94a3b8',
-                         flexWrap: 'wrap',
-                         marginTop: '0.5rem'
-                       }}>
-                         <span>Position Size: {formatCurrency((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))}</span>
-                         {trade.status === 'closed' && (
-                           <span>P&L %: {((parseFloat(trade.pnl || 0) / ((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))) * 100).toFixed(2)}%</span>
-                         )}
-                       </div>
+                                               {/* Trading Statistics - Second Row */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '2rem',
+                          fontSize: '0.875rem',
+                          color: '#94a3b8',
+                          flexWrap: 'wrap',
+                          marginTop: '0.5rem'
+                        }}>
+                          <span>Position Size: {formatCurrency((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))}</span>
+                          <span>% of Capital: {((((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0)) / 10000) * 100).toFixed(2)}%</span>
+                          <span>P&L %: {((parseFloat(trade.pnl || 0) / ((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))) * 100).toFixed(2)}%</span>
+                        </div>
                     </div>
                     
                                          <div style={{
@@ -687,14 +686,14 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                          <Edit size={16} />
                          Edit
                        </button>
-                       <div style={{
-                         fontSize: '2rem',
-                         fontWeight: '700',
-                         color: getPnlColor(trade.pnl),
-                         marginBottom: '0.5rem'
-                       }}>
-                         {trade.status === 'open' ? 'Open Position' : formatCurrency(trade.pnl)}
-                       </div>
+                                               <div style={{
+                          fontSize: '2rem',
+                          fontWeight: '700',
+                          color: getPnlColor(trade.pnl),
+                          marginBottom: '0.5rem'
+                        }}>
+                          {trade.status === 'open' ? 'Open Position' : `${((parseFloat(trade.pnl || 0) / ((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))) * 100).toFixed(2)}%`}
+                        </div>
                      </div>
                   </div>
 
