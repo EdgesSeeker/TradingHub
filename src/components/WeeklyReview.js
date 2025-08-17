@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, BarChart3, TrendingUp, Target, Plus, X, Save, Edit, CheckCircle, AlertTriangle } from 'lucide-react';
 import storage from '../utils/storage';
+import WeeklyReportGenerator from './WeeklyReportGenerator';
 
 const WeeklyReview = ({ trades, onTradeUpdated }) => {
   const [entries, setEntries] = useState([]);
@@ -136,6 +137,28 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
         margin: '0 auto',
         padding: '0 2rem 2rem'
       }}>
+        {/* Weekly Report Generator */}
+        <div style={{ marginBottom: '2rem' }}>
+          <WeeklyReportGenerator 
+            trades={trades} 
+            onReportGenerated={(report) => {
+              // Auto-fill the weekly review form with report data
+              setCurrentEntry(prev => ({
+                ...prev,
+                weekNumber: report.weekNumber.toString(),
+                year: report.year,
+                weekReport: {
+                  trades: report.trades,
+                  winRate: report.summary.winRate,
+                  riskReward: report.summary.avgWin / Math.abs(report.summary.avgLoss) || 0,
+                  avgPnL: report.summary.totalPnL / report.summary.totalTrades || 0,
+                  maxDrawdown: report.summary.maxLoss
+                }
+              }));
+            }}
+          />
+        </div>
+
         {/* Add New Entry Button */}
         <div style={{ marginBottom: '2rem' }}>
           <button
@@ -347,6 +370,92 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
                     </div>
                   </div>
 
+                  {/* Trading Matrix Summary */}
+                  {currentEntry.weekReport.trades && currentEntry.weekReport.trades.length > 0 && (
+                    <div style={{
+                      backgroundColor: '#334155',
+                      padding: '1.5rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #475569'
+                    }}>
+                      <h3 style={{
+                        fontSize: '1.125rem',
+                        fontWeight: '600',
+                        color: '#f8fafc',
+                        marginBottom: '1rem'
+                      }}>
+                        📊 Trading Matrix Summary ({currentEntry.weekReport.trades.length} trades)
+                      </h3>
+                      <div style={{
+                        backgroundColor: '#475569',
+                        borderRadius: '0.5rem',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+                          gap: '1px',
+                          backgroundColor: '#64748b'
+                        }}>
+                          {[
+                            'Symbol', 'Date', 'Status', 'P&L', 'Rules'
+                          ].map(header => (
+                            <div key={header} style={{
+                              padding: '0.5rem',
+                              backgroundColor: '#1e293b',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              color: '#94a3b8',
+                              textAlign: 'center'
+                            }}>
+                              {header}
+                            </div>
+                          ))}
+                        </div>
+                        {currentEntry.weekReport.trades.slice(0, 5).map((trade, index) => (
+                          <div key={index} style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+                            gap: '1px',
+                            backgroundColor: '#64748b'
+                          }}>
+                            {[
+                              trade.symbol,
+                              new Date(trade.date).toLocaleDateString(),
+                              trade.status,
+                              trade.pnl ? `$${trade.pnl}` : '-',
+                              trade.ruleAdherence === 'followed' ? '✅' : '❌'
+                            ].map((value, index) => (
+                              <div key={index} style={{
+                                padding: '0.5rem',
+                                backgroundColor: '#334155',
+                                fontSize: '0.75rem',
+                                color: '#f8fafc',
+                                textAlign: 'center',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                {value}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                        {currentEntry.weekReport.trades.length > 5 && (
+                          <div style={{
+                            padding: '0.5rem',
+                            backgroundColor: '#334155',
+                            fontSize: '0.75rem',
+                            color: '#94a3b8',
+                            textAlign: 'center'
+                          }}>
+                            ... and {currentEntry.weekReport.trades.length - 5} more trades
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Highlights */}
                   <div>
                     <label style={{
@@ -521,7 +630,120 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
                     />
                   </div>
 
-                  {/* Insights */}
+                  {/* Auto-generated Insights from Trades */}
+                  {currentEntry.weekReport.trades && currentEntry.weekReport.trades.length > 0 && (
+                    <div style={{
+                      backgroundColor: '#334155',
+                      padding: '1.5rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #475569'
+                    }}>
+                      <h3 style={{
+                        fontSize: '1.125rem',
+                        fontWeight: '600',
+                        color: '#f8fafc',
+                        marginBottom: '1rem'
+                      }}>
+                        🤖 Auto-generated Insights from Trades
+                      </h3>
+                      
+                      {/* Mistakes Summary */}
+                      <div style={{ marginBottom: '1rem' }}>
+                        <h4 style={{
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          color: '#ef4444',
+                          marginBottom: '0.5rem'
+                        }}>
+                          ❌ Common Mistakes Found:
+                        </h4>
+                        <div style={{
+                          backgroundColor: '#475569',
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.875rem',
+                          color: '#f8fafc'
+                        }}>
+                          {(() => {
+                            const mistakes = currentEntry.weekReport.trades
+                              .filter(trade => trade.executionNotes && 
+                                (trade.executionNotes.toLowerCase().includes('mistake') || 
+                                 trade.executionNotes.toLowerCase().includes('error') ||
+                                 trade.executionNotes.toLowerCase().includes('fomo')))
+                              .map(trade => `${trade.symbol}: ${trade.executionNotes}`)
+                              .slice(0, 3);
+                            
+                            return mistakes.length > 0 
+                              ? mistakes.join('\n')
+                              : 'No mistakes recorded in execution notes';
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Highlights Summary */}
+                      <div style={{ marginBottom: '1rem' }}>
+                        <h4 style={{
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          color: '#10b981',
+                          marginBottom: '0.5rem'
+                        }}>
+                          ✨ Highlights Found:
+                        </h4>
+                        <div style={{
+                          backgroundColor: '#475569',
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.875rem',
+                          color: '#f8fafc'
+                        }}>
+                          {(() => {
+                            const highlights = currentEntry.weekReport.trades
+                              .filter(trade => trade.executionNotes && 
+                                (trade.executionNotes.toLowerCase().includes('good') || 
+                                 trade.executionNotes.toLowerCase().includes('perfect') ||
+                                 trade.executionNotes.toLowerCase().includes('excellent')))
+                              .map(trade => `${trade.symbol}: ${trade.executionNotes}`)
+                              .slice(0, 3);
+                            
+                            return highlights.length > 0 
+                              ? highlights.join('\n')
+                              : 'No highlights recorded in execution notes';
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Rule Compliance Summary */}
+                      <div>
+                        <h4 style={{
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          color: '#f59e0b',
+                          marginBottom: '0.5rem'
+                        }}>
+                          ⚖️ Rule Compliance Summary:
+                        </h4>
+                        <div style={{
+                          backgroundColor: '#475569',
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.875rem',
+                          color: '#f8fafc'
+                        }}>
+                          {(() => {
+                            const followed = currentEntry.weekReport.trades.filter(t => t.ruleAdherence === 'followed').length;
+                            const violated = currentEntry.weekReport.trades.filter(t => t.ruleAdherence === 'violated').length;
+                            const total = currentEntry.weekReport.trades.length;
+                            const complianceRate = total > 0 ? ((followed / total) * 100).toFixed(1) : 0;
+                            
+                            return `Rules followed: ${followed}/${total} (${complianceRate}%)\nRules violated: ${violated}/${total}`;
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual Insights */}
                   <div>
                     <label style={{
                       display: 'block',
@@ -530,13 +752,13 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
                       color: '#94a3b8',
                       marginBottom: '0.5rem'
                     }}>
-                      📚 Trading Insights
+                      📚 Additional Trading Insights
                     </label>
                     <textarea
                       value={currentEntry.insights}
                       onChange={(e) => setCurrentEntry(prev => ({ ...prev, insights: e.target.value }))}
                       rows={3}
-                      placeholder="Wichtigste Erkenntnis, bestes Setup, größter Fehler zu vermeiden"
+                      placeholder="Additional insights, lessons learned, or observations not captured above"
                       style={{
                         width: '100%',
                         padding: '0.75rem',
