@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio - Trading Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="trading_theme.css" rel="stylesheet">
+    <style>
+        /* Animation Keyframes */
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Custom Styles */
+        .header { animation: slideDown 400ms ease-out forwards; }
+        
+        .portfolio-card {
+            animation: slideUp 600ms ease-out forwards;
+            opacity: 0;
+        }
+        
+        .portfolio-card:nth-child(1) { animation-delay: 100ms; }
+        .portfolio-card:nth-child(2) { animation-delay: 200ms; }
+        .portfolio-card:nth-child(3) { animation-delay: 300ms; }
+        
+        .trades-table {
+            animation: slideUp 500ms ease-out forwards;
+            animation-delay: 400ms;
+            opacity: 0;
+        }
+
+        .number-mono {
+            font-family: var(--font-mono);
+        }
+
+        .positive-value { color: var(--primary); }
+        .negative-value { color: var(--destructive); }
+
+        .nav-link {
+            color: var(--muted-foreground);
+            transition: color 200ms ease-out;
+        }
+        
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] min-h-screen">
+    <!-- Include Header -->
+    <div id="header-placeholder"></div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Portfolio Overview -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-semibold mb-6">Portfolio Overview</h1>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Total Portfolio Value -->
+                <div class="portfolio-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                    <h3 class="text-[var(--muted-foreground)] text-sm font-medium mb-2">Portfolio Value</h3>
+                    <p class="number-mono text-2xl font-semibold">$125,340</p>
+                    <span class="text-sm text-[var(--primary)]">+15.2% YTD</span>
+                </div>
+
+                <!-- Open Positions -->
+                <div class="portfolio-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                    <h3 class="text-[var(--muted-foreground)] text-sm font-medium mb-2">Open Positions</h3>
+                    <p class="number-mono text-2xl font-semibold">5</p>
+                    <span class="text-sm text-[var(--muted-foreground)]">Total exposure: 45%</span>
+                </div>
+
+                <!-- Cash Balance -->
+                <div class="portfolio-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                    <h3 class="text-[var(--muted-foreground)] text-sm font-medium mb-2">Cash Balance</h3>
+                    <p class="number-mono text-2xl font-semibold">$68,937</p>
+                    <span class="text-sm text-[var(--muted-foreground)]">55% of portfolio</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Open Positions Table -->
+        <div class="trades-table bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden mb-8">
+            <div class="p-6 border-b border-[var(--border)]">
+                <h2 class="text-lg font-semibold">Open Positions</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-[var(--muted)] text-[var(--muted-foreground)]">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Symbol</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Entry Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Current Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Quantity</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Unrealized P&L</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--border)]">
+                        <tr class="hover:bg-[var(--secondary)] transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">AAPL</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">Long</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">$175.50</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">$178.80</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">100</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono positive-value">+$330</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">2d 4h</td>
+                        </tr>
+                        <tr class="hover:bg-[var(--secondary)] transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">MSFT</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">Long</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">$385.30</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">$382.50</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">50</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono negative-value">-$140</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">1d 6h</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Position History -->
+        <div class="trades-table bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden">
+            <div class="p-6 border-b border-[var(--border)]">
+                <h2 class="text-lg font-semibold">Position History</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-[var(--muted)] text-[var(--muted-foreground)]">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Symbol</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Entry</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Exit</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Quantity</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">P&L</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--border)]">
+                        <tr class="hover:bg-[var(--secondary)] transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">NVDA</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">Long</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">$780.20</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">$789.10</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">25</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono positive-value">+$890</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">3d 2h</td>
+                        </tr>
+                        <tr class="hover:bg-[var(--secondary)] transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">META</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">Short</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">$485.30</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">$486.50</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">30</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono negative-value">-$120</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">1d 4h</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Load header
+        fetch('shared_header.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('header-placeholder').innerHTML = data;
+                // Set active nav link
+                document.querySelector('a[href="portfolio.html"]').classList.add('active');
+            });
+
+        // Mobile menu toggle
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuButton = document.querySelector('button.md\\:hidden');
+            const mobileMenu = document.querySelector('.md\\:flex');
+
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                    mobileMenu.classList.toggle('flex');
+                    mobileMenu.classList.toggle('flex-col');
+                    mobileMenu.classList.toggle('absolute');
+                    mobileMenu.classList.toggle('top-16');
+                    mobileMenu.classList.toggle('left-0');
+                    mobileMenu.classList.toggle('right-0');
+                    mobileMenu.classList.toggle('bg-[var(--card)]');
+                    mobileMenu.classList.toggle('p-4');
+                    mobileMenu.classList.toggle('space-y-4');
+                    mobileMenu.classList.toggle('border-b');
+                    mobileMenu.classList.toggle('border-[var(--border)]');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

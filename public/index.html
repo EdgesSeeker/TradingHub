@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Trading Journal - Offline Trading Analyse Tool"
+    />
+    <title>Trading Journal</title>
+    <style>
+      :root {
+        /* Base colors */
+        --background: #0a0a0a;
+        --foreground: #ffffff;
+        
+        /* Card and UI elements */
+        --card: #1f2937;
+        --card-foreground: #ffffff;
+        --popover: #1f2937;
+        --popover-foreground: #ffffff;
+        
+        /* Primary colors - using teal/green for positive indicators */
+        --primary: #10b981;
+        --primary-foreground: #ffffff;
+        
+        /* Secondary colors - subtle blue for UI elements */
+        --secondary: #374151;
+        --secondary-foreground: #ffffff;
+        
+        /* Muted elements */
+        --muted: #374151;
+        --muted-foreground: #9ca3af;
+        
+        /* Accent - bright teal for highlights */
+        --accent: #10b981;
+        --accent-foreground: #0a0a0a;
+        
+        /* Destructive - subtle red for negative values */
+        --destructive: #ef4444;
+        --destructive-foreground: #ffffff;
+        
+        /* UI element colors */
+        --border: #374151;
+        --input: #111827;
+        --ring: #10b981;
+        
+        /* Typography */
+        --font-sans: 'Inter', sans-serif;
+        --font-serif: 'Inter', sans-serif;
+        --font-mono: 'Geist Mono', monospace;
+        
+        /* Border radius */
+        --radius: 0.5rem;
+        
+        /* Shadows */
+        --shadow-2xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-xs: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-md: 0 6px 10px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        --shadow-2xl: 0 25px 30px -12px rgb(0 0 0 / 0.25);
+        
+        /* Spacing */
+        --spacing: 0.5rem;
+        
+        /* Derived radius values */
+        --radius-sm: calc(var(--radius) - 2px);
+        --radius-md: var(--radius);
+        --radius-lg: calc(var(--radius) + 2px);
+        --radius-xl: calc(var(--radius) - 4px);
+      }
+      
+      /* Import Google Fonts */
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap');
+      
+      body {
+        background-color: var(--background);
+        color: var(--foreground);
+        font-family: var(--font-sans);
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html> 

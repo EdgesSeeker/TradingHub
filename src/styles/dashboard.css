@@ -1,0 +1,84 @@
+:root {
+  /* Base colors */
+  --background: oklch(0.1 0 0);
+  --foreground: oklch(0.98 0 0);
+  
+  /* Card and UI elements */
+  --card: oklch(0.15 0.02 240);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.15 0.02 240);
+  --popover-foreground: oklch(0.98 0 0);
+  
+  /* Primary colors - using teal/green for positive indicators */
+  --primary: oklch(0.65 0.15 180);
+  --primary-foreground: oklch(0.98 0 0);
+  
+  /* Secondary colors - subtle blue for UI elements */
+  --secondary: oklch(0.3 0.05 240);
+  --secondary-foreground: oklch(0.98 0 0);
+  
+  /* Muted elements */
+  --muted: oklch(0.25 0.02 240);
+  --muted-foreground: oklch(0.65 0 0);
+  
+  /* Accent - bright teal for highlights */
+  --accent: oklch(0.70 0.15 180);
+  --accent-foreground: oklch(0.1 0 0);
+  
+  /* Destructive - subtle red for negative values */
+  --destructive: oklch(0.65 0.20 30);
+  --destructive-foreground: oklch(0.98 0 0);
+  
+  /* UI element colors */
+  --border: oklch(0.3 0.02 240);
+  --input: oklch(0.2 0.02 240);
+  --ring: oklch(0.65 0.15 180);
+  
+  /* Chart colors */
+  --chart-1: oklch(0.65 0.15 180);
+  --chart-2: oklch(0.60 0.15 160);
+  --chart-3: oklch(0.55 0.15 200);
+  --chart-4: oklch(0.50 0.15 220);
+  --chart-5: oklch(0.45 0.15 240);
+  
+  /* Sidebar specific */
+  --sidebar: oklch(0.12 0.02 240);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.65 0.15 180);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.70 0.15 180);
+  --sidebar-accent-foreground: oklch(0.1 0 0);
+  --sidebar-border: oklch(0.3 0.02 240);
+  --sidebar-ring: oklch(0.65 0.15 180);
+  
+  /* Typography */
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Inter', sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+  
+  /* Border radius */
+  --radius: 0.5rem;
+  
+  /* Shadows */
+  --shadow-2xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-xs: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 6px 10px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 30px -12px rgb(0 0 0 / 0.25);
+  
+  /* Spacing */
+  --spacing: 0.5rem;
+  
+  /* Derived radius values */
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap'); 

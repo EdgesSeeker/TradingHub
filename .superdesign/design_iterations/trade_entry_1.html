@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade Entry Form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="trading_theme.css" rel="stylesheet">
+    <style>
+        /* Animation Keyframes */
+        @keyframes slideIn {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Custom Styles */
+        .form-section {
+            animation: slideIn 400ms ease-out forwards;
+            opacity: 0;
+        }
+
+        .form-section:nth-child(1) { animation-delay: 100ms; }
+        .form-section:nth-child(2) { animation-delay: 200ms; }
+        .form-section:nth-child(3) { animation-delay: 300ms; }
+        .form-section:nth-child(4) { animation-delay: 400ms; }
+
+        /* Form Styles */
+        .form-input {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            color: var(--foreground);
+            border-radius: var(--radius);
+            padding: 0.5rem 1rem;
+            width: 100%;
+            transition: all 150ms ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-foreground);
+        }
+
+        .form-label {
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Toggle Button Styles */
+        .toggle-group {
+            display: flex;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .toggle-button {
+            padding: 0.5rem 1.5rem;
+            background: var(--card);
+            border: none;
+            color: var(--muted-foreground);
+            cursor: pointer;
+            transition: all 150ms ease;
+        }
+
+        .toggle-button.active {
+            background: var(--primary);
+            color: var(--primary-foreground);
+        }
+
+        /* Drag & Drop Zone */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 150ms ease;
+        }
+
+        .drop-zone:hover {
+            border-color: var(--primary);
+            background: var(--secondary);
+        }
+
+        /* Step Indicator */
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            color: var(--muted-foreground);
+        }
+
+        .step.active {
+            color: var(--primary);
+        }
+
+        .step-line {
+            height: 2px;
+            width: 100px;
+            background: var(--border);
+            margin: 0 1rem;
+        }
+
+        /* Checklist Styles */
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .checklist-item input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+
+        /* Risk Metrics Display */
+        .risk-metric {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .risk-value {
+            font-family: var(--font-mono);
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] min-h-screen p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-semibold mb-2">Trade Entry</h1>
+            <div class="step-indicator">
+                <div class="step active">
+                    <div class="w-8 h-8 rounded-full bg-[var(--primary)] flex items-center justify-center text-[var(--primary-foreground)]">1</div>
+                    <span class="ml-2">Entry Details</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="w-8 h-8 rounded-full border-2 border-[var(--border)] flex items-center justify-center">2</div>
+                    <span class="ml-2">Exit Details</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <form class="space-y-8">
+            <!-- Entry Details Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Symbol and Direction -->
+                <div class="form-section bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="form-label">Symbol</label>
+                            <input type="text" class="form-input" placeholder="AAPL" />
+                        </div>
+                        <div>
+                            <label class="form-label">Direction</label>
+                            <div class="toggle-group">
+                                <button type="button" class="toggle-button active">BUY</button>
+                                <button type="button" class="toggle-button">SELL</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Position Details -->
+                <div class="form-section bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="form-label">Quantity</label>
+                            <input type="number" class="form-input" placeholder="100" />
+                        </div>
+                        <div>
+                            <label class="form-label">Entry Price</label>
+                            <input type="number" class="form-input" placeholder="150.25" step="0.01" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk and Setup Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Risk Metrics -->
+                <div class="form-section bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="form-label">Stop Loss</label>
+                            <input type="number" class="form-input" placeholder="148.50" step="0.01" />
+                        </div>
+                        <div>
+                            <label class="form-label">Risk per Trade</label>
+                            <div class="risk-metric">
+                                <span class="risk-value">2.5%</span>
+                                <div class="text-sm text-[var(--muted-foreground)] mt-1">$875.00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Setup Details -->
+                <div class="form-section bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="form-label">Setup Type</label>
+                            <select class="form-input">
+                                <option>Breakout</option>
+                                <option>Pullback</option>
+                                <option>Reversal</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Pattern</label>
+                            <select class="form-input">
+                                <option>Bull Flag</option>
+                                <option>Cup & Handle</option>
+                                <option>Head & Shoulders</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screenshots Section -->
+            <div class="form-section bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                <label class="form-label">Screenshots</label>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="drop-zone">
+                        <i data-lucide="image-plus" class="w-8 h-8 mx-auto mb-2"></i>
+                        <div class="text-sm text-[var(--muted-foreground)]">
+                            Drag & Drop or Click to Upload
+                        </div>
+                    </div>
+                    <div class="drop-zone">
+                        <i data-lucide="image-plus" class="w-8 h-8 mx-auto mb-2"></i>
+                        <div class="text-sm text-[var(--muted-foreground)]">
+                            Drag & Drop or Click to Upload
+                        </div>
+                    </div>
+                    <div class="drop-zone">
+                        <i data-lucide="image-plus" class="w-8 h-8 mx-auto mb-2"></i>
+                        <div class="text-sm text-[var(--muted-foreground)]">
+                            Drag & Drop or Click to Upload
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checklist and Notes Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- System Checklist -->
+                <div class="form-section bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                    <label class="form-label mb-4">System Checklist</label>
+                    <div class="space-y-3">
+                        <div class="checklist-item">
+                            <input type="checkbox" id="rule1" />
+                            <label for="rule1">Entry rule followed</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="rule2" />
+                            <label for="rule2">Position size correct</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="rule3" />
+                            <label for="rule3">Stop loss set</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" id="rule4" />
+                            <label for="rule4">Risk within limits</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trade Notes -->
+                <div class="form-section bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="form-label">What went well</label>
+                            <textarea class="form-input h-20" placeholder="Enter your observations..."></textarea>
+                        </div>
+                        <div>
+                            <label class="form-label">What to improve</label>
+                            <textarea class="form-input h-20" placeholder="Enter areas for improvement..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-between pt-4">
+                <button type="button" class="px-6 py-2 rounded-[var(--radius)] border border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]">
+                    Cancel
+                </button>
+                <button type="button" class="px-6 py-2 rounded-[var(--radius)] bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary)] hover:opacity-90">
+                    Next Step →
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Toggle button functionality
+        const toggleButtons = document.querySelectorAll('.toggle-button');
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                toggleButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+            });
+        });
+
+        // Drag and drop functionality
+        const dropZones = document.querySelectorAll('.drop-zone');
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('border-[var(--primary)]');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('border-[var(--primary)]');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('border-[var(--primary)]');
+                // Handle file drop here
+            });
+
+            zone.addEventListener('click', () => {
+                // Trigger file input click
+            });
+        });
+    </script>
+</body>
+</html>

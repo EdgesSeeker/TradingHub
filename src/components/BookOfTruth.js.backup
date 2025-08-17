@@ -1,0 +1,1905 @@
+import React, { useState, useEffect } from 'react';
+import { BookOpen, Filter, TrendingUp, TrendingDown, Calendar, DollarSign, Target, Camera, Upload, X, Edit } from 'lucide-react';
+
+const BookOfTruth = ({ trades, onTradeUpdated }) => {
+  const [filteredTrades, setFilteredTrades] = useState([]);
+  const [sortBy, setSortBy] = useState('date');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [setupFilter, setSetupFilter] = useState('all');
+  const [resultFilter, setResultFilter] = useState('all');
+  const [gradeFilter, setGradeFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [uploadingScreenshots, setUploadingScreenshots] = useState({});
+  const [editingTrade, setEditingTrade] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  // Get unique setup types from trades, excluding unwanted ones
+  const excludedSetups = ['UNR', 'AV-Web', 'Dany', 'First Flag'];
+  const setupTypes = ['all', ...new Set(trades.map(trade => trade.setup).filter(Boolean).filter(setup => !excludedSetups.includes(setup)))];
+
+  // Calculate trade metrics for all trades
+  const calculateTradeMetrics = (trade) => {
+    // Debug: Log what's missing for NBIS
+    if (trade.symbol === 'NBIS') {
+      console.log('NBIS Trade Debug:', {
+        entryPrice: trade.entryPrice,
+        stopLoss: trade.stopLoss,
+        quantity: trade.quantity,
+        shares: trade.shares
+      });
+    }
+    
+    if (!trade.entryPrice || !trade.stopLoss) {
+      return null;
+    }
+
+    const entryPrice = parseFloat(trade.entryPrice);
+    const stopLoss = parseFloat(trade.stopLoss);
+    const shares = parseFloat(trade.quantity || trade.shares || 0); // Use quantity or shares
+    const portfolioValue = 100000; // Default portfolio value
+
+    // Total Risk = Distance to stop loss * shares
+    const riskPerShare = Math.abs(entryPrice - stopLoss);
+    const totalRisk = riskPerShare * shares;
+    
+    // % of Account Risked = Total Risk / Portfolio Value
+    const accountRiskPercent = (totalRisk / portfolioValue) * 100;
+    
+    // Risk per Share
+    const riskPerShareValue = riskPerShare;
+    
+    // Risk-Reward Ratio (planned)
+    const plannedTarget = trade.plannedTarget ? parseFloat(trade.plannedTarget) : null;
+    const riskRewardRatio = plannedTarget && riskPerShare > 0 ? 
+      Math.abs(plannedTarget - entryPrice) / riskPerShare : null;
+    
+    let pnl = 0;
+    let pnlPercent = 0;
+    let rMultiple = 0;
+    let tradeDuration = 0;
+    let mfe = 0;
+    let mae = 0;
+    
+    if (trade.status === 'closed' && trade.exitPrice && trade.exitDate) {
+      const exitPrice = parseFloat(trade.exitPrice);
+      
+      pnl = trade.side === 'BUY' 
+        ? (exitPrice - entryPrice) * shares
+        : (entryPrice - exitPrice) * shares;
+      
+      // P&L % = (Exit - Entry) / Entry
+      pnlPercent = ((exitPrice - entryPrice) / entryPrice) * 100;
+      
+      // R-Multiple = P&L / Total Risk (how much profit vs risk taken)
+      rMultiple = totalRisk > 0 ? pnl / totalRisk : 0;
+      
+      // Trade Duration in days
+      const entryDate = new Date(trade.entryDate);
+      const exitDate = new Date(trade.exitDate);
+      tradeDuration = Math.ceil((exitDate - entryDate) / (1000 * 60 * 60 * 24));
+      
+      // MFE/MAE (if available)
+      mfe = trade.mfe ? parseFloat(trade.mfe) : 0;
+      mae = trade.mae ? parseFloat(trade.mae) : 0;
+    }
+
+    return {
+      riskPerShare: riskPerShareValue,
+      totalRisk,
+      accountRiskPercent,
+      riskRewardRatio,
+      pnlPercent,
+      rMultiple,
+      tradeDuration,
+      mfe,
+      mae
+    };
+  };
+
+  useEffect(() => {
+    let filtered = [...trades];
+
+    // Remove duplicates - merge screenshots from all instances of the same trade
+    const uniqueTrades = new Map();
+    
+    filtered.forEach(trade => {
+      // Create a unique key based on symbol and entry date
+      const key = `${trade.symbol}-${trade.entryDate}`;
+      
+      if (!uniqueTrades.has(key)) {
+        // First occurrence of this trade
+        uniqueTrades.set(key, trade);
+      } else {
+        // We already have this trade, merge the data
+        const existingTrade = uniqueTrades.get(key);
+        
+        // Merge screenshots from both trades
+        const mergedScreenshots = {
+          preTrade: existingTrade.screenshots?.preTrade || trade.screenshots?.preTrade || '',
+          execution: existingTrade.screenshots?.execution || trade.screenshots?.execution || '',
+          postTrade: existingTrade.screenshots?.postTrade || trade.screenshots?.postTrade || ''
+        };
+        
+        // Create merged trade with best data from both
+        const mergedTrade = {
+          ...existingTrade,
+          // Keep the most complete trade data
+          ...(trade.status === 'closed' ? trade : {}),
+          ...(trade.pnl !== null && trade.pnl !== undefined ? { pnl: trade.pnl } : {}),
+          ...(trade.exitPrice ? { exitPrice: trade.exitPrice } : {}),
+          ...(trade.exitDate ? { exitDate: trade.exitDate } : {}),
+          // Merge screenshots
+          screenshots: mergedScreenshots,
+          // Merge notes if one is empty
+          notes: existingTrade.notes || trade.notes || '',
+          // Keep the most recent ID
+          id: Math.max(parseInt(existingTrade.id) || 0, parseInt(trade.id) || 0).toString()
+        };
+        
+        uniqueTrades.set(key, mergedTrade);
+      }
+    });
+
+    filtered = Array.from(uniqueTrades.values());
+
+    // Apply filters
+    if (setupFilter !== 'all') {
+      filtered = filtered.filter(trade => trade.setup === setupFilter);
+    }
+
+    if (resultFilter !== 'all') {
+      if (resultFilter === 'win') {
+        filtered = filtered.filter(trade => trade.status === 'closed' && parseFloat(trade.pnl || 0) > 0);
+      } else if (resultFilter === 'loss') {
+        filtered = filtered.filter(trade => trade.status === 'closed' && parseFloat(trade.pnl || 0) < 0);
+      } else if (resultFilter === 'open') {
+        filtered = filtered.filter(trade => trade.status === 'open');
+      }
+    }
+
+    if (gradeFilter !== 'all') {
+      filtered = filtered.filter(trade => trade.tradeGrade === gradeFilter);
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(trade => 
+        trade.symbol.toLowerCase().includes(term) ||
+        trade.notes?.toLowerCase().includes(term) ||
+        trade.tradePlan?.toLowerCase().includes(term)
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'date':
+          aValue = new Date(a.entryDate);
+          bValue = new Date(b.entryDate);
+          break;
+        case 'pnl':
+          aValue = parseFloat(a.pnl || 0);
+          bValue = parseFloat(b.pnl || 0);
+          break;
+        case 'symbol':
+          aValue = a.symbol;
+          bValue = b.symbol;
+          break;
+        case 'setup':
+          aValue = a.setup || '';
+          bValue = b.setup || '';
+          break;
+        default:
+          aValue = new Date(a.entryDate);
+          bValue = new Date(b.entryDate);
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    setFilteredTrades(filtered);
+  }, [trades, setupFilter, resultFilter, gradeFilter, searchTerm, sortBy, sortOrder]);
+
+  // Helper functions
+  const formatCurrency = (amount) => {
+    if (amount === null || amount === undefined) return 'N/A';
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(amount);
+  };
+
+  const formatPercent = (value) => {
+    if (value === null || value === undefined) return 'N/A';
+    return `${(value * 100).toFixed(2)}%`;
+  };
+
+  const getPnlColor = (pnl) => {
+    if (pnl === null || pnl === undefined) return '#94a3b8';
+    return parseFloat(pnl) > 0 ? '#10b981' : parseFloat(pnl) < 0 ? '#ef4444' : '#94a3b8';
+  };
+
+  const getResultBadge = (pnl, status) => {
+    if (status === 'open') {
+      return (
+        <span style={{
+          padding: '0.25rem 0.5rem',
+          borderRadius: '9999px',
+          fontSize: '0.75rem',
+          fontWeight: '500',
+          color: '#1e293b',
+          backgroundColor: '#94a3b8'
+        }}>
+          OPEN
+        </span>
+      );
+    }
+    
+    const pnlValue = parseFloat(pnl || 0);
+    return (
+      <span style={{
+        padding: '0.25rem 0.5rem',
+        borderRadius: '9999px',
+        fontSize: '0.75rem',
+        fontWeight: '500',
+        color: '#1e293b',
+        backgroundColor: pnlValue > 0 ? '#10b981' : pnlValue < 0 ? '#ef4444' : '#94a3b8'
+      }}>
+        {pnlValue > 0 ? 'WIN' : pnlValue < 0 ? 'LOSS' : 'BREAKEVEN'}
+      </span>
+    );
+  };
+
+  const getSetupBadge = (setup) => {
+    if (!setup) return null;
+    return (
+      <span style={{
+        padding: '0.25rem 0.5rem',
+        borderRadius: '9999px',
+        fontSize: '0.75rem',
+        fontWeight: '500',
+        color: '#1e293b',
+        backgroundColor: '#3b82f6'
+      }}>
+        {setup}
+      </span>
+    );
+  };
+
+  const getTradeGradeBadge = (grade) => {
+    if (!grade) return null;
+    const colors = {
+      'A': '#10b981',
+      'B': '#f59e0b',
+      'C': '#ef4444'
+    };
+    return (
+      <span style={{
+        padding: '0.25rem 0.5rem',
+        borderRadius: '9999px',
+        fontSize: '0.75rem',
+        fontWeight: '500',
+        color: '#1e293b',
+        backgroundColor: colors[grade] || '#94a3b8'
+      }}>
+        {grade}
+      </span>
+    );
+  };
+
+  const getRuleComplianceBadge = (psychology) => {
+    if (!psychology || !psychology.ruleCompliance) return null;
+    
+    const compliance = psychology.ruleCompliance;
+    const isCompliant = compliance >= 7; // Consider 7+ as compliant
+    
+    return (
+      <span style={{
+        padding: '0.25rem 0.5rem',
+        borderRadius: '9999px',
+        fontSize: '0.75rem',
+        fontWeight: '500',
+        color: '#1e293b',
+        backgroundColor: isCompliant ? '#10b981' : '#ef4444'
+      }}>
+        {isCompliant ? '✅ Rules Followed' : '❌ Rules Broken'}
+      </span>
+    );
+  };
+
+  // Edit trade functions
+  const handleEditTrade = (trade) => {
+    setEditingTrade({ ...trade });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingTrade && onTradeUpdated) {
+      onTradeUpdated(editingTrade);
+      setShowEditModal(false);
+      setEditingTrade(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditModal(false);
+    setEditingTrade(null);
+  };
+
+  const handleInputChange = (field, value) => {
+    setEditingTrade(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Calculate statistics
+  const closedTrades = filteredTrades.filter(trade => trade.status === 'closed');
+  const openTrades = filteredTrades.filter(trade => trade.status === 'open');
+  const winningTrades = closedTrades.filter(trade => parseFloat(trade.pnl || 0) > 0);
+  const losingTrades = closedTrades.filter(trade => parseFloat(trade.pnl || 0) < 0);
+  const aGradeTrades = filteredTrades.filter(trade => trade.tradeGrade === 'A');
+
+  const totalPnL = closedTrades.reduce((sum, trade) => sum + parseFloat(trade.pnl || 0), 0);
+  const winRate = closedTrades.length > 0 ? winningTrades.length / closedTrades.length : 0;
+
+  return (
+    <div style={{
+      backgroundColor: '#0f172a',
+      minHeight: '100vh',
+      color: '#f8fafc',
+      fontFamily: 'Inter, sans-serif'
+    }}>
+      {/* Header */}
+      <div style={{
+        backgroundColor: '#1e293b',
+        padding: '2rem',
+        borderBottom: '1px solid #334155'
+      }}>
+        {/* Page Header */}
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+          marginBottom: '2rem',
+          padding: '1rem',
+          backgroundColor: '#1e293b',
+          borderRadius: '0.5rem',
+          border: '1px solid #334155'
+        }}>
+          <BookOpen style={{ width: '2rem', height: '2rem', color: '#3b82f6' }} />
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
+              📚 Book of Truth
+            </h1>
+            <p style={{ margin: '0.5rem 0 0 0', color: '#94a3b8', fontSize: '0.875rem' }}>
+              Your complete trading history and analysis
+            </p>
+          </div>
+        </div>
+        
+        <div style={{
+            display: 'flex',
+            gap: '1rem',
+            alignItems: 'center'
+          }}>
+            <div style={{
+              textAlign: 'center',
+              padding: '1rem',
+              backgroundColor: '#334155',
+              borderRadius: '0.5rem',
+              minWidth: '120px'
+            }}>
+              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Total P&L</div>
+              <div style={{ 
+                fontSize: '1.5rem', 
+                fontWeight: '600', 
+                color: getPnlColor(totalPnL)
+              }}>
+                {formatCurrency(totalPnL)}
+              </div>
+            </div>
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '1rem',
+              backgroundColor: '#334155',
+              borderRadius: '0.5rem',
+              minWidth: '120px'
+            }}>
+              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Win Rate</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
+                {formatPercent(winRate)}
+              </div>
+            </div>
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '1rem',
+              backgroundColor: '#334155',
+              borderRadius: '0.5rem',
+              minWidth: '120px'
+            }}>
+              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Open Trades</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
+                {openTrades.length}
+              </div>
+            </div>
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '1rem',
+              backgroundColor: '#334155',
+              borderRadius: '0.5rem',
+              minWidth: '120px'
+            }}>
+              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>A-Game Trades</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#10b981' }}>
+                {aGradeTrades.length}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {/* Filters and Search */}
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '2rem 2rem 1rem'
+      }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '1rem',
+          marginBottom: '2rem'
+        }}>
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#94a3b8',
+              marginBottom: '0.5rem'
+            }}>
+              Setup Filter
+            </label>
+            <select
+              value={setupFilter}
+              onChange={(e) => setSetupFilter(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                backgroundColor: '#334155',
+                border: '1px solid #475569',
+                borderRadius: '0.5rem',
+                color: '#f8fafc',
+                fontSize: '0.875rem'
+              }}
+            >
+              {setupTypes.map(setup => (
+                <option key={setup} value={setup}>
+                  {setup === 'all' ? 'All Setups' : setup}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#94a3b8',
+              marginBottom: '0.5rem'
+            }}>
+              Result Filter
+            </label>
+            <select
+              value={resultFilter}
+              onChange={(e) => setResultFilter(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                backgroundColor: '#334155',
+                border: '1px solid #475569',
+                borderRadius: '0.5rem',
+                color: '#f8fafc',
+                fontSize: '0.875rem'
+              }}
+            >
+              <option value="all">All Results</option>
+              <option value="win">Winners</option>
+              <option value="loss">Losers</option>
+              <option value="open">Open Trades</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#94a3b8',
+              marginBottom: '0.5rem'
+            }}>
+              Grade Filter
+            </label>
+            <select
+              value={gradeFilter}
+              onChange={(e) => setGradeFilter(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                backgroundColor: '#334155',
+                border: '1px solid #475569',
+                borderRadius: '0.5rem',
+                color: '#f8fafc',
+                fontSize: '0.875rem'
+              }}
+            >
+              <option value="all">All Grades</option>
+              <option value="A">A Grade</option>
+              <option value="B">B Grade</option>
+              <option value="C">C Grade</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#94a3b8',
+              marginBottom: '0.5rem'
+            }}>
+              Sort By
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                backgroundColor: '#334155',
+                border: '1px solid #475569',
+                borderRadius: '0.5rem',
+                color: '#f8fafc',
+                fontSize: '0.875rem'
+              }}
+            >
+              <option value="date">Date</option>
+              <option value="pnl">P&L</option>
+              <option value="symbol">Symbol</option>
+              <option value="setup">Setup</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#94a3b8',
+              marginBottom: '0.5rem'
+            }}>
+              Sort Order
+            </label>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                backgroundColor: '#334155',
+                border: '1px solid #475569',
+                borderRadius: '0.5rem',
+                color: '#f8fafc',
+                fontSize: '0.875rem'
+              }}
+            >
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#94a3b8',
+              marginBottom: '0.5rem'
+            }}>
+              Search
+            </label>
+            <input
+              type="text"
+              placeholder="Search symbols, notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                backgroundColor: '#334155',
+                border: '1px solid #475569',
+                borderRadius: '0.5rem',
+                color: '#f8fafc',
+                fontSize: '0.875rem'
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Trades Grid */}
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '0 2rem 2rem'
+      }}>
+        <div style={{ display: 'grid', gap: '1.5rem' }}>
+          {filteredTrades.length === 0 ? (
+            <div style={{
+              backgroundColor: '#1e293b',
+              padding: '3rem',
+              borderRadius: '0.5rem',
+              border: '1px solid #334155',
+              textAlign: 'center'
+            }}>
+              <BookOpen style={{
+                width: '3rem',
+                height: '3rem',
+                color: '#94a3b8',
+                margin: '0 auto 1rem'
+              }} />
+              <h3 style={{
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                color: '#f8fafc',
+                marginBottom: '0.5rem'
+              }}>
+                No Trades Found
+              </h3>
+              <p style={{
+                color: '#94a3b8',
+                fontSize: '0.875rem'
+              }}>
+                Try adjusting your filters or search terms
+              </p>
+            </div>
+          ) : (
+            filteredTrades.map((trade) => {
+              const metrics = calculateTradeMetrics(trade);
+              
+              return (
+                <div key={trade.id} style={{
+                  backgroundColor: '#1e293b',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #334155',
+                  overflow: 'hidden'
+                }}>
+                  {/* Trade Header */}
+                  <div style={{
+                    padding: '1.5rem',
+                    borderBottom: '1px solid #334155',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    gap: '1rem'
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem',
+                        marginBottom: '0.5rem',
+                        flexWrap: 'wrap'
+                      }}>
+                        <h3 style={{
+                          fontSize: '1.5rem',
+                          fontWeight: '600',
+                          color: '#f8fafc'
+                        }}>
+                          {trade.symbol}
+                        </h3>
+                        {getResultBadge(trade.pnl, trade.status)}
+                        {getSetupBadge(trade.setup)}
+                        {getTradeGradeBadge(trade.tradeGrade)}
+                        {getRuleComplianceBadge(trade.psychology)}
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: '500',
+                          color: trade.side === 'BUY' ? '#10b981' : '#ef4444',
+                          backgroundColor: trade.side === 'BUY' ? '#065f46' : '#7f1d1d'
+                        }}>
+                          {trade.side === 'BUY' ? 'LONG' : 'SHORT'}
+                        </span>
+                      </div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '2rem',
+                        fontSize: '0.875rem',
+                        color: '#94a3b8',
+                        flexWrap: 'wrap'
+                      }}>
+                                                 <span>Entry: {trade.entryDate}</span>
+                         <span>Entry Price: {formatCurrency(trade.entryPrice)}</span>
+                         <span>Shares: {trade.quantity || trade.shares || 'N/A'}</span>
+                         <span>Stop Loss: {formatCurrency(trade.stopLoss)}</span>
+                         {trade.trailingMA && (
+                           <span>Trailing: {trade.trailingMA}-Day MA</span>
+                         )}
+                        {trade.status === 'closed' && (
+                          <>
+                            <span>Exit: {trade.exitDate}</span>
+                            <span>Exit Price: {formatCurrency(trade.exitPrice)}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                                         <div style={{
+                       textAlign: 'right',
+                       display: 'flex',
+                       flexDirection: 'column',
+                       alignItems: 'flex-end',
+                       gap: '0.5rem'
+                     }}>
+                       <button
+                         onClick={() => handleEditTrade(trade)}
+                         style={{
+                           padding: '0.5rem',
+                           backgroundColor: '#3b82f6',
+                           border: 'none',
+                           borderRadius: '0.375rem',
+                           color: '#ffffff',
+                           cursor: 'pointer',
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.25rem',
+                           fontSize: '0.875rem',
+                           fontWeight: '500'
+                         }}
+                       >
+                         <Edit size={16} />
+                         Edit
+                       </button>
+                       <div style={{
+                         fontSize: '2rem',
+                         fontWeight: '700',
+                         color: getPnlColor(trade.pnl),
+                         marginBottom: '0.5rem'
+                       }}>
+                         {trade.status === 'open' ? 'Open Position' : formatCurrency(trade.pnl)}
+                       </div>
+                       {trade.status === 'closed' && (
+                         <div style={{
+                           fontSize: '1rem',
+                           color: getPnlColor(trade.pnl)
+                         }}>
+                           {trade.pnl > 0 ? '+' : ''}{formatPercent(trade.pnl / (trade.entryPrice * (trade.quantity || trade.shares || 1)))}
+                         </div>
+                       )}
+                     </div>
+                  </div>
+
+                                     {/* Trade Details */}
+                   <div style={{
+                     padding: '1rem 1.5rem 1.5rem',
+                     display: 'grid',
+                     gap: '1rem'
+                   }}>
+                                           {/* Rule Adherence - MOST IMPORTANT FIRST */}
+                      {(trade.ruleAdherence !== undefined || trade.ruleAdherenceNotes) && (
+                        <div style={{ 
+                          backgroundColor: '#334155', 
+                          padding: '0.1rem 1rem 1rem', 
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                                                                              <h5 style={{
+                             fontSize: '1rem',
+                             fontWeight: '600',
+                             color: '#f8fafc',
+                             marginBottom: '0.75rem'
+                           }}>
+                             🎯 Rule Adherence
+                           </h5>
+                         <div style={{ display: 'grid', gap: '0.75rem' }}>
+                           {trade.ruleAdherence !== undefined && (
+                             <div>
+                               <div style={{ 
+                                 color: '#94a3b8', 
+                                 fontSize: '0.875rem', 
+                                 fontWeight: '500',
+                                 marginBottom: '0.25rem'
+                               }}>
+                                 Rules Followed
+                               </div>
+                               <div style={{ 
+                                 fontSize: '1rem', 
+                                 color: trade.ruleAdherence ? '#10b981' : '#ef4444',
+                                 fontWeight: '600'
+                               }}>
+                                 {trade.ruleAdherence ? '✅ Rules Followed' : '❌ Rules Broken'}
+                               </div>
+                             </div>
+                           )}
+                           {trade.ruleAdherenceNotes && (
+                             <div>
+                                                               <div style={{ 
+                                  color: '#94a3b8', 
+                                  fontSize: '0.875rem', 
+                                  fontWeight: '500',
+                                  marginBottom: '0.25rem'
+                                }}>
+                                  Why rules were broken
+                                </div>
+                               <div style={{ 
+                                 fontSize: '0.875rem', 
+                                 color: '#f8fafc',
+                                 lineHeight: '1.5',
+                                 whiteSpace: 'pre-wrap'
+                               }}>
+                                 {trade.ruleAdherenceNotes}
+                               </div>
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     )}
+
+                                                                  {/* Plan & Trigger Notes */}
+                       {(trade.notes || trade.tradePlan || trade.triggerUsed || trade.triggerNotes) && (
+                         <div style={{ 
+                           backgroundColor: '#334155', 
+                           padding: '0.1rem 1rem 1rem', 
+                           borderRadius: '0.5rem',
+                           border: '1px solid #475569'
+                         }}>
+                                                                                 <h5 style={{
+                              fontSize: '1rem',
+                              fontWeight: '600',
+                              color: '#f8fafc',
+                              marginBottom: '0.75rem'
+                            }}>
+                              📝 Plan & Trigger Notes
+                            </h5>
+                          <div style={{ display: 'grid', gap: '0.75rem' }}>
+                            {trade.tradePlan && (
+                              <div>
+                                <div style={{ 
+                                  color: '#94a3b8', 
+                                  fontSize: '0.875rem', 
+                                  fontWeight: '500',
+                                  marginBottom: '0.25rem'
+                                }}>
+                                  Trade Plan
+                                </div>
+                                <div style={{ 
+                                  fontSize: '0.875rem', 
+                                  color: '#f8fafc',
+                                  lineHeight: '1.5',
+                                  whiteSpace: 'pre-wrap'
+                                }}>
+                                  {trade.tradePlan}
+                                </div>
+                              </div>
+                            )}
+                            {trade.notes && (
+                              <div>
+                                <div style={{ 
+                                  color: '#94a3b8', 
+                                  fontSize: '0.875rem', 
+                                  fontWeight: '500',
+                                  marginBottom: '0.25rem'
+                                }}>
+                                  Notes
+                                </div>
+                                <div style={{ 
+                                  fontSize: '0.875rem', 
+                                  color: '#f8fafc',
+                                  lineHeight: '1.5',
+                                  whiteSpace: 'pre-wrap'
+                                }}>
+                                  {trade.notes}
+                                </div>
+                              </div>
+                            )}
+                            {trade.triggerUsed && (
+                              <div>
+                                <div style={{ 
+                                  color: '#94a3b8', 
+                                  fontSize: '0.875rem', 
+                                  fontWeight: '500',
+                                  marginBottom: '0.25rem'
+                                }}>
+                                  Trigger Used
+                                </div>
+                                <div style={{ 
+                                  fontSize: '0.875rem', 
+                                  color: '#10b981',
+                                  fontWeight: '500'
+                                }}>
+                                  ✅ Yes
+                                </div>
+                              </div>
+                            )}
+                            {trade.triggerNotes && (
+                              <div>
+                                <div style={{ 
+                                  color: '#94a3b8', 
+                                  fontSize: '0.875rem', 
+                                  fontWeight: '500',
+                                  marginBottom: '0.25rem'
+                                }}>
+                                  Trigger Notes
+                                </div>
+                                <div style={{ 
+                                  fontSize: '0.875rem', 
+                                  color: '#f8fafc',
+                                  lineHeight: '1.5',
+                                  whiteSpace: 'pre-wrap'
+                                }}>
+                                  {trade.triggerNotes}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                                           {/* Mental Game Snapshot from Trade Entry */}
+                      {trade.mentalGame && (trade.mentalGame.tradeReasoning || trade.mentalGame.emotionsThoughts || trade.mentalGame.strengthsMistakes || trade.mentalGame.nextTimeFix) && (
+                        <div style={{ 
+                          backgroundColor: '#334155', 
+                          padding: '0.1rem 1rem 1rem', 
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                                                                              <h5 style={{
+                             fontSize: '1rem',
+                             fontWeight: '600',
+                             color: '#f8fafc',
+                             marginBottom: '0.75rem'
+                           }}>
+                             🧠 Mental Game Snapshot
+                           </h5>
+                         <div style={{ display: 'grid', gap: '0.75rem' }}>
+                           {trade.mentalGame.tradeReasoning && (
+                             <div>
+                               <div style={{ 
+                                 color: '#94a3b8', 
+                                 fontSize: '0.875rem', 
+                                 fontWeight: '500',
+                                 marginBottom: '0.25rem'
+                               }}>
+                                 Why did I take this trade?
+                               </div>
+                               <div style={{ 
+                                 fontSize: '0.875rem', 
+                                 color: '#f8fafc',
+                                 lineHeight: '1.5',
+                                 whiteSpace: 'pre-wrap'
+                               }}>
+                                 {trade.mentalGame.tradeReasoning}
+                               </div>
+                             </div>
+                           )}
+                           {trade.mentalGame.emotionsThoughts && (
+                             <div>
+                               <div style={{ 
+                                 color: '#94a3b8', 
+                                 fontSize: '0.875rem', 
+                                 fontWeight: '500',
+                                 marginBottom: '0.25rem'
+                               }}>
+                                 What emotions/thoughts?
+                               </div>
+                               <div style={{ 
+                                 fontSize: '0.875rem', 
+                                 color: '#f8fafc',
+                                 lineHeight: '1.5',
+                                 whiteSpace: 'pre-wrap'
+                               }}>
+                                 {trade.mentalGame.emotionsThoughts}
+                               </div>
+                             </div>
+                           )}
+                           {trade.mentalGame.strengthsMistakes && (
+                             <div>
+                               <div style={{ 
+                                 color: '#94a3b8', 
+                                 fontSize: '0.875rem', 
+                                 fontWeight: '500',
+                                 marginBottom: '0.25rem'
+                               }}>
+                                 Strengths/Mistakes
+                               </div>
+                               <div style={{ 
+                                 fontSize: '0.875rem', 
+                                 color: '#f8fafc',
+                                 lineHeight: '1.5',
+                                 whiteSpace: 'pre-wrap'
+                               }}>
+                                 {trade.mentalGame.strengthsMistakes}
+                               </div>
+                             </div>
+                           )}
+                           {trade.mentalGame.nextTimeFix && (
+                             <div>
+                               <div style={{ 
+                                 color: '#94a3b8', 
+                                 fontSize: '0.875rem', 
+                                 fontWeight: '500',
+                                 marginBottom: '0.25rem'
+                               }}>
+                                 Next time fix
+                               </div>
+                               <div style={{ 
+                                 fontSize: '0.875rem', 
+                                 color: '#f8fafc',
+                                 lineHeight: '1.5',
+                                 whiteSpace: 'pre-wrap'
+                               }}>
+                                 {trade.mentalGame.nextTimeFix}
+                               </div>
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     )}
+
+                                             {/* Profit-Taking Notes */}
+                       {trade.profitTakingNotes && (
+                         <div style={{ 
+                           backgroundColor: '#334155', 
+                           padding: '0.1rem 1rem 1rem', 
+                           borderRadius: '0.5rem',
+                           border: '1px solid #475569'
+                         }}>
+                                                                                 <h5 style={{
+                              fontSize: '1rem',
+                              fontWeight: '600',
+                              color: '#f8fafc',
+                              marginBottom: '0.75rem'
+                            }}>
+                              💰 Profit-Taking Notes
+                            </h5>
+                          <div style={{ 
+                            fontSize: '0.875rem', 
+                            color: '#f8fafc',
+                            lineHeight: '1.5',
+                            whiteSpace: 'pre-wrap'
+                          }}>
+                            {trade.profitTakingNotes}
+                          </div>
+                        </div>
+                      )}
+
+                                                                                                                             {/* Trade Metrics - for all trades */}
+                                            {(metrics || (trade.entryPrice && !trade.stopLoss)) && (
+                        <div style={{ 
+                          backgroundColor: '#334155', 
+                          padding: '0.1rem 1rem 1rem', 
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                                                                                                          <h5 style={{
+                              fontSize: '1rem',
+                              fontWeight: '600',
+                              color: '#f8fafc',
+                              marginBottom: '0.75rem'
+                            }}>
+                              📊 Trading Metrics
+                            </h5>
+                          {!trade.stopLoss && (
+                            <div style={{
+                              backgroundColor: '#7f1d1d',
+                              color: '#fecaca',
+                              padding: '0.75rem',
+                              borderRadius: '0.5rem',
+                              marginBottom: '1rem',
+                              fontSize: '0.875rem'
+                            }}>
+                              ⚠️ Warning: No Stop Loss set - Risk calculations may be incomplete
+                            </div>
+                          )}
+                          <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                            gap: '1rem' 
+                          }}>
+                                                       <div>
+                              <div style={{ 
+                                color: '#94a3b8', 
+                                fontSize: '0.875rem', 
+                                fontWeight: '500',
+                                marginBottom: '0.25rem'
+                              }}>
+                                Risk per Share (€)
+                              </div>
+                              <div style={{ 
+                                fontSize: '1rem', 
+                                color: '#f8fafc',
+                                fontWeight: '600',
+                                fontFamily: 'Geist Mono, monospace'
+                              }}>
+                                {metrics ? metrics.riskPerShare.toFixed(2) + '€' : 'N/A'}
+                              </div>
+                            </div>
+                                                       <div>
+                              <div style={{ 
+                                color: '#94a3b8', 
+                                fontSize: '0.875rem', 
+                                fontWeight: '500',
+                                marginBottom: '0.25rem'
+                              }}>
+                                Total Risk (€)
+                              </div>
+                              <div style={{ 
+                                fontSize: '1rem', 
+                                color: '#f8fafc',
+                                fontWeight: '600',
+                                fontFamily: 'Geist Mono, monospace'
+                              }}>
+                                {metrics ? metrics.totalRisk.toFixed(2) + '€' : 'N/A'}
+                              </div>
+                            </div>
+                                                       <div>
+                              <div style={{ 
+                                color: '#94a3b8', 
+                                fontSize: '0.875rem', 
+                                fontWeight: '500',
+                                marginBottom: '0.25rem'
+                              }}>
+                                % of Account Risked
+                              </div>
+                              <div style={{ 
+                                fontSize: '1rem', 
+                                color: '#f8fafc',
+                                fontWeight: '600',
+                                fontFamily: 'Geist Mono, monospace'
+                              }}>
+                                {metrics ? metrics.accountRiskPercent.toFixed(2) + '%' : 'N/A'}
+                              </div>
+                            </div>
+                                                       {metrics && metrics.riskRewardRatio && (
+                             <div>
+                               <div style={{ 
+                                 color: '#94a3b8', 
+                                 fontSize: '0.875rem', 
+                                 fontWeight: '500',
+                                 marginBottom: '0.25rem'
+                               }}>
+                                 Risk-Reward Ratio
+                               </div>
+                               <div style={{ 
+                                 fontSize: '1rem', 
+                                 color: '#f8fafc',
+                                 fontWeight: '600',
+                                 fontFamily: 'Geist Mono, monospace'
+                               }}>
+                                 {metrics.riskRewardRatio.toFixed(2)}:1
+                               </div>
+                             </div>
+                           )}
+                                                       <div>
+                              <div style={{ 
+                                color: '#94a3b8', 
+                                fontSize: '0.875rem', 
+                                fontWeight: '500',
+                                marginBottom: '0.25rem'
+                              }}>
+                                P&L (%)
+                              </div>
+                              <div style={{ 
+                                fontSize: '1rem', 
+                                color: trade.status === 'closed' && metrics ? (metrics.pnlPercent > 0 ? '#10b981' : '#ef4444') : '#94a3b8',
+                                fontWeight: '600',
+                                fontFamily: 'Geist Mono, monospace'
+                              }}>
+                                {trade.status === 'closed' && metrics ? `${metrics.pnlPercent > 0 ? '+' : ''}${metrics.pnlPercent.toFixed(2)}%` : 'N/A'}
+                              </div>
+                            </div>
+                                                       <div>
+                              <div style={{ 
+                                color: '#94a3b8', 
+                                fontSize: '0.875rem', 
+                                fontWeight: '500',
+                                marginBottom: '0.25rem'
+                              }}>
+                                R-Multiple
+                              </div>
+                              <div style={{ 
+                                fontSize: '1rem', 
+                                color: trade.status === 'closed' && metrics ? (metrics.rMultiple > 0 ? '#10b981' : '#ef4444') : '#94a3b8',
+                                fontWeight: '600',
+                                fontFamily: 'Geist Mono, monospace'
+                              }}>
+                                {trade.status === 'closed' && metrics ? `${metrics.rMultiple > 0 ? '+' : ''}${metrics.rMultiple.toFixed(2)}R` : 'N/A'}
+                              </div>
+                            </div>
+                                                       <div>
+                              <div style={{ 
+                                color: '#94a3b8', 
+                                fontSize: '0.875rem', 
+                                fontWeight: '500',
+                                marginBottom: '0.25rem'
+                              }}>
+                                Trade Duration (Days)
+                              </div>
+                              <div style={{ 
+                                fontSize: '1rem', 
+                                color: trade.status === 'closed' ? '#f8fafc' : '#94a3b8',
+                                fontWeight: '600',
+                                fontFamily: 'Geist Mono, monospace'
+                              }}>
+                                {trade.status === 'closed' && metrics ? `${metrics.tradeDuration} days` : 'N/A'}
+                              </div>
+                            </div>
+                                                       {trade.status === 'closed' && metrics && metrics.mfe > 0 && (
+                             <div>
+                               <div style={{ 
+                                 color: '#94a3b8', 
+                                 fontSize: '0.875rem', 
+                                 fontWeight: '500',
+                                 marginBottom: '0.25rem'
+                               }}>
+                                 MFE (%)
+                               </div>
+                               <div style={{ 
+                                 fontSize: '1rem', 
+                                 color: '#10b981',
+                                 fontWeight: '600',
+                                 fontFamily: 'Geist Mono, monospace'
+                               }}>
+                                 +{metrics.mfe.toFixed(2)}%
+                               </div>
+                             </div>
+                           )}
+                                                       {trade.status === 'closed' && metrics && metrics.mae > 0 && (
+                             <div>
+                               <div style={{ 
+                                 color: '#94a3b8', 
+                                 fontSize: '0.875rem', 
+                                 fontWeight: '500',
+                                 marginBottom: '0.25rem'
+                               }}>
+                                 MAE (%)
+                               </div>
+                               <div style={{ 
+                                 fontSize: '1rem', 
+                                 color: '#ef4444',
+                                 fontWeight: '600',
+                                 fontFamily: 'Geist Mono, monospace'
+                               }}>
+                                 -{metrics.mae.toFixed(2)}%
+                               </div>
+                             </div>
+                           )}
+                         </div>
+                      </div>
+                    )}
+
+                                         {/* Screenshots - improved design with left-aligned images */}
+                                           {trade.screenshots && (trade.screenshots.preTrade || trade.screenshots.execution || trade.screenshots.postTrade) && (
+                        <div style={{ 
+                          backgroundColor: '#334155', 
+                          padding: '0.1rem 1rem 1rem', 
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                                                                              <h5 style={{
+                             fontSize: '1rem',
+                             fontWeight: '600',
+                             color: '#f8fafc',
+                             marginBottom: '0.75rem'
+                           }}>
+                             📸 Screenshots
+                           </h5>
+                         <div style={{ 
+                           display: 'grid', 
+                           gap: '1.5rem' 
+                         }}>
+                           {trade.screenshots.preTrade && (
+                             <div style={{
+                               backgroundColor: '#1e293b',
+                               padding: '1rem',
+                               borderRadius: '0.75rem',
+                               border: '2px solid #475569',
+                               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                             }}>
+                                                               <div style={{ 
+                                  color: '#94a3b8', 
+                                  fontSize: '0.875rem', 
+                                  fontWeight: '600',
+                                  marginBottom: '0.75rem',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em'
+                                }}>
+                                  Pre-Trade Analysis
+                                </div>
+                                                               <img 
+                                  src={trade.screenshots.preTrade} 
+                                  alt="Pre-trade screenshot"
+                                  style={{
+                                    width: '100%',
+                                    maxHeight: '600px',
+                                    objectFit: 'contain',
+                                    borderRadius: '0.5rem'
+                                  }}
+                                />
+                             </div>
+                           )}
+                           {trade.screenshots.execution && (
+                             <div style={{
+                               backgroundColor: '#1e293b',
+                               padding: '1rem',
+                               borderRadius: '0.75rem',
+                               border: '2px solid #475569',
+                               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                             }}>
+                                                               <div style={{ 
+                                  color: '#94a3b8', 
+                                  fontSize: '0.875rem', 
+                                  fontWeight: '600',
+                                  marginBottom: '0.75rem',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em'
+                                }}>
+                                  Trade Execution
+                                </div>
+                                                               <img 
+                                  src={trade.screenshots.execution} 
+                                  alt="Execution screenshot"
+                                  style={{
+                                    width: '100%',
+                                    maxHeight: '600px',
+                                    objectFit: 'contain',
+                                    borderRadius: '0.5rem'
+                                  }}
+                                />
+                             </div>
+                           )}
+                           {trade.screenshots.postTrade && (
+                             <div style={{
+                               backgroundColor: '#1e293b',
+                               padding: '1rem',
+                               borderRadius: '0.75rem',
+                               border: '2px solid #475569',
+                               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                             }}>
+                                                               <div style={{ 
+                                  color: '#94a3b8', 
+                                  fontSize: '0.875rem', 
+                                  fontWeight: '600',
+                                  marginBottom: '0.75rem',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em'
+                                }}>
+                                  Post-Trade Review
+                                </div>
+                                                               <img 
+                                  src={trade.screenshots.postTrade} 
+                                  alt="Post-trade screenshot"
+                                  style={{
+                                    width: '100%',
+                                    maxHeight: '600px',
+                                    objectFit: 'contain',
+                                    borderRadius: '0.5rem'
+                                  }}
+                                />
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     )}
+
+                                         {/* Psychology Tracking */}
+                     {trade.psychology && (trade.psychology.ruleCompliance || trade.psychology.emotionControl) && (
+                       <div style={{ 
+                         backgroundColor: '#334155', 
+                         padding: '0.1rem 1rem 1rem', 
+                         borderRadius: '0.5rem',
+                         border: '1px solid #475569'
+                       }}>
+                                                                           <h5 style={{
+                            fontSize: '1rem',
+                            fontWeight: '600',
+                            color: '#f8fafc',
+                            marginBottom: '0.75rem'
+                          }}>
+                            🧠 Psychology Tracking
+                          </h5>
+                        <div style={{ display: 'grid', gap: '0.75rem' }}>
+                          {trade.psychology.ruleCompliance && (
+                            <div>
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: '0.25rem'
+                              }}>
+                                <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+                                  Rule Compliance
+                                </span>
+                                <span style={{ fontSize: '0.875rem', color: '#f8fafc', fontWeight: '500' }}>
+                                  {trade.psychology.ruleCompliance}/10
+                                </span>
+                              </div>
+                              <div style={{
+                                width: '100%',
+                                height: '8px',
+                                backgroundColor: '#475569',
+                                borderRadius: '4px',
+                                overflow: 'hidden'
+                              }}>
+                                <div style={{
+                                  width: `${(trade.psychology.ruleCompliance / 10) * 100}%`,
+                                  height: '100%',
+                                  backgroundColor: '#10b981',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                            </div>
+                          )}
+                          {trade.psychology.emotionControl && (
+                            <div>
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: '0.25rem'
+                              }}>
+                                <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+                                  Emotion Control
+                                </span>
+                                <span style={{ fontSize: '0.875rem', color: '#f8fafc', fontWeight: '500' }}>
+                                  {trade.psychology.emotionControl}/10
+                                </span>
+                              </div>
+                              <div style={{
+                                width: '100%',
+                                height: '8px',
+                                backgroundColor: '#475569',
+                                borderRadius: '4px',
+                                overflow: 'hidden'
+                              }}>
+                                <div style={{
+                                  width: `${(trade.psychology.emotionControl / 10) * 100}%`,
+                                  height: '100%',
+                                  backgroundColor: '#3b82f6',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+                 </div>
+       </div>
+
+       {/* Edit Trade Modal */}
+       {showEditModal && editingTrade && (
+         <div style={{
+           position: 'fixed',
+           top: 0,
+           left: 0,
+           right: 0,
+           bottom: 0,
+           backgroundColor: 'rgba(0, 0, 0, 0.75)',
+           display: 'flex',
+           justifyContent: 'center',
+           alignItems: 'center',
+           zIndex: 1000
+         }}>
+           <div style={{
+             backgroundColor: '#1e293b',
+             borderRadius: '0.75rem',
+             padding: '2rem',
+             maxWidth: '600px',
+             width: '90%',
+             maxHeight: '90vh',
+             overflow: 'auto',
+             border: '1px solid #334155'
+           }}>
+             <div style={{
+               display: 'flex',
+               justifyContent: 'space-between',
+               alignItems: 'center',
+               marginBottom: '1.5rem'
+             }}>
+               <h2 style={{
+                 fontSize: '1.5rem',
+                 fontWeight: '600',
+                 color: '#f8fafc',
+                 margin: 0
+               }}>
+                 Edit Trade: {editingTrade.symbol}
+               </h2>
+               <button
+                 onClick={handleCancelEdit}
+                 style={{
+                   background: 'none',
+                   border: 'none',
+                   color: '#94a3b8',
+                   cursor: 'pointer',
+                   padding: '0.5rem'
+                 }}
+               >
+                 <X size={24} />
+               </button>
+             </div>
+
+             <div style={{
+               display: 'grid',
+               gap: '1rem',
+               marginBottom: '1.5rem'
+             }}>
+               {/* Basic Trade Info */}
+               <div style={{
+                 display: 'grid',
+                 gridTemplateColumns: '1fr 1fr',
+                 gap: '1rem'
+               }}>
+                 <div>
+                   <label style={{
+                     display: 'block',
+                     fontSize: '0.875rem',
+                     fontWeight: '500',
+                     color: '#94a3b8',
+                     marginBottom: '0.5rem'
+                   }}>
+                     Entry Price (€)
+                   </label>
+                   <input
+                     type="number"
+                     step="0.01"
+                     value={editingTrade.entryPrice || ''}
+                     onChange={(e) => handleInputChange('entryPrice', e.target.value)}
+                     style={{
+                       width: '100%',
+                       padding: '0.75rem',
+                       backgroundColor: '#334155',
+                       border: '1px solid #475569',
+                       borderRadius: '0.5rem',
+                       color: '#f8fafc',
+                       fontSize: '0.875rem'
+                     }}
+                   />
+                 </div>
+
+                 <div>
+                   <label style={{
+                     display: 'block',
+                     fontSize: '0.875rem',
+                     fontWeight: '500',
+                     color: '#94a3b8',
+                     marginBottom: '0.5rem'
+                   }}>
+                     Stop Loss (€)
+                   </label>
+                   <input
+                     type="number"
+                     step="0.01"
+                     value={editingTrade.stopLoss || ''}
+                     onChange={(e) => handleInputChange('stopLoss', e.target.value)}
+                     style={{
+                       width: '100%',
+                       padding: '0.75rem',
+                       backgroundColor: '#334155',
+                       border: '1px solid #475569',
+                       borderRadius: '0.5rem',
+                       color: '#f8fafc',
+                       fontSize: '0.875rem'
+                     }}
+                   />
+                 </div>
+
+                 <div>
+                   <label style={{
+                     display: 'block',
+                     fontSize: '0.875rem',
+                     fontWeight: '500',
+                     color: '#94a3b8',
+                     marginBottom: '0.5rem'
+                   }}>
+                     Shares/Quantity
+                   </label>
+                   <input
+                     type="number"
+                     step="1"
+                     value={editingTrade.quantity || editingTrade.shares || ''}
+                     onChange={(e) => {
+                       handleInputChange('quantity', e.target.value);
+                       handleInputChange('shares', e.target.value);
+                     }}
+                     style={{
+                       width: '100%',
+                       padding: '0.75rem',
+                       backgroundColor: '#334155',
+                       border: '1px solid #475569',
+                       borderRadius: '0.5rem',
+                       color: '#f8fafc',
+                       fontSize: '0.875rem'
+                     }}
+                   />
+                 </div>
+
+                                   <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#94a3b8',
+                      marginBottom: '0.5rem'
+                    }}>
+                      Planned Target (€)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editingTrade.plannedTarget || ''}
+                      onChange={(e) => handleInputChange('plannedTarget', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        backgroundColor: '#334155',
+                        border: '1px solid #475569',
+                        borderRadius: '0.5rem',
+                        color: '#f8fafc',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#94a3b8',
+                      marginBottom: '0.5rem'
+                    }}>
+                      Trailing Moving Average
+                    </label>
+                    <select
+                      value={editingTrade.trailingMA || ''}
+                      onChange={(e) => handleInputChange('trailingMA', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        backgroundColor: '#334155',
+                        border: '1px solid #475569',
+                        borderRadius: '0.5rem',
+                        color: '#f8fafc',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      <option value="">Select MA for profit taking</option>
+                      <option value="5">5-Day Moving Average</option>
+                      <option value="10">10-Day Moving Average</option>
+                      <option value="20">20-Day Moving Average</option>
+                      <option value="50">50-Day Moving Average</option>
+                    </select>
+                  </div>
+               </div>
+
+               {/* Exit Info for Closed Trades */}
+               {editingTrade.status === 'closed' && (
+                 <div style={{
+                   display: 'grid',
+                   gridTemplateColumns: '1fr 1fr',
+                   gap: '1rem'
+                 }}>
+                   <div>
+                     <label style={{
+                       display: 'block',
+                       fontSize: '0.875rem',
+                       fontWeight: '500',
+                       color: '#94a3b8',
+                       marginBottom: '0.5rem'
+                     }}>
+                       Exit Price (€)
+                     </label>
+                     <input
+                       type="number"
+                       step="0.01"
+                       value={editingTrade.exitPrice || ''}
+                       onChange={(e) => handleInputChange('exitPrice', e.target.value)}
+                       style={{
+                         width: '100%',
+                         padding: '0.75rem',
+                         backgroundColor: '#334155',
+                         border: '1px solid #475569',
+                         borderRadius: '0.5rem',
+                         color: '#f8fafc',
+                         fontSize: '0.875rem'
+                       }}
+                     />
+                   </div>
+
+                   <div>
+                     <label style={{
+                       display: 'block',
+                       fontSize: '0.875rem',
+                       fontWeight: '500',
+                       color: '#94a3b8',
+                       marginBottom: '0.5rem'
+                     }}>
+                       Exit Date
+                     </label>
+                     <input
+                       type="date"
+                       value={editingTrade.exitDate || ''}
+                       onChange={(e) => handleInputChange('exitDate', e.target.value)}
+                       style={{
+                         width: '100%',
+                         padding: '0.75rem',
+                         backgroundColor: '#334155',
+                         border: '1px solid #475569',
+                         borderRadius: '0.5rem',
+                         color: '#f8fafc',
+                         fontSize: '0.875rem'
+                       }}
+                     />
+                   </div>
+                 </div>
+               )}
+
+               {/* MFE/MAE for Closed Trades */}
+               {editingTrade.status === 'closed' && (
+                 <div style={{
+                   display: 'grid',
+                   gridTemplateColumns: '1fr 1fr',
+                   gap: '1rem'
+                 }}>
+                   <div>
+                     <label style={{
+                       display: 'block',
+                       fontSize: '0.875rem',
+                       fontWeight: '500',
+                       color: '#94a3b8',
+                       marginBottom: '0.5rem'
+                     }}>
+                       MFE (%)
+                     </label>
+                     <input
+                       type="number"
+                       step="0.01"
+                       value={editingTrade.mfe || ''}
+                       onChange={(e) => handleInputChange('mfe', e.target.value)}
+                       style={{
+                         width: '100%',
+                         padding: '0.75rem',
+                         backgroundColor: '#334155',
+                         border: '1px solid #475569',
+                         borderRadius: '0.5rem',
+                         color: '#f8fafc',
+                         fontSize: '0.875rem'
+                       }}
+                     />
+                   </div>
+
+                   <div>
+                     <label style={{
+                       display: 'block',
+                       fontSize: '0.875rem',
+                       fontWeight: '500',
+                       color: '#94a3b8',
+                       marginBottom: '0.5rem'
+                     }}>
+                       MAE (%)
+                     </label>
+                     <input
+                       type="number"
+                       step="0.01"
+                       value={editingTrade.mae || ''}
+                       onChange={(e) => handleInputChange('mae', e.target.value)}
+                       style={{
+                         width: '100%',
+                         padding: '0.75rem',
+                         backgroundColor: '#334155',
+                         border: '1px solid #475569',
+                         borderRadius: '0.5rem',
+                         color: '#f8fafc',
+                         fontSize: '0.875rem'
+                       }}
+                     />
+                   </div>
+                 </div>
+               )}
+
+               {/* Notes */}
+               <div>
+                 <label style={{
+                   display: 'block',
+                   fontSize: '0.875rem',
+                   fontWeight: '500',
+                   color: '#94a3b8',
+                   marginBottom: '0.5rem'
+                 }}>
+                   Notes
+                 </label>
+                 <textarea
+                   value={editingTrade.notes || ''}
+                   onChange={(e) => handleInputChange('notes', e.target.value)}
+                   rows={3}
+                   style={{
+                     width: '100%',
+                     padding: '0.75rem',
+                     backgroundColor: '#334155',
+                     border: '1px solid #475569',
+                     borderRadius: '0.5rem',
+                     color: '#f8fafc',
+                     fontSize: '0.875rem',
+                     resize: 'vertical'
+                   }}
+                 />
+               </div>
+             </div>
+
+             <div style={{
+               display: 'flex',
+               gap: '1rem',
+               justifyContent: 'flex-end'
+             }}>
+               <button
+                 onClick={handleCancelEdit}
+                 style={{
+                   padding: '0.75rem 1.5rem',
+                   backgroundColor: '#475569',
+                   border: 'none',
+                   borderRadius: '0.5rem',
+                   color: '#f8fafc',
+                   cursor: 'pointer',
+                   fontSize: '0.875rem',
+                   fontWeight: '500'
+                 }}
+               >
+                 Cancel
+               </button>
+               <button
+                 onClick={handleSaveEdit}
+                 style={{
+                   padding: '0.75rem 1.5rem',
+                   backgroundColor: '#10b981',
+                   border: 'none',
+                   borderRadius: '0.5rem',
+                   color: '#ffffff',
+                   cursor: 'pointer',
+                   fontSize: '0.875rem',
+                   fontWeight: '500'
+                 }}
+               >
+                 Save Changes
+               </button>
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+   )}
+    </div>
+  );
+};
+
+export default BookOfTruth;

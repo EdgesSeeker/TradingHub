@@ -1,0 +1,17 @@
+Date,Symbol,Type,Volume,Price,Profit,Commission,Strategy,Notes
+2024-01-15,AAPL,Buy,100,150.25,125.50,2.50,Long Term,Strong earnings expected
+2024-01-16,AAPL,Sell,100,152.75,250.00,2.50,Long Term,Target reached
+2024-01-17,TSLA,Buy,50,240.00,-125.00,2.50,Swing Trading,Technical breakout
+2024-01-18,TSLA,Sell,50,237.50,-125.00,2.50,Swing Trading,Stop loss hit
+2024-01-19,MSFT,Buy,75,380.00,187.50,2.50,Value Investing,Undervalued
+2024-01-20,MSFT,Sell,75,382.50,187.50,2.50,Value Investing,Profit taking
+2024-01-21,GOOGL,Buy,25,140.00,62.50,2.50,Day Trading,News catalyst
+2024-01-22,GOOGL,Sell,25,142.50,62.50,2.50,Day Trading,Intraday target
+2024-01-23,NVDA,Buy,30,500.00,-150.00,2.50,Momentum,AI hype
+2024-01-24,NVDA,Sell,30,495.00,-150.00,2.50,Momentum,Reversal pattern
+2024-01-25,AMZN,Buy,40,160.00,200.00,2.50,Long Term,Prime day effect
+2024-01-26,AMZN,Sell,40,165.00,200.00,2.50,Long Term,Target achieved
+2024-01-27,META,Buy,60,320.00,180.00,2.50,Swing Trading,Support level
+2024-01-28,META,Sell,60,323.00,180.00,2.50,Swing Trading,Resistance hit
+2024-01-29,NFLX,Buy,35,450.00,-87.50,2.50,Day Trading,Earnings play
+2024-01-30,NFLX,Sell,35,447.50,-87.50,2.50,Day Trading,Disappointing results 

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Management - Trading Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="trading_theme.css" rel="stylesheet">
+    <style>
+        /* Animation Keyframes */
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Custom Styles */
+        .header { animation: slideDown 400ms ease-out forwards; }
+        
+        .risk-card {
+            animation: slideUp 600ms ease-out forwards;
+            opacity: 0;
+        }
+        
+        .risk-card:nth-child(1) { animation-delay: 100ms; }
+        .risk-card:nth-child(2) { animation-delay: 200ms; }
+        .risk-card:nth-child(3) { animation-delay: 300ms; }
+        .risk-card:nth-child(4) { animation-delay: 400ms; }
+
+        .nav-link {
+            color: var(--muted-foreground);
+            transition: color 200ms ease-out;
+        }
+        
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--primary);
+        }
+
+        .number-mono {
+            font-family: var(--font-mono);
+        }
+
+        .positive-value { color: var(--primary); }
+        .negative-value { color: var(--destructive); }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: var(--muted);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary);
+            transition: width 300ms ease-out;
+        }
+
+        .progress-fill.warning {
+            background-color: var(--destructive);
+        }
+    </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] min-h-screen">
+    <!-- Include Header -->
+    <div id="header-placeholder"></div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <h1 class="text-2xl font-semibold mb-8">Risk Management</h1>
+
+        <!-- Risk Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Current Risk -->
+            <div class="risk-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                <h3 class="text-[var(--muted-foreground)] text-sm font-medium mb-2">Current Risk</h3>
+                <p class="number-mono text-2xl font-semibold">45%</p>
+                <div class="mt-2">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 45%"></div>
+                    </div>
+                </div>
+                <span class="text-sm text-[var(--muted-foreground)] mt-2 block">of max 60%</span>
+            </div>
+
+            <!-- Largest Position -->
+            <div class="risk-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                <h3 class="text-[var(--muted-foreground)] text-sm font-medium mb-2">Largest Position</h3>
+                <p class="number-mono text-2xl font-semibold">AAPL</p>
+                <span class="text-sm text-[var(--primary)]">15% of portfolio</span>
+            </div>
+
+            <!-- Daily Heat -->
+            <div class="risk-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                <h3 class="text-[var(--muted-foreground)] text-sm font-medium mb-2">Daily Heat</h3>
+                <p class="number-mono text-2xl font-semibold negative-value">-$2,340</p>
+                <div class="mt-2">
+                    <div class="progress-bar">
+                        <div class="progress-fill warning" style="width: 78%"></div>
+                    </div>
+                </div>
+                <span class="text-sm text-[var(--destructive)] mt-2 block">78% of daily limit</span>
+            </div>
+
+            <!-- Win Rate -->
+            <div class="risk-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                <h3 class="text-[var(--muted-foreground)] text-sm font-medium mb-2">Win Rate</h3>
+                <p class="number-mono text-2xl font-semibold">68%</p>
+                <span class="text-sm text-[var(--muted-foreground)]">Last 50 trades</span>
+            </div>
+        </div>
+
+        <!-- Risk Analysis -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <!-- Position Size Distribution -->
+            <div class="risk-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                <h2 class="text-lg font-semibold mb-6">Position Size Distribution</h2>
+                <div class="h-[300px] flex items-center justify-center text-[var(--muted-foreground)]">
+                    [Position Size Chart]
+                </div>
+            </div>
+
+            <!-- Risk per Trade -->
+            <div class="risk-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                <h2 class="text-lg font-semibold mb-6">Risk per Trade</h2>
+                <div class="h-[300px] flex items-center justify-center text-[var(--muted-foreground)]">
+                    [Risk Distribution Chart]
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Metrics Table -->
+        <div class="risk-card bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden">
+            <div class="p-6 border-b border-[var(--border)]">
+                <h2 class="text-lg font-semibold">Risk Metrics</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-[var(--muted)] text-[var(--muted-foreground)]">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Metric</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Current</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Target</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--border)]">
+                        <tr class="hover:bg-[var(--secondary)] transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">Max Position Size</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">15%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">20%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm positive-value">Within Limits</td>
+                        </tr>
+                        <tr class="hover:bg-[var(--secondary)] transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">Portfolio Heat</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">45%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">60%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm positive-value">Within Limits</td>
+                        </tr>
+                        <tr class="hover:bg-[var(--secondary)] transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">Daily Drawdown</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">-2.1%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm number-mono">-3%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm negative-value">Warning</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Load header
+        fetch('shared_header.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('header-placeholder').innerHTML = data;
+                // Set active nav link
+                document.querySelector('a[href="risk_management.html"]').classList.add('active');
+            });
+
+        // Mobile menu toggle
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuButton = document.querySelector('button.md\\:hidden');
+            const mobileMenu = document.querySelector('.md\\:flex');
+
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                    mobileMenu.classList.toggle('flex');
+                    mobileMenu.classList.toggle('flex-col');
+                    mobileMenu.classList.toggle('absolute');
+                    mobileMenu.classList.toggle('top-16');
+                    mobileMenu.classList.toggle('left-0');
+                    mobileMenu.classList.toggle('right-0');
+                    mobileMenu.classList.toggle('bg-[var(--card)]');
+                    mobileMenu.classList.toggle('p-4');
+                    mobileMenu.classList.toggle('space-y-4');
+                    mobileMenu.classList.toggle('border-b');
+                    mobileMenu.classList.toggle('border-[var(--border)]');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

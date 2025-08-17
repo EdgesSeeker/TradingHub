@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Trading Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="trading_theme.css" rel="stylesheet">
+    <style>
+        /* Animation Keyframes */
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Custom Styles */
+        .header { animation: slideDown 400ms ease-out forwards; }
+        
+        .settings-card {
+            animation: slideUp 600ms ease-out forwards;
+            opacity: 0;
+        }
+        
+        .settings-card:nth-child(1) { animation-delay: 100ms; }
+        .settings-card:nth-child(2) { animation-delay: 200ms; }
+        .settings-card:nth-child(3) { animation-delay: 300ms; }
+
+        .nav-link {
+            color: var(--muted-foreground);
+            transition: color 200ms ease-out;
+        }
+        
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--primary);
+        }
+
+        /* Form Styles */
+        .form-input {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            color: var(--foreground);
+            border-radius: var(--radius);
+            padding: 0.5rem 1rem;
+            width: 100%;
+            transition: all 150ms ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-foreground);
+        }
+
+        .form-label {
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--muted);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: var(--card-foreground);
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] min-h-screen">
+    <!-- Include Header -->
+    <div id="header-placeholder"></div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <h1 class="text-2xl font-semibold mb-8">Settings</h1>
+
+        <!-- Settings Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Account Settings -->
+            <div class="settings-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                <h2 class="text-lg font-semibold mb-6">Account Settings</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-input" value="trader@example.com" />
+                    </div>
+                    <div>
+                        <label class="form-label">Time Zone</label>
+                        <select class="form-input">
+                            <option>Eastern Time (ET)</option>
+                            <option>Central Time (CT)</option>
+                            <option>Pacific Time (PT)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Default Currency</label>
+                        <select class="form-input">
+                            <option>USD ($)</option>
+                            <option>EUR (€)</option>
+                            <option>GBP (£)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trading Preferences -->
+            <div class="settings-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                <h2 class="text-lg font-semibold mb-6">Trading Preferences</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="form-label">Default Position Size (%)</label>
+                        <input type="number" class="form-input" value="2" min="0" max="100" />
+                    </div>
+                    <div>
+                        <label class="form-label">Max Risk per Trade (%)</label>
+                        <input type="number" class="form-input" value="1" min="0" max="100" />
+                    </div>
+                    <div>
+                        <label class="form-label">Default Stop Loss (%)</label>
+                        <input type="number" class="form-input" value="2" min="0" max="100" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="settings-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                <h2 class="text-lg font-semibold mb-6">Notifications</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-medium">Trade Alerts</h3>
+                            <p class="text-sm text-[var(--muted-foreground)]">Receive alerts for trade entries and exits</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-medium">Risk Warnings</h3>
+                            <p class="text-sm text-[var(--muted-foreground)]">Get notified when approaching risk limits</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-medium">Performance Reports</h3>
+                            <p class="text-sm text-[var(--muted-foreground)]">Weekly performance summary</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Connections -->
+            <div class="settings-card bg-[var(--card)] p-6 rounded-[var(--radius)] border border-[var(--border)]">
+                <h2 class="text-lg font-semibold mb-6">API Connections</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-medium">Trading View</h3>
+                            <p class="text-sm text-[var(--muted-foreground)]">Connected</p>
+                        </div>
+                        <button class="px-4 py-2 text-sm rounded-[var(--radius)] border border-[var(--border)] hover:bg-[var(--secondary)]">
+                            Disconnect
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-medium">MT4</h3>
+                            <p class="text-sm text-[var(--muted-foreground)]">Not connected</p>
+                        </div>
+                        <button class="px-4 py-2 text-sm rounded-[var(--radius)] bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90">
+                            Connect
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-medium">Interactive Brokers</h3>
+                            <p class="text-sm text-[var(--muted-foreground)]">Not connected</p>
+                        </div>
+                        <button class="px-4 py-2 text-sm rounded-[var(--radius)] bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90">
+                            Connect
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="mt-8 flex justify-end">
+            <button class="px-6 py-2 rounded-[var(--radius)] bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90">
+                Save Changes
+            </button>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Load header
+        fetch('shared_header.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('header-placeholder').innerHTML = data;
+                // Set active nav link
+                document.querySelector('a[href="settings.html"]').classList.add('active');
+            });
+
+        // Mobile menu toggle
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuButton = document.querySelector('button.md\\:hidden');
+            const mobileMenu = document.querySelector('.md\\:flex');
+
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                    mobileMenu.classList.toggle('flex');
+                    mobileMenu.classList.toggle('flex-col');
+                    mobileMenu.classList.toggle('absolute');
+                    mobileMenu.classList.toggle('top-16');
+                    mobileMenu.classList.toggle('left-0');
+                    mobileMenu.classList.toggle('right-0');
+                    mobileMenu.classList.toggle('bg-[var(--card)]');
+                    mobileMenu.classList.toggle('p-4');
+                    mobileMenu.classList.toggle('space-y-4');
+                    mobileMenu.classList.toggle('border-b');
+                    mobileMenu.classList.toggle('border-[var(--border)]');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
