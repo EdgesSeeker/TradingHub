@@ -621,28 +621,44 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                           {trade.side === 'BUY' ? 'LONG' : 'SHORT'}
                         </span>
                       </div>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '2rem',
-                        fontSize: '0.875rem',
-                        color: '#94a3b8',
-                        flexWrap: 'wrap'
-                      }}>
-                                                 <span>Entry: {trade.entryDate}</span>
-                         <span>Entry Price: {formatCurrency(trade.entryPrice)}</span>
-                         <span>Shares: {trade.quantity || trade.shares || 'N/A'}</span>
-                         <span>Stop Loss: {formatCurrency(trade.stopLoss)}</span>
-                         {trade.trailingMA && (
-                           <span>Trailing: {trade.trailingMA}-Day MA</span>
+                                             <div style={{
+                         display: 'flex',
+                         alignItems: 'center',
+                         gap: '2rem',
+                         fontSize: '0.875rem',
+                         color: '#94a3b8',
+                         flexWrap: 'wrap'
+                       }}>
+                                                  <span>Entry: {trade.entryDate}</span>
+                          <span>Entry Price: {formatCurrency(trade.entryPrice)}</span>
+                          <span>Shares: {trade.quantity || trade.shares || 'N/A'}</span>
+                          <span>Stop Loss: {formatCurrency(trade.stopLoss)}</span>
+                          {trade.trailingMA && (
+                            <span>Trailing: {trade.trailingMA}-Day MA</span>
+                          )}
+                         {trade.status === 'closed' && (
+                           <>
+                             <span>Exit: {trade.exitDate}</span>
+                             <span>Exit Price: {formatCurrency(trade.exitPrice)}</span>
+                           </>
                          )}
-                        {trade.status === 'closed' && (
-                          <>
-                            <span>Exit: {trade.exitDate}</span>
-                            <span>Exit Price: {formatCurrency(trade.exitPrice)}</span>
-                          </>
-                        )}
-                      </div>
+                       </div>
+                       
+                       {/* Trading Statistics - Second Row */}
+                       <div style={{
+                         display: 'flex',
+                         alignItems: 'center',
+                         gap: '2rem',
+                         fontSize: '0.875rem',
+                         color: '#94a3b8',
+                         flexWrap: 'wrap',
+                         marginTop: '0.5rem'
+                       }}>
+                         <span>Position Size: {formatCurrency((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))}</span>
+                         {trade.status === 'closed' && (
+                           <span>P&L %: {((parseFloat(trade.pnl || 0) / ((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))) * 100).toFixed(2)}%</span>
+                         )}
+                       </div>
                     </div>
                     
                                          <div style={{
