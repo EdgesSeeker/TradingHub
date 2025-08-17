@@ -16,14 +16,24 @@ const ProfitTaking = ({ trades, onTradeUpdated }) => {
   const [alerts, setAlerts] = useState([]);
   const [lastUpdate, setLastUpdate] = useState(null);
 
-  // Calculate days since trade entry
+  // Calculate business days since trade entry (excluding weekends)
   const getDaysSinceEntry = (trade) => {
     if (!trade.entryDate) return 0;
     const entryDate = new Date(trade.entryDate);
     const today = new Date();
-    const diffTime = Math.abs(today - entryDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    
+    let businessDays = 0;
+    const currentDate = new Date(entryDate);
+    
+    while (currentDate <= today) {
+      // Skip weekends (0 = Sunday, 6 = Saturday)
+      if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+        businessDays++;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return businessDays;
   };
 
   // Check if profit taking is recommended (after 3 days)

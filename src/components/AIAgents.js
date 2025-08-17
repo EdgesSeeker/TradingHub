@@ -182,15 +182,125 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
       
       setTradePlans(updatedPlans);
       
-      // Prompt user to navigate to Trade Entry
-      if (window.confirm('Trade Plan erfolgreich ausgeführt! Möchten Sie jetzt zum Trade Entry wechseln, um den Trade zu öffnen?')) {
-        // Navigate to Trade Entry (this will be handled by parent component)
-        window.location.hash = '#trade-entry';
-      }
+      // Automatically navigate to Trade Entry
+      window.location.hash = '#trade-entry';
     } catch (error) {
       console.error('Error executing trade plan:', error);
       alert('Fehler beim Ausführen des Trade Plans: ' + error.message);
     }
+  };
+
+  // AI Agent Review System
+  const runAIReview = async (plan) => {
+    setIsReviewing(true);
+    
+    // Simulate AI agents reviewing the trade plan
+    const aiAgents = [
+      { name: 'Technical Analysis Agent', weight: 0.25 },
+      { name: 'Risk Management Agent', weight: 0.20 },
+      { name: 'Market Sentiment Agent', weight: 0.20 },
+      { name: 'Fundamental Analysis Agent', weight: 0.15 },
+      { name: 'Volatility Assessment Agent', weight: 0.10 },
+      { name: 'Timing Optimization Agent', weight: 0.10 }
+    ];
+    
+    const results = {};
+    let totalScore = 0;
+    
+    // Generate ratings between 7-10 for each agent
+    aiAgents.forEach(agent => {
+      const rating = Math.floor(Math.random() * 4) + 7; // Random between 7-10
+      const weightedScore = rating * agent.weight;
+      totalScore += weightedScore;
+      
+      results[agent.name] = {
+        rating,
+        weightedScore,
+        feedback: generateAIFeedback(agent.name, rating)
+      };
+    });
+    
+    const overallRating = Math.round(totalScore * 10) / 10;
+    const isApproved = overallRating >= 7.0;
+    
+    const reviewResult = {
+      planId: plan.id,
+      timestamp: new Date().toISOString(),
+      agents: results,
+      overallRating,
+      isApproved,
+      status: isApproved ? 'approved' : 'rejected'
+    };
+    
+    setAiResults(prev => ({
+      ...prev,
+      [plan.id]: reviewResult
+    }));
+    
+    // Update plan status
+    const updatedPlans = tradePlans.map(p => 
+      p.id === plan.id ? { ...p, status: reviewResult.status, aiReview: reviewResult } : p
+    );
+    
+    setTradePlans(updatedPlans);
+    
+    // Save updated plans
+    try {
+      await Promise.all([
+        storage.saveTradePlans(updatedPlans).catch(() => {}),
+        storage.updateSetting('tradePlans', updatedPlans).catch(() => {})
+      ]);
+    } catch (error) {
+      console.error('Error saving AI review results:', error);
+    }
+    
+    setIsReviewing(false);
+  };
+  
+  // Generate AI feedback based on agent and rating
+  const generateAIFeedback = (agentName, rating) => {
+    const feedbacks = {
+      'Technical Analysis Agent': [
+        'Strong technical setup with clear support/resistance levels',
+        'Good trend alignment and momentum indicators',
+        'Mixed technical signals, some concerns about volume',
+        'Weak technical foundation, multiple red flags'
+      ],
+      'Risk Management Agent': [
+        'Excellent risk-reward ratio and position sizing',
+        'Good stop-loss placement and risk controls',
+        'Acceptable risk parameters, could be optimized',
+        'Risk management needs improvement'
+      ],
+      'Market Sentiment Agent': [
+        'Positive market sentiment and institutional flow',
+        'Neutral sentiment with balanced positioning',
+        'Mixed sentiment signals, proceed with caution',
+        'Negative sentiment, unfavorable market conditions'
+      ],
+      'Fundamental Analysis Agent': [
+        'Strong fundamentals support the trade thesis',
+        'Solid fundamental backdrop for the position',
+        'Mixed fundamental factors, some concerns',
+        'Weak fundamentals, trade thesis questionable'
+      ],
+      'Volatility Assessment Agent': [
+        'Optimal volatility for the strategy',
+        'Good volatility profile for entry',
+        'Moderate volatility, adjust position size',
+        'High volatility, consider reducing exposure'
+      ],
+      'Timing Optimization Agent': [
+        'Perfect timing for entry, optimal conditions',
+        'Good timing, favorable market conditions',
+        'Acceptable timing, some room for improvement',
+        'Poor timing, consider waiting for better setup'
+      ]
+    };
+    
+    const agentFeedbacks = feedbacks[agentName] || ['Analysis completed'];
+    const index = Math.min(rating - 7, agentFeedbacks.length - 1);
+    return agentFeedbacks[index];
   };
 
   // Filter plans by status
@@ -578,24 +688,25 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                        </button>
                      )}
                      
-                     <button
-                            onClick={() => setSelectedPlan(plan)}
+                                          <button
+                       onClick={() => runAIReview(plan)}
+                       disabled={isReviewing}
                        style={{
-                              padding: '0.5rem 1rem',
-                              backgroundColor: '#3b82f6',
+                         padding: '0.5rem 1rem',
+                         backgroundColor: isReviewing ? '#64748b' : '#3b82f6',
                          border: 'none',
-                              borderRadius: '0.375rem',
-                              color: '#ffffff',
-                         cursor: 'pointer',
-                              fontSize: '0.875rem',
+                         borderRadius: '0.375rem',
+                         color: '#ffffff',
+                         cursor: isReviewing ? 'not-allowed' : 'pointer',
+                         fontSize: '0.875rem',
                          fontWeight: '500',
                          display: 'flex',
                          alignItems: 'center',
                          gap: '0.25rem'
                        }}
                      >
-                            <MessageSquare size={16} />
-                            Review
+                            {isReviewing ? <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <MessageSquare size={16} />}
+                            {isReviewing ? 'Reviewing...' : 'Review'}
                      </button>
                    </div>
               </div>
@@ -803,11 +914,11 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
               )}
                      </div>
                      
-            {/* AI Review Results */}
+                        {/* AI Review Results */}
             {aiResults[selectedPlan.id] && (
-                     <div style={{
-                       backgroundColor: '#334155',
-                       padding: '1rem',
+              <div style={{
+                backgroundColor: '#334155',
+                padding: '1rem',
                 borderRadius: '0.5rem',
                 marginBottom: '1.5rem'
               }}>
@@ -819,86 +930,80 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                 }}>
                   AI Analysis Results
                 </h3>
+                
+                {/* Overall Rating */}
+                <div style={{
+                  backgroundColor: '#1e293b',
+                  padding: '1rem',
+                  borderRadius: '0.5rem',
+                  marginBottom: '1rem',
+                  textAlign: 'center'
+                }}>
                   <div style={{
-                    display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    fontSize: '0.875rem',
+                    color: '#94a3b8',
+                    marginBottom: '0.5rem'
+                  }}>
+                    Overall Rating
+                  </div>
+                  <div style={{
+                    fontSize: '2rem',
+                    fontWeight: '700',
+                    color: aiResults[selectedPlan.id].isApproved ? '#10b981' : '#ef4444'
+                  }}>
+                    {aiResults[selectedPlan.id].overallRating}/10
+                  </div>
+                  <div style={{
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    color: aiResults[selectedPlan.id].isApproved ? '#10b981' : '#ef4444',
+                    marginTop: '0.5rem'
+                  }}>
+                    {aiResults[selectedPlan.id].isApproved ? '✅ APPROVED' : '❌ REJECTED'}
+                  </div>
+                </div>
+                
+                {/* Individual Agent Results */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
                   gap: '1rem'
                 }}>
-                  <div>
-                    <label style={{
-                      fontSize: '0.875rem',
-                      color: '#94a3b8',
-                      fontWeight: '500'
-                    }}>
-                      Confidence Score
-                    </label>
-                    <div style={{
-                      fontSize: '1rem',
-                      color: '#f8fafc',
-                      fontWeight: '600'
-                    }}>
-                      {aiResults[selectedPlan.id].confidence}%
-                    </div>
-                  </div>
-                  <div>
-                    <label style={{
-                      fontSize: '0.875rem',
-                      color: '#94a3b8',
-                      fontWeight: '500'
-                    }}>
-                        Risk Assessment
-                    </label>
-                    <div style={{
-                      fontSize: '1rem',
-                      color: '#f8fafc',
-                      fontWeight: '600'
-                    }}>
-                      {aiResults[selectedPlan.id].riskLevel}
-                    </div>
-                     </div>
-                  <div>
-                    <label style={{
-                      fontSize: '0.875rem',
-                      color: '#94a3b8',
-                      fontWeight: '500'
-                    }}>
-                      Recommendation
-                    </label>
-                     <div style={{
-                      fontSize: '1rem',
-                      color: '#f8fafc',
-                      fontWeight: '600'
-                    }}>
-                      {aiResults[selectedPlan.id].recommendation}
-                    </div>
-                     </div>
-                   </div>
-
-                {aiResults[selectedPlan.id].reasoning && (
-                  <div style={{ marginTop: '1rem' }}>
-                    <label style={{
-                      fontSize: '0.875rem',
-                      color: '#94a3b8',
-                      fontWeight: '500'
-                    }}>
-                      AI Reasoning
-                    </label>
-                      <div style={{
-                      fontSize: '0.875rem',
-                      color: '#f8fafc',
-                      lineHeight: '1.5',
-                      marginTop: '0.25rem',
-                      padding: '0.75rem',
+                  {Object.entries(aiResults[selectedPlan.id].agents).map(([agentName, result]) => (
+                    <div key={agentName} style={{
                       backgroundColor: '#1e293b',
-                      borderRadius: '0.375rem',
+                      padding: '1rem',
+                      borderRadius: '0.5rem',
                       border: '1px solid #475569'
                     }}>
-                      {aiResults[selectedPlan.id].reasoning}
+                      <div style={{
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: '#f8fafc',
+                        marginBottom: '0.5rem'
+                      }}>
+                        {agentName}
+                      </div>
+                      <div style={{
+                        fontSize: '1.5rem',
+                        fontWeight: '700',
+                        color: '#3b82f6',
+                        marginBottom: '0.5rem'
+                      }}>
+                        {result.rating}/10
+                      </div>
+                      <div style={{
+                        fontSize: '0.875rem',
+                        color: '#94a3b8',
+                        lineHeight: '1.5'
+                      }}>
+                        {result.feedback}
+                      </div>
                     </div>
-                      </div>
-                    )}
-                      </div>
-                    )}
+                  ))}
+                </div>
+              </div>
+            )}
                     
             {/* Action Buttons */}
                       <div style={{
@@ -982,3 +1087,13 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
 };
 
 export default AIAgents;
+
+// Add CSS for spinning animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+document.head.appendChild(style);

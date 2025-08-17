@@ -136,7 +136,7 @@ const NewTradeEntry = ({ onTradeAdded, openTrades }) => {
     
     // Check if there's a plan to execute
     const loadPlanToExecute = () => {
-      const planData = localStorage.getItem('planToExecute');
+      const planData = localStorage.getItem('executedTradePlan');
       if (planData) {
         try {
           const plan = JSON.parse(planData);
@@ -164,10 +164,10 @@ const NewTradeEntry = ({ onTradeAdded, openTrades }) => {
             }
           }));
           // Clear the plan data from localStorage
-          localStorage.removeItem('planToExecute');
+          localStorage.removeItem('executedTradePlan');
         } catch (error) {
           console.error('Error loading plan:', error);
-          localStorage.removeItem('planToExecute');
+          localStorage.removeItem('executedTradePlan');
         }
       }
     };

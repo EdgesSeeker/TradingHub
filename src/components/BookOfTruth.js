@@ -621,42 +621,45 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                           {trade.side === 'BUY' ? 'LONG' : 'SHORT'}
                         </span>
                       </div>
-                                             <div style={{
-                         display: 'flex',
-                         alignItems: 'center',
-                         gap: '2rem',
-                         fontSize: '0.875rem',
-                         color: '#94a3b8',
-                         flexWrap: 'wrap'
-                       }}>
-                                                  <span>Entry: {trade.entryDate}</span>
-                          <span>Entry Price: {formatCurrency(trade.entryPrice)}</span>
-                          <span>Shares: {trade.quantity || trade.shares || 'N/A'}</span>
-                          <span>Stop Loss: {formatCurrency(trade.stopLoss)}</span>
-                          {trade.trailingMA && (
-                            <span>Trailing: {trade.trailingMA}-Day MA</span>
-                          )}
-                         {trade.status === 'closed' && (
-                           <>
-                             <span>Exit: {trade.exitDate}</span>
-                             <span>Exit Price: {formatCurrency(trade.exitPrice)}</span>
-                           </>
-                         )}
-                       </div>
-                       
-                                               {/* Trading Statistics - Second Row */}
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
+                                                                                                                                         {/* Trading Details - Organized in columns */}
+                                              <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(3, 1fr)',
                           gap: '2rem',
                           fontSize: '0.875rem',
                           color: '#94a3b8',
-                          flexWrap: 'wrap',
-                          marginTop: '0.5rem'
+                          padding: '1rem',
+                          backgroundColor: '#334155',
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
                         }}>
-                          <span>Position Size: {formatCurrency((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))}</span>
-                          <span>% of Capital: {((((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0)) / 10000) * 100).toFixed(2)}%</span>
-                          <span>P&L %: {((parseFloat(trade.pnl || 0) / ((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))) * 100).toFixed(2)}%</span>
+                          {/* Column 1: Entry Details */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <span><strong>Entry:</strong> {trade.entryDate}</span>
+                            <span><strong>Entry Price:</strong> {formatCurrency(trade.entryPrice)}</span>
+                            <span><strong>Shares:</strong> {trade.quantity || trade.shares || 'N/A'}</span>
+                          </div>
+                          
+                          {/* Column 2: Risk Management */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <span><strong>Stop Loss:</strong> {formatCurrency(trade.stopLoss)}</span>
+                            {trade.trailingMA && (
+                              <span><strong>Trailing:</strong> {trade.trailingMA}-Day MA</span>
+                            )}
+                            {trade.status === 'closed' && (
+                              <>
+                                <span><strong>Exit:</strong> {trade.exitDate}</span>
+                                <span><strong>Exit Price:</strong> {formatCurrency(trade.exitPrice)}</span>
+                              </>
+                            )}
+                          </div>
+                          
+                          {/* Column 3: Position Analysis */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <span><strong>Position Size:</strong> {formatCurrency((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))}</span>
+                            <span><strong>% of Capital:</strong> {((((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0)) / 10000) * 100).toFixed(2)}%</span>
+                            <span><strong>P&L in $:</strong> {formatCurrency(trade.pnl || 0)}</span>
+                          </div>
                         </div>
                     </div>
                     
