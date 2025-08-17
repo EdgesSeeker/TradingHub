@@ -639,32 +639,121 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                      display: 'grid',
                      gap: '1rem'
                    }}>
-                  {/* Notes */}
-                  {trade.notes && (
-                        <div style={{ 
-                          backgroundColor: '#334155', 
-                      padding: '1rem', 
-                          borderRadius: '0.5rem',
-                          border: '1px solid #475569'
-                        }}>
-                                                                              <h5 style={{
-                             fontSize: '1rem',
-                             fontWeight: '600',
-                             color: '#f8fafc',
-                             marginBottom: '0.75rem'
-                           }}>
-                        📝 Notes
-                           </h5>
-                                <div style={{ 
-                                  fontSize: '0.875rem', 
-                                  color: '#f8fafc',
-                                  lineHeight: '1.5',
-                                  whiteSpace: 'pre-wrap'
-                                }}>
-                                  {trade.notes}
-                          </div>
-                        </div>
-                      )}
+                                     {/* Rule Adherence - GANZ OBEN */}
+                   {trade.ruleAdherence !== undefined && (
+                     <div style={{ 
+                       backgroundColor: '#334155', 
+                       padding: '1rem', 
+                       borderRadius: '0.5rem',
+                       border: '1px solid #475569'
+                     }}>
+                       <h5 style={{
+                         fontSize: '1rem',
+                         fontWeight: '600',
+                         color: '#f8fafc',
+                         marginBottom: '0.75rem'
+                       }}>
+                         📋 Rule Adherence
+                       </h5>
+                       <div style={{ 
+                         fontSize: '0.875rem', 
+                         color: trade.ruleAdherence ? '#10b981' : '#ef4444',
+                         fontWeight: '600',
+                         marginBottom: '0.5rem'
+                       }}>
+                         {trade.ruleAdherence ? '✅ Rules Followed' : '❌ Rules Violated'}
+                       </div>
+                       {!trade.ruleAdherence && trade.ruleViolationReason && (
+                         <div style={{ 
+                           fontSize: '0.875rem', 
+                           color: '#f8fafc',
+                           fontStyle: 'italic',
+                           padding: '0.5rem',
+                           backgroundColor: '#475569',
+                           borderRadius: '0.375rem'
+                         }}>
+                           <strong>Warum nicht befolgt:</strong> {trade.ruleViolationReason}
+                         </div>
+                       )}
+                     </div>
+                   )}
+
+                   {/* Mental Game Snapshot - ZWEITER */}
+                   {trade.mentalGame && (
+                     <div style={{ 
+                       backgroundColor: '#334155', 
+                       padding: '1rem', 
+                       borderRadius: '0.5rem',
+                       border: '1px solid #475569'
+                     }}>
+                       <h5 style={{
+                         fontSize: '1rem',
+                         fontWeight: '600',
+                         color: '#f8fafc',
+                         marginBottom: '0.75rem'
+                       }}>
+                         🧠 Mental Game Snapshot
+                       </h5>
+                       <div style={{ 
+                         fontSize: '0.875rem', 
+                         color: '#f8fafc',
+                         lineHeight: '1.5',
+                         whiteSpace: 'pre-wrap'
+                       }}>
+                         {trade.mentalGame.tradeReasoning && (
+                           <div style={{ marginBottom: '1rem' }}>
+                             <strong>Why did I take this trade?</strong><br />
+                             {trade.mentalGame.tradeReasoning}
+                           </div>
+                         )}
+                         {trade.mentalGame.emotionsThoughts && (
+                           <div style={{ marginBottom: '1rem' }}>
+                             <strong>What emotions or thoughts influenced my actions?</strong><br />
+                             {trade.mentalGame.emotionsThoughts}
+                           </div>
+                         )}
+                         {trade.mentalGame.strengthsMistakes && (
+                           <div style={{ marginBottom: '1rem' }}>
+                             <strong>What did I do well, and what was a mistake?</strong><br />
+                             {trade.mentalGame.strengthsMistakes}
+                           </div>
+                         )}
+                         {trade.mentalGame.nextTimeFix && (
+                           <div style={{ marginBottom: '1rem' }}>
+                             <strong>What's one fix for next time?</strong><br />
+                             {trade.mentalGame.nextTimeFix}
+                           </div>
+                         )}
+                       </div>
+                     </div>
+                   )}
+
+                   {/* Trade Planning - DRITTER (statt "Notes") */}
+                   {trade.notes && (
+                     <div style={{ 
+                       backgroundColor: '#334155', 
+                       padding: '1rem', 
+                       borderRadius: '0.5rem',
+                       border: '1px solid #475569'
+                     }}>
+                       <h5 style={{
+                         fontSize: '1rem',
+                         fontWeight: '600',
+                         color: '#f8fafc',
+                         marginBottom: '0.75rem'
+                       }}>
+                         📝 Trade Planning
+                       </h5>
+                       <div style={{ 
+                         fontSize: '0.875rem', 
+                         color: '#f8fafc',
+                         lineHeight: '1.5',
+                         whiteSpace: 'pre-wrap'
+                       }}>
+                         {trade.notes}
+                       </div>
+                     </div>
+                   )}
 
                   {/* Screenshots */}
                                            {trade.screenshots && (trade.screenshots.preTrade || trade.screenshots.execution || trade.screenshots.postTrade) && (
@@ -757,108 +846,32 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                        </div>
                      )}
 
-                     {/* Rule Adherence */}
-                     {trade.ruleAdherence !== undefined && (
-                       <div style={{ 
-                         backgroundColor: '#334155', 
-                         padding: '1rem', 
-                         borderRadius: '0.5rem',
-                         border: '1px solid #475569'
-                       }}>
-                         <h5 style={{
-                           fontSize: '1rem',
-                           fontWeight: '600',
-                           color: '#f8fafc',
-                           marginBottom: '0.75rem'
-                         }}>
-                           📋 Rule Adherence
-                         </h5>
-                         <div style={{ 
-                           fontSize: '0.875rem', 
-                           color: trade.ruleAdherence ? '#10b981' : '#ef4444',
-                           fontWeight: '600'
-                         }}>
-                           {trade.ruleAdherence ? '✅ Rules Followed' : '❌ Rules Violated'}
-                         </div>
-                       </div>
-                     )}
-
-                     {/* Plan & Trigger Notes */}
-                     {trade.tradePlan && (
-                       <div style={{ 
-                         backgroundColor: '#334155', 
-                         padding: '1rem', 
-                         borderRadius: '0.5rem',
-                         border: '1px solid #475569'
-                       }}>
-                         <h5 style={{
-                           fontSize: '1rem',
-                           fontWeight: '600',
-                           color: '#f8fafc',
-                           marginBottom: '0.75rem'
-                         }}>
-                           🎯 Plan & Trigger Notes
-                         </h5>
-                         <div style={{ 
-                           fontSize: '0.875rem', 
-                           color: '#f8fafc',
-                           lineHeight: '1.5',
-                           whiteSpace: 'pre-wrap'
-                         }}>
-                           {trade.tradePlan}
-                         </div>
-                       </div>
-                     )}
-
-                     {/* Mental Game Snapshot */}
-                     {trade.mentalGame && (
-                       <div style={{ 
-                         backgroundColor: '#334155', 
-                         padding: '1rem', 
-                         borderRadius: '0.5rem',
-                         border: '1px solid #475569'
-                       }}>
-                         <h5 style={{
-                           fontSize: '1rem',
-                           fontWeight: '600',
-                           color: '#f8fafc',
-                           marginBottom: '0.75rem'
-                         }}>
-                           🧠 Mental Game Snapshot
-                         </h5>
-                         <div style={{ 
-                           fontSize: '0.875rem', 
-                           color: '#f8fafc',
-                           lineHeight: '1.5',
-                           whiteSpace: 'pre-wrap'
-                         }}>
-                           {trade.mentalGame.tradeReasoning && (
-                             <div style={{ marginBottom: '1rem' }}>
-                               <strong>Why did I take this trade?</strong><br />
-                               {trade.mentalGame.tradeReasoning}
-                             </div>
-                           )}
-                           {trade.mentalGame.emotionsThoughts && (
-                             <div style={{ marginBottom: '1rem' }}>
-                               <strong>What emotions or thoughts influenced my actions?</strong><br />
-                               {trade.mentalGame.emotionsThoughts}
-                             </div>
-                           )}
-                           {trade.mentalGame.strengthsMistakes && (
-                             <div style={{ marginBottom: '1rem' }}>
-                               <strong>What did I do well, and what was a mistake?</strong><br />
-                               {trade.mentalGame.strengthsMistakes}
-                             </div>
-                           )}
-                           {trade.mentalGame.nextTimeFix && (
-                             <div style={{ marginBottom: '1rem' }}>
-                               <strong>What's one fix for next time?</strong><br />
-                               {trade.mentalGame.nextTimeFix}
-                             </div>
-                           )}
-                         </div>
-                       </div>
-                     )}
+                                           {/* Plan & Trigger Notes */}
+                      {trade.tradePlan && (
+                        <div style={{ 
+                          backgroundColor: '#334155', 
+                          padding: '1rem', 
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                          <h5 style={{
+                            fontSize: '1rem',
+                            fontWeight: '600',
+                            color: '#f8fafc',
+                            marginBottom: '0.75rem'
+                          }}>
+                            🎯 Plan & Trigger Notes
+                          </h5>
+                          <div style={{ 
+                            fontSize: '0.875rem', 
+                            color: '#f8fafc',
+                            lineHeight: '1.5',
+                            whiteSpace: 'pre-wrap'
+                          }}>
+                            {trade.tradePlan}
+                          </div>
+                        </div>
+                      )}
 
                      {/* Execution Notes */}
                      {trade.executionNotes && (
