@@ -234,66 +234,66 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
               Your complete trading history and analysis
             </p>
           </div>
-        </div>
-        
-        <div style={{
-          display: 'flex',
-          gap: '1rem',
-          alignItems: 'center'
-        }}>
+          </div>
+          
           <div style={{
-            textAlign: 'center',
-            padding: '1rem',
-            backgroundColor: '#334155',
-            borderRadius: '0.5rem',
-            minWidth: '120px'
+            display: 'flex',
+            gap: '1rem',
+            alignItems: 'center'
           }}>
-            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Total P&L</div>
-            <div style={{ 
-              fontSize: '1.5rem', 
-              fontWeight: '600', 
-              color: getPnlColor(totalPnL)
+            <div style={{
+              textAlign: 'center',
+              padding: '1rem',
+              backgroundColor: '#334155',
+              borderRadius: '0.5rem',
+              minWidth: '120px'
             }}>
-              {formatCurrency(totalPnL)}
+              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Total P&L</div>
+              <div style={{ 
+                fontSize: '1.5rem', 
+                fontWeight: '600', 
+                color: getPnlColor(totalPnL)
+              }}>
+                {formatCurrency(totalPnL)}
+              </div>
             </div>
-          </div>
-          
-          <div style={{
-            textAlign: 'center',
-            padding: '1rem',
-            backgroundColor: '#334155',
-            borderRadius: '0.5rem',
-            minWidth: '120px'
-          }}>
-            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Win Rate</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '1rem',
+              backgroundColor: '#334155',
+              borderRadius: '0.5rem',
+              minWidth: '120px'
+            }}>
+              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Win Rate</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
               {(winRate * 100).toFixed(1)}%
+              </div>
             </div>
-          </div>
-          
-          <div style={{
-            textAlign: 'center',
-            padding: '1rem',
-            backgroundColor: '#334155',
-            borderRadius: '0.5rem',
-            minWidth: '120px'
-          }}>
-            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Open Trades</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
-              {openTrades.length}
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '1rem',
+              backgroundColor: '#334155',
+              borderRadius: '0.5rem',
+              minWidth: '120px'
+            }}>
+              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Open Trades</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
+                {openTrades.length}
+              </div>
             </div>
-          </div>
-          
-          <div style={{
-            textAlign: 'center',
-            padding: '1rem',
-            backgroundColor: '#334155',
-            borderRadius: '0.5rem',
-            minWidth: '120px'
-          }}>
-            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>A-Game Trades</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#10b981' }}>
-              {aGradeTrades.length}
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '1rem',
+              backgroundColor: '#334155',
+              borderRadius: '0.5rem',
+              minWidth: '120px'
+            }}>
+              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>A-Game Trades</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#10b981' }}>
+                {aGradeTrades.length}
             </div>
           </div>
         </div>
@@ -527,366 +527,366 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
             </div>
           ) : (
             filteredTrades.map((trade) => (
-              <div key={trade.id} style={{
-                backgroundColor: '#1e293b',
-                borderRadius: '0.5rem',
-                border: '1px solid #334155',
-                overflow: 'hidden'
-              }}>
-                {/* Trade Header */}
-                <div style={{
-                  padding: '1.5rem',
-                  borderBottom: '1px solid #334155',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  gap: '1rem'
+                <div key={trade.id} style={{
+                  backgroundColor: '#1e293b',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #334155',
+                  overflow: 'hidden'
                 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '1rem',
-                      marginBottom: '0.5rem',
-                      flexWrap: 'wrap'
-                    }}>
-                      <h3 style={{
-                        fontSize: '1.5rem',
-                        fontWeight: '600',
-                        color: '#f8fafc'
-                      }}>
-                        {trade.symbol}
-                      </h3>
-                      {getResultBadge(trade.pnl, trade.status)}
-                      {getSetupBadge(trade.setup)}
-                      {getTradeGradeBadge(trade.tradeGrade)}
-                      <span style={{
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.75rem',
-                        fontWeight: '500',
-                        color: trade.side === 'BUY' ? '#10b981' : '#ef4444',
-                        backgroundColor: trade.side === 'BUY' ? '#065f46' : '#7f1d1d'
-                      }}>
-                        {trade.side === 'BUY' ? 'LONG' : 'SHORT'}
-                      </span>
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '2rem',
-                      fontSize: '0.875rem',
-                      color: '#94a3b8',
-                      flexWrap: 'wrap'
-                    }}>
-                      <span>Entry: {trade.entryDate}</span>
-                      <span>Entry Price: {formatCurrency(trade.entryPrice)}</span>
-                      <span>Shares: {trade.quantity || trade.shares || 'N/A'}</span>
-                      <span>Stop Loss: {formatCurrency(trade.stopLoss)}</span>
-                      {trade.trailingMA && (
-                        <span>Trailing: {trade.trailingMA}-Day MA</span>
-                      )}
-                      {trade.status === 'closed' && (
-                        <>
-                          <span>Exit: {trade.exitDate}</span>
-                          <span>Exit Price: {formatCurrency(trade.exitPrice)}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  
+                  {/* Trade Header */}
                   <div style={{
-                    textAlign: 'right',
+                    padding: '1.5rem',
+                    borderBottom: '1px solid #334155',
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-end',
-                    gap: '0.5rem'
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    gap: '1rem'
                   }}>
-                    <button
-                      onClick={() => handleEditTrade(trade)}
-                      style={{
-                        padding: '0.5rem',
-                        backgroundColor: '#3b82f6',
-                        border: 'none',
-                        borderRadius: '0.375rem',
-                        color: '#ffffff',
-                        cursor: 'pointer',
+                    <div style={{ flex: 1 }}>
+                      <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.25rem',
+                        gap: '1rem',
+                        marginBottom: '0.5rem',
+                        flexWrap: 'wrap'
+                      }}>
+                        <h3 style={{
+                          fontSize: '1.5rem',
+                          fontWeight: '600',
+                          color: '#f8fafc'
+                        }}>
+                          {trade.symbol}
+                        </h3>
+                        {getResultBadge(trade.pnl, trade.status)}
+                        {getSetupBadge(trade.setup)}
+                        {getTradeGradeBadge(trade.tradeGrade)}
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: '500',
+                          color: trade.side === 'BUY' ? '#10b981' : '#ef4444',
+                          backgroundColor: trade.side === 'BUY' ? '#065f46' : '#7f1d1d'
+                        }}>
+                          {trade.side === 'BUY' ? 'LONG' : 'SHORT'}
+                        </span>
+                      </div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '2rem',
                         fontSize: '0.875rem',
-                        fontWeight: '500'
-                      }}
-                    >
-                      <Edit size={16} />
-                      Edit
-                    </button>
-                    <div style={{
-                      fontSize: '2rem',
-                      fontWeight: '700',
-                      color: getPnlColor(trade.pnl),
-                      marginBottom: '0.5rem'
-                    }}>
-                      {trade.status === 'open' ? 'Open Position' : formatCurrency(trade.pnl)}
+                        color: '#94a3b8',
+                        flexWrap: 'wrap'
+                      }}>
+                                                 <span>Entry: {trade.entryDate}</span>
+                         <span>Entry Price: {formatCurrency(trade.entryPrice)}</span>
+                         <span>Shares: {trade.quantity || trade.shares || 'N/A'}</span>
+                         <span>Stop Loss: {formatCurrency(trade.stopLoss)}</span>
+                         {trade.trailingMA && (
+                           <span>Trailing: {trade.trailingMA}-Day MA</span>
+                         )}
+                        {trade.status === 'closed' && (
+                          <>
+                            <span>Exit: {trade.exitDate}</span>
+                            <span>Exit Price: {formatCurrency(trade.exitPrice)}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
+                    
+                                         <div style={{
+                       textAlign: 'right',
+                       display: 'flex',
+                       flexDirection: 'column',
+                       alignItems: 'flex-end',
+                       gap: '0.5rem'
+                     }}>
+                       <button
+                         onClick={() => handleEditTrade(trade)}
+                         style={{
+                           padding: '0.5rem',
+                           backgroundColor: '#3b82f6',
+                           border: 'none',
+                           borderRadius: '0.375rem',
+                           color: '#ffffff',
+                           cursor: 'pointer',
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.25rem',
+                           fontSize: '0.875rem',
+                           fontWeight: '500'
+                         }}
+                       >
+                         <Edit size={16} />
+                         Edit
+                       </button>
+                       <div style={{
+                         fontSize: '2rem',
+                         fontWeight: '700',
+                         color: getPnlColor(trade.pnl),
+                         marginBottom: '0.5rem'
+                       }}>
+                         {trade.status === 'open' ? 'Open Position' : formatCurrency(trade.pnl)}
+                       </div>
+                     </div>
                   </div>
-                </div>
 
-                {/* Trade Details */}
-                <div style={{
-                  padding: '1rem 1.5rem 1.5rem',
-                  display: 'grid',
-                  gap: '1rem'
-                }}>
+                                     {/* Trade Details */}
+                   <div style={{
+                     padding: '1rem 1.5rem 1.5rem',
+                     display: 'grid',
+                     gap: '1rem'
+                   }}>
                   {/* Notes */}
                   {trade.notes && (
-                    <div style={{ 
-                      backgroundColor: '#334155', 
+                        <div style={{ 
+                          backgroundColor: '#334155', 
                       padding: '1rem', 
-                      borderRadius: '0.5rem',
-                      border: '1px solid #475569'
-                    }}>
-                      <h5 style={{
-                        fontSize: '1rem',
-                        fontWeight: '600',
-                        color: '#f8fafc',
-                        marginBottom: '0.75rem'
-                      }}>
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                                                                              <h5 style={{
+                             fontSize: '1rem',
+                             fontWeight: '600',
+                             color: '#f8fafc',
+                             marginBottom: '0.75rem'
+                           }}>
                         📝 Notes
-                      </h5>
-                      <div style={{ 
-                        fontSize: '0.875rem', 
-                        color: '#f8fafc',
-                        lineHeight: '1.5',
-                        whiteSpace: 'pre-wrap'
-                      }}>
-                        {trade.notes}
-                      </div>
-                    </div>
-                  )}
+                           </h5>
+                                <div style={{ 
+                                  fontSize: '0.875rem', 
+                                  color: '#f8fafc',
+                                  lineHeight: '1.5',
+                                  whiteSpace: 'pre-wrap'
+                                }}>
+                                  {trade.notes}
+                          </div>
+                        </div>
+                      )}
 
                   {/* Screenshots */}
-                  {trade.screenshots && (trade.screenshots.preTrade || trade.screenshots.execution || trade.screenshots.postTrade) && (
-                    <div style={{ 
-                      backgroundColor: '#334155', 
+                                           {trade.screenshots && (trade.screenshots.preTrade || trade.screenshots.execution || trade.screenshots.postTrade) && (
+                        <div style={{ 
+                          backgroundColor: '#334155', 
                       padding: '1rem', 
-                      borderRadius: '0.5rem',
-                      border: '1px solid #475569'
-                    }}>
-                      <h5 style={{
-                        fontSize: '1rem',
-                        fontWeight: '600',
-                        color: '#f8fafc',
-                        marginBottom: '0.75rem'
-                      }}>
-                        📸 Screenshots
-                      </h5>
-                      <div style={{ 
-                        display: 'grid', 
-                        gap: '1.5rem' 
-                      }}>
-                        {trade.screenshots.preTrade && (
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                                                                              <h5 style={{
+                             fontSize: '1rem',
+                             fontWeight: '600',
+                             color: '#f8fafc',
+                             marginBottom: '0.75rem'
+                           }}>
+                             📸 Screenshots
+                           </h5>
+                         <div style={{ 
+                           display: 'grid', 
+                           gap: '1.5rem' 
+                         }}>
+                           {trade.screenshots.preTrade && (
                           <div>
-                            <div style={{ 
-                              color: '#94a3b8', 
-                              fontSize: '0.875rem', 
-                              fontWeight: '600',
+                                                               <div style={{ 
+                                  color: '#94a3b8', 
+                                  fontSize: '0.875rem', 
+                                  fontWeight: '600',
                               marginBottom: '0.75rem'
-                            }}>
-                              Pre-Trade Analysis
-                            </div>
-                            <img 
-                              src={trade.screenshots.preTrade} 
-                              alt="Pre-trade screenshot"
-                              style={{
-                                width: '100%',
+                                }}>
+                                  Pre-Trade Analysis
+                                </div>
+                                                               <img 
+                                  src={trade.screenshots.preTrade} 
+                                  alt="Pre-trade screenshot"
+                                  style={{
+                                    width: '100%',
                                 maxHeight: '400px',
-                                objectFit: 'contain',
-                                borderRadius: '0.5rem'
-                              }}
-                            />
-                          </div>
-                        )}
-                        {trade.screenshots.execution && (
+                                    objectFit: 'contain',
+                                    borderRadius: '0.5rem'
+                                  }}
+                                />
+                             </div>
+                           )}
+                           {trade.screenshots.execution && (
                           <div>
-                            <div style={{ 
-                              color: '#94a3b8', 
-                              fontSize: '0.875rem', 
-                              fontWeight: '600',
+                                                               <div style={{ 
+                                  color: '#94a3b8', 
+                                  fontSize: '0.875rem', 
+                                  fontWeight: '600',
                               marginBottom: '0.75rem'
-                            }}>
-                              Trade Execution
-                            </div>
-                            <img 
-                              src={trade.screenshots.execution} 
-                              alt="Execution screenshot"
-                              style={{
-                                width: '100%',
+                                }}>
+                                  Trade Execution
+                                </div>
+                                                               <img 
+                                  src={trade.screenshots.execution} 
+                                  alt="Execution screenshot"
+                                  style={{
+                                    width: '100%',
                                 maxHeight: '400px',
-                                objectFit: 'contain',
-                                borderRadius: '0.5rem'
-                              }}
-                            />
-                          </div>
-                        )}
-                        {trade.screenshots.postTrade && (
+                                    objectFit: 'contain',
+                                    borderRadius: '0.5rem'
+                                  }}
+                                />
+                             </div>
+                           )}
+                           {trade.screenshots.postTrade && (
                           <div>
-                            <div style={{ 
-                              color: '#94a3b8', 
-                              fontSize: '0.875rem', 
-                              fontWeight: '600',
+                                                               <div style={{ 
+                                  color: '#94a3b8', 
+                                  fontSize: '0.875rem', 
+                                  fontWeight: '600',
                               marginBottom: '0.75rem'
-                            }}>
-                              Post-Trade Review
-                            </div>
-                            <img 
-                              src={trade.screenshots.postTrade} 
-                              alt="Post-trade screenshot"
-                              style={{
-                                width: '100%',
+                                }}>
+                                  Post-Trade Review
+                                </div>
+                                                               <img 
+                                  src={trade.screenshots.postTrade} 
+                                  alt="Post-trade screenshot"
+                                  style={{
+                                    width: '100%',
                                 maxHeight: '400px',
-                                objectFit: 'contain',
-                                borderRadius: '0.5rem'
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+                                    objectFit: 'contain',
+                                    borderRadius: '0.5rem'
+                                  }}
+                                />
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     )}
+                              </div>
+                              </div>
             ))
           )}
-        </div>
-      </div>
+                 </div>
+       </div>
 
-      {/* Edit Trade Modal */}
-      {showEditModal && editingTrade && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.75)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: '#1e293b',
-            borderRadius: '0.75rem',
-            padding: '2rem',
-            maxWidth: '600px',
-            width: '90%',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            border: '1px solid #334155'
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '1.5rem'
-            }}>
-              <h2 style={{
-                fontSize: '1.5rem',
-                fontWeight: '600',
-                color: '#f8fafc',
-                margin: 0
-              }}>
-                Edit Trade: {editingTrade.symbol}
-              </h2>
-              <button
-                onClick={handleCancelEdit}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
-                  padding: '0.5rem'
-                }}
-              >
-                <X size={24} />
-              </button>
-            </div>
+       {/* Edit Trade Modal */}
+       {showEditModal && editingTrade && (
+         <div style={{
+           position: 'fixed',
+           top: 0,
+           left: 0,
+           right: 0,
+           bottom: 0,
+           backgroundColor: 'rgba(0, 0, 0, 0.75)',
+           display: 'flex',
+           justifyContent: 'center',
+           alignItems: 'center',
+           zIndex: 1000
+         }}>
+           <div style={{
+             backgroundColor: '#1e293b',
+             borderRadius: '0.75rem',
+             padding: '2rem',
+             maxWidth: '600px',
+             width: '90%',
+             maxHeight: '90vh',
+             overflow: 'auto',
+             border: '1px solid #334155'
+           }}>
+             <div style={{
+               display: 'flex',
+               justifyContent: 'space-between',
+               alignItems: 'center',
+               marginBottom: '1.5rem'
+             }}>
+               <h2 style={{
+                 fontSize: '1.5rem',
+                 fontWeight: '600',
+                 color: '#f8fafc',
+                 margin: 0
+               }}>
+                 Edit Trade: {editingTrade.symbol}
+               </h2>
+               <button
+                 onClick={handleCancelEdit}
+                 style={{
+                   background: 'none',
+                   border: 'none',
+                   color: '#94a3b8',
+                   cursor: 'pointer',
+                   padding: '0.5rem'
+                 }}
+               >
+                 <X size={24} />
+               </button>
+             </div>
 
-            <div style={{
-              display: 'grid',
-              gap: '1rem',
-              marginBottom: '1.5rem'
+             <div style={{
+               display: 'grid',
+               gap: '1rem',
+               marginBottom: '1.5rem'
             }}>
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: '#94a3b8',
-                  marginBottom: '0.5rem'
-                }}>
-                  Notes
-                </label>
-                <textarea
-                  value={editingTrade.notes || ''}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    backgroundColor: '#334155',
-                    border: '1px solid #475569',
-                    borderRadius: '0.5rem',
-                    color: '#f8fafc',
-                    fontSize: '0.875rem',
-                    resize: 'vertical'
-                  }}
-                />
-              </div>
-            </div>
+               <div>
+                 <label style={{
+                   display: 'block',
+                   fontSize: '0.875rem',
+                   fontWeight: '500',
+                   color: '#94a3b8',
+                   marginBottom: '0.5rem'
+                 }}>
+                   Notes
+                 </label>
+                 <textarea
+                   value={editingTrade.notes || ''}
+                   onChange={(e) => handleInputChange('notes', e.target.value)}
+                   rows={3}
+                   style={{
+                     width: '100%',
+                     padding: '0.75rem',
+                     backgroundColor: '#334155',
+                     border: '1px solid #475569',
+                     borderRadius: '0.5rem',
+                     color: '#f8fafc',
+                     fontSize: '0.875rem',
+                     resize: 'vertical'
+                   }}
+                 />
+               </div>
+             </div>
 
-            <div style={{
-              display: 'flex',
-              gap: '1rem',
-              justifyContent: 'flex-end'
-            }}>
-              <button
-                onClick={handleCancelEdit}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#475569',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  color: '#f8fafc',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#10b981',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500'
-                }}
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+             <div style={{
+               display: 'flex',
+               gap: '1rem',
+               justifyContent: 'flex-end'
+             }}>
+               <button
+                 onClick={handleCancelEdit}
+                 style={{
+                   padding: '0.75rem 1.5rem',
+                   backgroundColor: '#475569',
+                   border: 'none',
+                   borderRadius: '0.5rem',
+                   color: '#f8fafc',
+                   cursor: 'pointer',
+                   fontSize: '0.875rem',
+                   fontWeight: '500'
+                 }}
+               >
+                 Cancel
+               </button>
+               <button
+                 onClick={handleSaveEdit}
+                 style={{
+                   padding: '0.75rem 1.5rem',
+                   backgroundColor: '#10b981',
+                   border: 'none',
+                   borderRadius: '0.5rem',
+                   color: '#ffffff',
+                   cursor: 'pointer',
+                   fontSize: '0.875rem',
+                   fontWeight: '500'
+                 }}
+               >
+                 Save Changes
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+   );
+ };
 
 export default BookOfTruth;

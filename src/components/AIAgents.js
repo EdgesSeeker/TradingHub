@@ -117,7 +117,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
       
       // Reset all plans to pending status
       const resetPlans = allPlans.map(plan => ({
-        ...plan,
+            ...plan,
         status: 'pending',
         aiReview: null,
         approvalStatus: 'pending'
@@ -131,7 +131,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
       
       setTradePlans(resetPlans);
       console.log('Trade plans reset and ready for re-evaluation');
-    } catch (error) {
+      } catch (error) {
       console.error('Error reloading trade plans:', error);
     }
   };
@@ -201,18 +201,18 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
 
   // Group plans by date
   const groupedPlans = filteredPlans.reduce((groups, plan) => {
-    const date = new Date(plan.createdAt || plan.date || Date.now()).toLocaleDateString('de-DE', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    
+      const date = new Date(plan.createdAt || plan.date || Date.now()).toLocaleDateString('de-DE', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
     if (!groups[date]) {
       groups[date] = [];
     }
     groups[date].push(plan);
     return groups;
-  }, {});
+      }, {});
 
   // Toggle date expansion
   const toggleDateExpansion = (date) => {
@@ -252,109 +252,109 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
             AI-Powered Trade Analysis & Execution
           </p>
         </div>
-      </div>
-      
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        {/* Reload Button */}
-        <button
-          onClick={reloadAndReevaluatePlans}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: '#3b82f6',
-            border: 'none',
-            borderRadius: '0.5rem',
-            color: '#f8fafc',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem'
-          }}
-          title="AI-Bewertungen zurücksetzen für neue Bewertung"
-        >
-          <RefreshCw size={16} />
-          Reload
-        </button>
+        </div>
         
-        {/* API Status */}
-        {apiStatus && (
-          <div style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: apiStatus.remainingCalls > 0 ? '#10b981' : '#ef4444',
-            borderRadius: '0.5rem',
-            color: '#f8fafc',
-            fontSize: '0.75rem',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem'
-          }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: apiStatus.remainingCalls > 0 ? '#f8fafc' : '#f8fafc' }}></div>
-            API: {apiStatus.remainingCalls}/5 calls
-          </div>
-        )}
-        
-        <button
-          onClick={() => setFilterStatus('all')}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: filterStatus === 'all' ? '#10b981' : 'transparent',
-            border: `1px solid ${filterStatus === 'all' ? '#10b981' : '#475569'}`,
-            borderRadius: '0.5rem',
-            color: filterStatus === 'all' ? '#f8fafc' : '#94a3b8',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500'
-          }}
-        >
-          Alle
-        </button>
-        <button
-          onClick={() => setFilterStatus('pending')}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: filterStatus === 'pending' ? '#10b981' : 'transparent',
-            border: `1px solid ${filterStatus === 'pending' ? '#10b981' : '#475569'}`,
-            borderRadius: '0.5rem',
-            color: filterStatus === 'pending' ? '#f8fafc' : '#94a3b8',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500'
-          }}
-        >
-          Ausstehend
-        </button>
-        <button
-          onClick={() => setFilterStatus('approved')}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: filterStatus === 'approved' ? '#10b981' : 'transparent',
-            border: `1px solid ${filterStatus === 'approved' ? '#10b981' : '#475569'}`,
-            borderRadius: '0.5rem',
-            color: filterStatus === 'approved' ? '#f8fafc' : '#94a3b8',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500'
-          }}
-        >
-          Genehmigt
-        </button>
-        <button
-          onClick={() => setFilterStatus('rejected')}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: filterStatus === 'rejected' ? '#10b981' : 'transparent',
-            border: `1px solid ${filterStatus === 'rejected' ? '#10b981' : '#475569'}`,
-            borderRadius: '0.5rem',
-            color: filterStatus === 'rejected' ? '#f8fafc' : '#94a3b8',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500'
-          }}
-        >
-          Abgelehnt
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {/* Reload Button */}
+          <button
+            onClick={reloadAndReevaluatePlans}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#3b82f6',
+              border: 'none',
+              borderRadius: '0.5rem',
+              color: '#f8fafc',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}
+            title="AI-Bewertungen zurücksetzen für neue Bewertung"
+          >
+            <RefreshCw size={16} />
+            Reload
+          </button>
+          
+          {/* API Status */}
+          {apiStatus && (
+            <div style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: apiStatus.remainingCalls > 0 ? '#10b981' : '#ef4444',
+              borderRadius: '0.5rem',
+              color: '#f8fafc',
+              fontSize: '0.75rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: apiStatus.remainingCalls > 0 ? '#f8fafc' : '#f8fafc' }}></div>
+              API: {apiStatus.remainingCalls}/5 calls
+            </div>
+          )}
+          
+          <button
+            onClick={() => setFilterStatus('all')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: filterStatus === 'all' ? '#10b981' : 'transparent',
+              border: `1px solid ${filterStatus === 'all' ? '#10b981' : '#475569'}`,
+              borderRadius: '0.5rem',
+              color: filterStatus === 'all' ? '#f8fafc' : '#94a3b8',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500'
+            }}
+          >
+            Alle
+          </button>
+          <button
+            onClick={() => setFilterStatus('pending')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: filterStatus === 'pending' ? '#10b981' : 'transparent',
+              border: `1px solid ${filterStatus === 'pending' ? '#10b981' : '#475569'}`,
+              borderRadius: '0.5rem',
+              color: filterStatus === 'pending' ? '#f8fafc' : '#94a3b8',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500'
+            }}
+          >
+            Ausstehend
+          </button>
+          <button
+            onClick={() => setFilterStatus('approved')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: filterStatus === 'approved' ? '#10b981' : 'transparent',
+              border: `1px solid ${filterStatus === 'approved' ? '#10b981' : '#475569'}`,
+              borderRadius: '0.5rem',
+              color: filterStatus === 'approved' ? '#f8fafc' : '#94a3b8',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500'
+            }}
+          >
+            Genehmigt
+          </button>
+          <button
+            onClick={() => setFilterStatus('rejected')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: filterStatus === 'rejected' ? '#10b981' : 'transparent',
+              border: `1px solid ${filterStatus === 'rejected' ? '#10b981' : '#475569'}`,
+              borderRadius: '0.5rem',
+              color: filterStatus === 'rejected' ? '#f8fafc' : '#94a3b8',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500'
+            }}
+          >
+            Abgelehnt
+          </button>
       </div>
 
       {/* Trade Plans Overview */}
@@ -444,10 +444,10 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                     borderLeft: '2px solid #475569'
                   }}>
                     {plans.map(plan => (
-                      <div key={plan.id} style={{
-                        backgroundColor: '#334155',
-                        borderRadius: '0.5rem',
-                        padding: '1rem',
+              <div key={plan.id} style={{
+                backgroundColor: '#334155',
+                borderRadius: '0.5rem',
+                padding: '1rem',
                         border: '1px solid #475569'
                       }}>
                         {/* Plan Header */}
@@ -465,9 +465,9 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                               color: '#f8fafc'
                             }}>
                               {plan.symbol} - {plan.setup || 'Setup'}
-                            </h4>
+                    </h4>
                             <div style={{
-                              display: 'flex',
+                      display: 'flex',
                               gap: '1rem',
                               flexWrap: 'wrap',
                               fontSize: '0.875rem',
@@ -478,13 +478,13 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                               {plan.entryPrice && <span>Entry: ${plan.entryPrice}</span>}
                               {plan.stopLoss && <span>Stop: ${plan.stopLoss}</span>}
                             </div>
-                          </div>
-                          
+                  </div>
+                  
                           {/* Status Badge */}
-                          <div style={{
+                       <div style={{
                             padding: '0.25rem 0.75rem',
                             borderRadius: '9999px',
-                            fontSize: '0.75rem',
+                         fontSize: '0.75rem',
                             fontWeight: '600',
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
@@ -503,7 +503,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                             })
                           }}>
                             {plan.status}
-                          </div>
+                       </div>
                         </div>
                         
                         {/* Plan Details */}
@@ -519,15 +519,15 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                             </h5>
                             <p style={{
                               fontSize: '0.875rem',
-                              color: '#f8fafc',
+                         color: '#f8fafc',
                               lineHeight: '1.5',
                               margin: 0
-                            }}>
+                       }}>
                               {plan.thesis}
                             </p>
-                          </div>
-                        )}
-                        
+                       </div>
+                     )}
+                     
                         {/* Action Buttons */}
                         <div style={{
                           display: 'flex',
@@ -535,71 +535,71 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                           flexWrap: 'wrap'
                         }}>
                           {plan.status === 'approved' && (
-                            <button
+                       <button
                               onClick={() => executeTradePlan(plan)}
-                              style={{
+                         style={{
                                 padding: '0.5rem 1rem',
                                 backgroundColor: '#10b981',
-                                border: 'none',
+                           border: 'none',
                                 borderRadius: '0.375rem',
                                 color: '#ffffff',
-                                cursor: 'pointer',
+                           cursor: 'pointer',
                                 fontSize: '0.875rem',
-                                fontWeight: '500',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.25rem'
-                              }}
-                            >
+                           fontWeight: '500',
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '0.25rem'
+                         }}
+                       >
                               <Play size={16} />
-                              Execute
-                            </button>
-                          )}
-                          
+                         Execute
+                       </button>
+                     )}
+                     
                           {plan.status === 'executed' && (
-                            <button
+                       <button
                               onClick={() => resetTradePlanStatus(plan.id)}
-                              style={{
+                         style={{
                                 padding: '0.5rem 1rem',
                                 backgroundColor: '#f59e0b',
-                                border: 'none',
+                           border: 'none',
                                 borderRadius: '0.375rem',
                                 color: '#ffffff',
                                 cursor: 'pointer',
                                 fontSize: '0.875rem',
-                                fontWeight: '500',
+                           fontWeight: '500',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '0.25rem'
-                              }}
-                            >
+                         }}
+                       >
                               <RefreshCw size={16} />
                               Reset
-                            </button>
-                          )}
-                          
-                          <button
+                       </button>
+                     )}
+                     
+                     <button
                             onClick={() => setSelectedPlan(plan)}
-                            style={{
+                       style={{
                               padding: '0.5rem 1rem',
                               backgroundColor: '#3b82f6',
-                              border: 'none',
+                         border: 'none',
                               borderRadius: '0.375rem',
                               color: '#ffffff',
-                              cursor: 'pointer',
+                         cursor: 'pointer',
                               fontSize: '0.875rem',
-                              fontWeight: '500',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.25rem'
-                            }}
-                          >
+                         fontWeight: '500',
+                         display: 'flex',
+                         alignItems: 'center',
+                         gap: '0.25rem'
+                       }}
+                     >
                             <MessageSquare size={16} />
                             Review
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                     </button>
+                   </div>
+              </div>
+            ))}
                   </div>
                 )}
               </div>
@@ -632,38 +632,38 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
             overflow: 'auto',
             border: '1px solid #334155'
           }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
+                         <div style={{
+               display: 'flex',
+               justifyContent: 'space-between',
+               alignItems: 'center',
               marginBottom: '1.5rem'
-            }}>
+             }}>
               <h2 style={{
                 fontSize: '1.5rem',
-                fontWeight: '600',
-                color: '#f8fafc',
-                margin: 0
-              }}>
+                 fontWeight: '600',
+                 color: '#f8fafc',
+                 margin: 0
+               }}>
                 AI Review: {selectedPlan.symbol}
               </h2>
-              <button
-                onClick={() => setSelectedPlan(null)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#94a3b8',
-                  cursor: 'pointer',
+                 <button
+                   onClick={() => setSelectedPlan(null)}
+                   style={{
+                     background: 'none',
+                     border: 'none',
+                     color: '#94a3b8',
+                     cursor: 'pointer',
                   padding: '0.5rem'
                 }}
               >
                 <XCircle size={24} />
-              </button>
-            </div>
-            
+                 </button>
+             </div>
+
             {/* Plan Details */}
-            <div style={{
-              backgroundColor: '#334155',
-              padding: '1rem',
+                <div style={{
+                  backgroundColor: '#334155',
+                  padding: '1rem',
               borderRadius: '0.5rem',
               marginBottom: '1.5rem'
             }}>
@@ -676,26 +676,26 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                 Trade Plan Details
               </h3>
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '1rem'
-              }}>
-                <div>
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '1rem'
+                }}>
+                  <div>
                   <label style={{
-                    fontSize: '0.875rem',
+                       fontSize: '0.875rem',
                     color: '#94a3b8',
                     fontWeight: '500'
                   }}>
                     Symbol
                   </label>
-                  <div style={{
+                     <div style={{ 
                     fontSize: '1rem',
                     color: '#f8fafc',
                     fontWeight: '600'
                   }}>
                     {selectedPlan.symbol}
-                  </div>
-                </div>
+                     </div>
+                   </div>
                 <div>
                   <label style={{
                     fontSize: '0.875rem',
@@ -704,14 +704,14 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                   }}>
                     Setup
                   </label>
-                  <div style={{
+                    <div style={{
                     fontSize: '1rem',
-                    color: '#f8fafc',
+                      color: '#f8fafc',
                     fontWeight: '600'
                   }}>
                     {selectedPlan.setup || 'N/A'}
+                    </div>
                   </div>
-                </div>
                 <div>
                   <label style={{
                     fontSize: '0.875rem',
@@ -720,14 +720,14 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                   }}>
                     Direction
                   </label>
-                  <div style={{
+                    <div style={{
                     fontSize: '1rem',
                     color: '#f8fafc',
                     fontWeight: '600'
                   }}>
                     {selectedPlan.direction || 'N/A'}
-                  </div>
-                </div>
+                      </div>
+                      </div>
                 <div>
                   <label style={{
                     fontSize: '0.875rem',
@@ -736,14 +736,14 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                   }}>
                     Entry Price
                   </label>
-                  <div style={{
+                      <div style={{
                     fontSize: '1rem',
                     color: '#f8fafc',
                     fontWeight: '600'
                   }}>
                     {selectedPlan.entryPrice ? `$${selectedPlan.entryPrice}` : 'N/A'}
-                  </div>
-                </div>
+                      </div>
+                    </div>
                 <div>
                   <label style={{
                     fontSize: '0.875rem',
@@ -752,14 +752,14 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                   }}>
                     Stop Loss
                   </label>
-                  <div style={{
+                      <div style={{
                     fontSize: '1rem',
                     color: '#f8fafc',
                     fontWeight: '600'
                   }}>
                     {selectedPlan.stopLoss ? `$${selectedPlan.stopLoss}` : 'N/A'}
-                  </div>
-                </div>
+                      </div>
+                    </div>
                 <div>
                   <label style={{
                     fontSize: '0.875rem',
@@ -768,16 +768,16 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                   }}>
                     Risk Amount
                   </label>
-                  <div style={{
+                       <div style={{
                     fontSize: '1rem',
                     color: '#f8fafc',
                     fontWeight: '600'
                   }}>
                     {selectedPlan.riskAmount ? `$${selectedPlan.riskAmount}` : 'N/A'}
                   </div>
-                </div>
-              </div>
-              
+                       </div>
+                     </div>
+                     
               {selectedPlan.thesis && (
                 <div style={{ marginTop: '1rem' }}>
                   <label style={{
@@ -787,7 +787,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                   }}>
                     Thesis
                   </label>
-                  <div style={{
+                       <div style={{
                     fontSize: '0.875rem',
                     color: '#f8fafc',
                     lineHeight: '1.5',
@@ -798,16 +798,16 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                     border: '1px solid #475569'
                   }}>
                     {selectedPlan.thesis}
-                  </div>
+                       </div>
                 </div>
               )}
-            </div>
-            
+                     </div>
+                     
             {/* AI Review Results */}
             {aiResults[selectedPlan.id] && (
-              <div style={{
-                backgroundColor: '#334155',
-                padding: '1rem',
+                     <div style={{
+                       backgroundColor: '#334155',
+                       padding: '1rem',
                 borderRadius: '0.5rem',
                 marginBottom: '1.5rem'
               }}>
@@ -819,8 +819,8 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                 }}>
                   AI Analysis Results
                 </h3>
-                <div style={{
-                  display: 'grid',
+                  <div style={{
+                    display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                   gap: '1rem'
                 }}>
@@ -846,7 +846,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                       color: '#94a3b8',
                       fontWeight: '500'
                     }}>
-                      Risk Assessment
+                        Risk Assessment
                     </label>
                     <div style={{
                       fontSize: '1rem',
@@ -855,7 +855,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                     }}>
                       {aiResults[selectedPlan.id].riskLevel}
                     </div>
-                  </div>
+                     </div>
                   <div>
                     <label style={{
                       fontSize: '0.875rem',
@@ -864,16 +864,16 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                     }}>
                       Recommendation
                     </label>
-                    <div style={{
+                     <div style={{
                       fontSize: '1rem',
                       color: '#f8fafc',
                       fontWeight: '600'
                     }}>
                       {aiResults[selectedPlan.id].recommendation}
                     </div>
-                  </div>
-                </div>
-                
+                     </div>
+                   </div>
+
                 {aiResults[selectedPlan.id].reasoning && (
                   <div style={{ marginTop: '1rem' }}>
                     <label style={{
@@ -883,7 +883,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                     }}>
                       AI Reasoning
                     </label>
-                    <div style={{
+                      <div style={{
                       fontSize: '0.875rem',
                       color: '#f8fafc',
                       lineHeight: '1.5',
@@ -895,32 +895,32 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                     }}>
                       {aiResults[selectedPlan.id].reasoning}
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
-            
+                      </div>
+                    )}
+                      </div>
+                    )}
+                    
             {/* Action Buttons */}
-            <div style={{
+                      <div style={{
               display: 'flex',
               gap: '1rem',
               justifyContent: 'flex-end'
             }}>
-              <button
+                  <button
                 onClick={() => setSelectedPlan(null)}
-                style={{
-                  padding: '0.75rem 1.5rem',
+                    style={{
+                      padding: '0.75rem 1.5rem',
                   backgroundColor: '#475569',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  color: '#f8fafc',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      color: '#f8fafc',
                   cursor: 'pointer',
-                  fontSize: '0.875rem',
+                      fontSize: '0.875rem',
                   fontWeight: '500'
-                }}
-              >
+                    }}
+                  >
                 Close
-              </button>
+                  </button>
               
               {selectedPlan.status === 'pending' && (
                 <>
