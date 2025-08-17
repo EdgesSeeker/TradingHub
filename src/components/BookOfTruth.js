@@ -755,96 +755,98 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                      </div>
                    )}
 
-                  {/* Screenshots */}
-                                           {trade.screenshots && (trade.screenshots.preTrade || trade.screenshots.execution || trade.screenshots.postTrade) && (
-                        <div style={{ 
-                          backgroundColor: '#334155', 
-                      padding: '1rem', 
-                          borderRadius: '0.5rem',
-                          border: '1px solid #475569'
-                        }}>
-                                                                              <h5 style={{
-                             fontSize: '1rem',
-                             fontWeight: '600',
-                             color: '#f8fafc',
-                             marginBottom: '0.75rem'
-                           }}>
-                             📸 Screenshots
-                           </h5>
+                  
+
+                   {/* Screenshots - GANZ UNTEN */}
+                                            {trade.screenshots && (trade.screenshots.preTrade || trade.screenshots.execution || trade.screenshots.postTrade) && (
                          <div style={{ 
-                           display: 'grid', 
-                           gap: '1.5rem',
-                           justifyContent: 'start'
+                           backgroundColor: '#334155', 
+                       padding: '1rem', 
+                           borderRadius: '0.5rem',
+                           border: '1px solid #475569'
                          }}>
-                           {trade.screenshots.preTrade && (
-                          <div>
-                                                               <div style={{ 
-                                  color: '#94a3b8', 
-                                  fontSize: '0.875rem', 
-                                  fontWeight: '600',
+                                                                               <h5 style={{
+                              fontSize: '1rem',
+                              fontWeight: '600',
+                              color: '#f8fafc',
                               marginBottom: '0.75rem'
-                                }}>
-                                  Pre-Trade Analysis
-                                </div>
-                                                               <img 
-                                  src={trade.screenshots.preTrade} 
-                                  alt="Pre-trade screenshot"
-                                  style={{
-                                    width: '100%',
-                                maxHeight: '400px',
-                                    objectFit: 'contain',
-                                    borderRadius: '0.5rem'
-                                  }}
-                                />
-                             </div>
-                           )}
-                           {trade.screenshots.execution && (
-                          <div>
-                                                               <div style={{ 
-                                  color: '#94a3b8', 
-                                  fontSize: '0.875rem', 
-                                  fontWeight: '600',
-                              marginBottom: '0.75rem'
-                                }}>
-                                  Trade Execution
-                                </div>
-                                                               <img 
-                                  src={trade.screenshots.execution} 
-                                  alt="Execution screenshot"
-                                  style={{
-                                    width: '100%',
-                                maxHeight: '400px',
-                                    objectFit: 'contain',
-                                    borderRadius: '0.5rem'
-                                  }}
-                                />
-                             </div>
-                           )}
-                           {trade.screenshots.postTrade && (
-                          <div>
-                                                               <div style={{ 
-                                  color: '#94a3b8', 
-                                  fontSize: '0.875rem', 
-                                  fontWeight: '600',
-                              marginBottom: '0.75rem'
-                                }}>
-                                  Post-Trade Review
-                                </div>
-                                                               <img 
-                                  src={trade.screenshots.postTrade} 
-                                  alt="Post-trade screenshot"
-                                  style={{
-                                    width: '100%',
-                                maxHeight: '400px',
-                                    objectFit: 'contain',
-                                    borderRadius: '0.5rem'
-                                  }}
-                                />
-                             </div>
-                           )}
-                         </div>
-                       </div>
-                     )}
+                            }}>
+                              📸 Screenshots
+                            </h5>
+                          <div style={{ 
+                            display: 'grid', 
+                            gap: '1.5rem',
+                            justifyContent: 'start'
+                          }}>
+                            {trade.screenshots.preTrade && (
+                           <div>
+                                                                <div style={{ 
+                                   color: '#94a3b8', 
+                                   fontSize: '0.875rem', 
+                                   fontWeight: '600',
+                               marginBottom: '0.75rem'
+                                 }}>
+                                   Pre-Trade Analysis
+                                 </div>
+                                                                <img 
+                                   src={trade.screenshots.preTrade} 
+                                   alt="Pre-trade screenshot"
+                                   style={{
+                                     width: '100%',
+                                 maxHeight: '400px',
+                                     objectFit: 'contain',
+                                     borderRadius: '0.5rem'
+                                   }}
+                                 />
+                              </div>
+                            )}
+                            {trade.screenshots.execution && (
+                           <div>
+                                                                <div style={{ 
+                                   color: '#94a3b8', 
+                                   fontSize: '0.875rem', 
+                                   fontWeight: '600',
+                               marginBottom: '0.75rem'
+                                 }}>
+                                   Trade Execution
+                                 </div>
+                                                                <img 
+                                   src={trade.screenshots.execution} 
+                                   alt="Execution screenshot"
+                                   style={{
+                                     width: '100%',
+                                 maxHeight: '400px',
+                                     objectFit: 'contain',
+                                     borderRadius: '0.5rem'
+                                   }}
+                                 />
+                              </div>
+                            )}
+                            {trade.screenshots.postTrade && (
+                           <div>
+                                                                <div style={{ 
+                                   color: '#94a3b8', 
+                                   fontSize: '0.875rem', 
+                                   fontWeight: '600',
+                               marginBottom: '0.75rem'
+                                 }}>
+                                   Post-Trade Review
+                                 </div>
+                                                                <img 
+                                   src={trade.screenshots.postTrade} 
+                                   alt="Post-trade screenshot"
+                                   style={{
+                                     width: '100%',
+                                 maxHeight: '400px',
+                                     objectFit: 'contain',
+                                     borderRadius: '0.5rem'
+                                   }}
+                                 />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                                            {/* Plan & Trigger Notes */}
                       {trade.tradePlan && (
