@@ -225,7 +225,6 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
           borderRadius: '0.5rem',
           border: '1px solid #334155'
         }}>
-          <BookOpen style={{ width: '2rem', height: '2rem', color: '#3b82f6' }} />
           <div>
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
               📚 Book of Truth
@@ -239,7 +238,9 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
           <div style={{
             display: 'flex',
             gap: '1rem',
-            alignItems: 'center'
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%'
           }}>
             <div style={{
               textAlign: 'center',
@@ -683,7 +684,8 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                            </h5>
                          <div style={{ 
                            display: 'grid', 
-                           gap: '1.5rem' 
+                           gap: '1.5rem',
+                           justifyContent: 'start'
                          }}>
                            {trade.screenshots.preTrade && (
                           <div>
@@ -751,6 +753,167 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                                 />
                              </div>
                            )}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Rule Adherence */}
+                     {trade.ruleAdherence !== undefined && (
+                       <div style={{ 
+                         backgroundColor: '#334155', 
+                         padding: '1rem', 
+                         borderRadius: '0.5rem',
+                         border: '1px solid #475569'
+                       }}>
+                         <h5 style={{
+                           fontSize: '1rem',
+                           fontWeight: '600',
+                           color: '#f8fafc',
+                           marginBottom: '0.75rem'
+                         }}>
+                           📋 Rule Adherence
+                         </h5>
+                         <div style={{ 
+                           fontSize: '0.875rem', 
+                           color: trade.ruleAdherence ? '#10b981' : '#ef4444',
+                           fontWeight: '600'
+                         }}>
+                           {trade.ruleAdherence ? '✅ Rules Followed' : '❌ Rules Violated'}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Plan & Trigger Notes */}
+                     {trade.tradePlan && (
+                       <div style={{ 
+                         backgroundColor: '#334155', 
+                         padding: '1rem', 
+                         borderRadius: '0.5rem',
+                         border: '1px solid #475569'
+                       }}>
+                         <h5 style={{
+                           fontSize: '1rem',
+                           fontWeight: '600',
+                           color: '#f8fafc',
+                           marginBottom: '0.75rem'
+                         }}>
+                           🎯 Plan & Trigger Notes
+                         </h5>
+                         <div style={{ 
+                           fontSize: '0.875rem', 
+                           color: '#f8fafc',
+                           lineHeight: '1.5',
+                           whiteSpace: 'pre-wrap'
+                         }}>
+                           {trade.tradePlan}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Mental Game Snapshot */}
+                     {trade.mentalGame && (
+                       <div style={{ 
+                         backgroundColor: '#334155', 
+                         padding: '1rem', 
+                         borderRadius: '0.5rem',
+                         border: '1px solid #475569'
+                       }}>
+                         <h5 style={{
+                           fontSize: '1rem',
+                           fontWeight: '600',
+                           color: '#f8fafc',
+                           marginBottom: '0.75rem'
+                         }}>
+                           🧠 Mental Game Snapshot
+                         </h5>
+                         <div style={{ 
+                           fontSize: '0.875rem', 
+                           color: '#f8fafc',
+                           lineHeight: '1.5',
+                           whiteSpace: 'pre-wrap'
+                         }}>
+                           {trade.mentalGame}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Execution Notes */}
+                     {trade.executionNotes && (
+                       <div style={{ 
+                         backgroundColor: '#334155', 
+                         padding: '1rem', 
+                         borderRadius: '0.5rem',
+                         border: '1px solid #475569'
+                       }}>
+                         <h5 style={{
+                           fontSize: '1rem',
+                           fontWeight: '600',
+                           color: '#f8fafc',
+                           marginBottom: '0.75rem'
+                         }}>
+                           ⚡ Execution Notes
+                         </h5>
+                         <div style={{ 
+                           fontSize: '0.875rem', 
+                           color: '#f8fafc',
+                           lineHeight: '1.5',
+                           whiteSpace: 'pre-wrap'
+                         }}>
+                           {trade.executionNotes}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Profit-Taking Notes */}
+                     {trade.profitTakingNotes && (
+                       <div style={{ 
+                         backgroundColor: '#334155', 
+                         padding: '1rem', 
+                         borderRadius: '0.5rem',
+                         border: '1px solid #475569'
+                       }}>
+                         <h5 style={{
+                           fontSize: '1rem',
+                           fontWeight: '600',
+                           color: '#f8fafc',
+                           marginBottom: '0.75rem'
+                         }}>
+                           💰 Profit-Taking Notes
+                         </h5>
+                         <div style={{ 
+                           fontSize: '0.875rem', 
+                           color: '#f8fafc',
+                           lineHeight: '1.5',
+                           whiteSpace: 'pre-wrap'
+                         }}>
+                           {trade.profitTakingNotes}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Psychology Tracking */}
+                     {trade.psychologyTracking && (
+                       <div style={{ 
+                         backgroundColor: '#334155', 
+                         padding: '1rem', 
+                         borderRadius: '0.5rem',
+                         border: '1px solid #475569'
+                       }}>
+                         <h5 style={{
+                           fontSize: '1rem',
+                           fontWeight: '600',
+                           color: '#f8fafc',
+                           marginBottom: '0.75rem'
+                         }}>
+                           🧘 Psychology Tracking
+                         </h5>
+                         <div style={{ 
+                           fontSize: '0.875rem', 
+                           color: '#f8fafc',
+                           lineHeight: '1.5',
+                           whiteSpace: 'pre-wrap'
+                         }}>
+                           {trade.psychologyTracking}
                          </div>
                        </div>
                      )}

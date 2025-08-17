@@ -1,3 +1,0 @@
-Test file to verify automatic Git execution
-Created: 2024
-Purpose: Testing automatic Git commits
