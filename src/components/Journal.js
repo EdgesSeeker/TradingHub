@@ -715,7 +715,11 @@ ${trade.notes ? `- **Notes:** ${trade.notes}` : ''}
                 {editingEntry ? 'Eintrag bearbeiten' : 'Neuer Eintrag'}
               </h3>
               <button
-                onClick={resetForm}
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingEntry(null);
+                  resetForm();
+                }}
                 style={{
                   background: 'none',
                   border: 'none',
