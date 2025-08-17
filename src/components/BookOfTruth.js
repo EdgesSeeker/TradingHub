@@ -199,6 +199,21 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
   const totalPnL = closedTrades.reduce((sum, trade) => sum + parseFloat(trade.pnl || 0), 0);
   const winRate = closedTrades.length > 0 ? winningTrades.length / closedTrades.length : 0;
 
+  // Calculate revenue per trade based on rule adherence
+  const calculateRevenuePerTrade = (rulesFollowed) => {
+    const relevantTrades = closedTrades.filter(trade => 
+      trade.ruleAdherence === rulesFollowed
+    );
+    
+    if (relevantTrades.length === 0) return 0;
+    
+    const totalRevenue = relevantTrades.reduce((sum, trade) => 
+      sum + parseFloat(trade.pnl || 0), 0
+    );
+    
+    return totalRevenue / relevantTrades.length;
+  };
+
   return (
     <div style={{
       backgroundColor: '#0f172a',
@@ -294,6 +309,32 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
             <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>A-Game Trades</div>
             <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#10b981' }}>
               {aGradeTrades.length}
+            </div>
+          </div>
+          
+          <div style={{
+            textAlign: 'center',
+            padding: '1rem',
+            backgroundColor: '#334155',
+            borderRadius: '0.5rem',
+            minWidth: '120px'
+          }}>
+            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Revenue per Trade (Rules Followed)</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#10b981' }}>
+              {formatCurrency(calculateRevenuePerTrade(true))}
+            </div>
+          </div>
+          
+          <div style={{
+            textAlign: 'center',
+            padding: '1rem',
+            backgroundColor: '#334155',
+            borderRadius: '0.5rem',
+            minWidth: '120px'
+          }}>
+            <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Revenue per Trade (Rules Violated)</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#ef4444' }}>
+              {formatCurrency(calculateRevenuePerTrade(false))}
             </div>
           </div>
         </div>
