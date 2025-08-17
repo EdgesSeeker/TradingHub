@@ -37,7 +37,7 @@ const YearlyReview = ({ trades, onTradeUpdated }) => {
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
               Yearly Review
             </h1>
-            <p style={{ margin: '0.5rem 0 0 0, color: '#94a3b8', fontSize: '0.875rem' }}>
+            <p style={{ margin: '0.5rem 0 0 0', color: '#94a3b8', fontSize: '0.875rem' }}>
               Annual trading performance analysis and insights
             </p>
           </div>
