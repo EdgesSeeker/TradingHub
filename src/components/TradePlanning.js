@@ -16,7 +16,8 @@ const TradePlanning = ({ onNavigate }) => {
     checklist: [],
     aptr14: '', // APTR for 14 days
     screenshotPre: '',
-    ranking: '' // Add ranking field
+    ranking: '', // Add ranking field
+    setupQuality: '' // Add setup quality field
   });
 
   const [portfolioValue, setPortfolioValue] = useState(0);
@@ -195,25 +196,27 @@ const TradePlanning = ({ onNavigate }) => {
       checklist: [],
       aptr14: '',
       screenshotPre: '',
-      ranking: '' // Reset ranking
+      ranking: '', // Reset ranking
+      setupQuality: '' // Reset setup quality
     });
   };
 
            const handleLoadPlan = (savedPlan) => {
       setPlan({
-        symbol: savedPlan.symbol,
-        direction: savedPlan.direction || 'LONG', // Load direction
-        setup: savedPlan.setup,
-        entryPrice: savedPlan.entryPrice,
-        stopLoss: savedPlan.stopLoss,
-        positionSizePercent: savedPlan.positionSizePercent,
-        tradePlan: savedPlan.tradePlan,
+        symbol: savedPlan.symbol || '',
+        direction: savedPlan.direction || 'LONG',
+        setup: savedPlan.setup || '',
+        entryPrice: savedPlan.entryPrice || '',
+        stopLoss: savedPlan.stopLoss || '',
+        positionSizePercent: savedPlan.positionSizePercent || '',
+        tradePlan: savedPlan.tradePlan || '',
         failureReasons: savedPlan.failureReasons || '',
         plannedDate: savedPlan.plannedDate || '',
         checklist: savedPlan.checklist || [],
         aptr14: savedPlan.aptr14 || '',
         screenshotPre: savedPlan.screenshotPre || '',
-        ranking: savedPlan.ranking || '' // Load ranking
+        ranking: savedPlan.ranking || '', // Load ranking
+        setupQuality: savedPlan.setupQuality || '' // Load setup quality
       });
     };
 
@@ -379,6 +382,37 @@ const TradePlanning = ({ onNavigate }) => {
                 min="1"
                 max="10"
                 value={plan.ranking || ''}
+                onChange={handleInputChange}
+                placeholder="1-10"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  backgroundColor: '#334155',
+                  border: '1px solid #475569',
+                  borderRadius: '0.5rem',
+                  color: '#f8fafc',
+                  fontSize: '0.875rem'
+                }}
+              />
+            </div>
+
+            {/* Setup Quality */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#94a3b8',
+                marginBottom: '0.5rem'
+              }}>
+                Setup Quality (1-10)
+              </label>
+              <input
+                type="number"
+                name="setupQuality"
+                min="1"
+                max="10"
+                value={plan.setupQuality || ''}
                 onChange={handleInputChange}
                 placeholder="1-10"
                 style={{
@@ -1062,6 +1096,7 @@ const TradePlanning = ({ onNavigate }) => {
                                 <div style={{ fontWeight: '600', color: '#f8fafc' }}>
                                   {plan.symbol} - {plan.direction || 'LONG'} - {plan.setup || 'No Setup'}
                                   {plan.ranking && <span style={{ color: '#fbbf24', marginLeft: '0.5rem' }}>⭐ {plan.ranking}/10</span>}
+                                  {plan.setupQuality && <span style={{ color: '#10b981', marginLeft: '0.5rem' }}>🎯 {plan.setupQuality}/10</span>}
                                 </div>
                                 <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
                                   Entry: ${plan.entryPrice} | Shares: {sharesToBuy.toLocaleString()} | Size: {plan.positionSizePercent}%

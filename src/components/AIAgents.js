@@ -392,6 +392,18 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                     ⭐ {plan.ranking}/10
                   </span>
                 )}
+                {plan.setupQuality && (
+                  <span style={{ 
+                    color: '#10b981', 
+                    fontWeight: '600',
+                    fontSize: '0.875rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}>
+                    🎯 {plan.setupQuality}/10
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
                 Entry: ${plan.entryPrice} | Stop: ${plan.stopLoss} | Target: ${plan.takeProfit}
@@ -643,12 +655,21 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                   }}>
                     {plans
                       .sort((a, b) => {
-                        // Sort by ranking (highest first), then by creation date
+                        // Sort by ranking (highest first), then by setup quality, then by creation date
                         const rankingA = a.ranking || 0;
                         const rankingB = b.ranking || 0;
+                        const setupQualityA = a.setupQuality || 0;
+                        const setupQualityB = b.setupQuality || 0;
+                        
+                        // First sort by ranking
                         if (rankingA !== rankingB) {
                           return rankingB - rankingA;
                         }
+                        // Then sort by setup quality
+                        if (setupQualityA !== setupQualityB) {
+                          return setupQualityB - setupQualityA;
+                        }
+                        // Finally sort by date
                         return new Date(b.createdAt) - new Date(a.createdAt);
                       })
                       .map(plan => (
@@ -687,6 +708,18 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                                 gap: '0.25rem'
                               }}>
                                 ⭐ {plan.ranking}/10
+                              </span>
+                            )}
+                            {plan.setupQuality && (
+                              <span style={{ 
+                                color: '#10b981', 
+                                fontWeight: '600',
+                                fontSize: '0.875rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.25rem'
+                              }}>
+                                🎯 {plan.setupQuality}/10
                               </span>
                             )}
                           </div>
