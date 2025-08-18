@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BarChart3, TrendingUp, Target, Plus, X, Save, Edit, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Calendar, BarChart3, TrendingUp, Target, Plus, X, Save, Edit, CheckCircle, AlertTriangle, Trash2 } from 'lucide-react';
 import storage from '../utils/storage';
 import WeeklyReportGenerator from './WeeklyReportGenerator';
+import WeeklyReportViewer from './WeeklyReportViewer';
 
 const WeeklyReview = ({ trades, onTradeUpdated }) => {
   const [entries, setEntries] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null);
   const [currentEntry, setCurrentEntry] = useState({
     weekNumber: '',
     year: new Date().getFullYear(),
@@ -96,6 +98,208 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
     });
   };
 
+  const handleViewReport = (report) => {
+    setSelectedReport(report);
+  };
+
+  const handleCloseReport = () => {
+    setSelectedReport(null);
+  };
+
+  const handleExportReport = (report, format) => {
+    if (format === 'csv') {
+      // CSV export logic
+      const headers = [
+        'Symbol', 'Date', 'Status', 'Entry Price', 'Exit Price', 'Shares', 
+        'P&L', 'P&L %', 'Rule Adherence', 'Rule Violation Reason', 
+        'Execution Notes', 'Mental Game Notes'
+      ];
+      
+      const csvContent = [
+        headers.join(','),
+        ...report.trades.map(trade => [
+          trade.symbol,
+          trade.date,
+          trade.status,
+          trade.entryPrice,
+          trade.exitPrice || '',
+          trade.shares,
+          trade.pnl || '',
+          trade.pnlPercent || '',
+          trade.ruleAdherence || '',
+          trade.ruleViolationReason || '',
+          `"${(trade.executionNotes || '').replace(/"/g, '""')}"`,
+          `"${JSON.stringify(trade.mentalGame || {}).replace(/"/g, '""')}"`
+        ].join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `weekly_report_${report.year}_week_${report.weekNumber}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else if (format === 'text') {
+      // Text export logic
+      let textContent = `WEEKLY TRADING REPORT - Week ${report.weekNumber}/${report.year}\n`;
+      textContent += `Generated: ${new Date(report.generatedAt).toLocaleString()}\n`;
+      textContent += `Total Trades: ${report.summary.totalPnL}\n`;
+      textContent += `Win Rate: ${report.summary.winRate.toFixed(1)}%\n`;
+      textContent += `Total P&L: $${report.summary.totalPnL}\n\n`;
+      
+      textContent += 'TRADES:\n';
+      textContent += '='.repeat(80) + '\n';
+      
+      report.trades.forEach((trade, index) => {
+        textContent += `\n${index + 1}. ${trade.symbol} (${trade.date})\n`;
+        textContent += `   Status: ${trade.status}\n`;
+        textContent += `   Entry: $${trade.entryPrice} | Exit: ${trade.exitPrice ? `$${trade.exitPrice}` : 'Open'}\n`;
+        textContent += `   Shares: ${trade.shares}\n`;
+        textContent += `   P&L: ${trade.pnl ? `$${trade.pnl}` : 'N/A'}\n`;
+        textContent += `   Rules: ${trade.ruleAdherence === 'followed' ? 'Followed' : 'Violated'}\n`;
+        if (trade.ruleViolationReason) {
+          textContent += `   Violation: ${trade.ruleViolationReason}\n`;
+        }
+        if (trade.executionNotes) {
+          textContent += `   Notes: ${trade.executionNotes}\n`;
+        }
+        textContent += '-'.repeat(40) + '\n';
+      });
+      
+      const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `weekly_report_${report.year}_week_${report.weekNumber}.txt`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const renderTradingMatrix = () => {
+    if (!currentEntry?.weekReport?.trades || currentEntry.weekReport.trades.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+          Keine Trades für diese Woche verfügbar
+        </div>
+      );
+    }
+
+    const formatDate = (dateString) => {
+      if (!dateString) return 'N/A';
+      try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'N/A';
+        return date.toLocaleDateString('de-DE');
+      } catch {
+        return 'N/A';
+      }
+    };
+
+    const getTradeStatus = (trade) => {
+      if (trade.status) return trade.status;
+      if (trade.exitDate && trade.exitPrice) return 'Closed';
+      if (trade.entryDate && trade.entryPrice && !trade.exitDate) return 'Open';
+      return 'Unknown';
+    };
+
+    return (
+      <div style={{ marginTop: '1rem' }}>
+        <h4 style={{ color: '#f8fafc', marginBottom: '1rem' }}>📊 Trading Matrix - Alle Trades der Woche</h4>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            backgroundColor: '#1e293b',
+            borderRadius: '0.5rem',
+            overflow: 'hidden'
+          }}>
+            <thead>
+              <tr style={{ backgroundColor: '#334155' }}>
+                <th style={{ padding: '0.75rem', textAlign: 'left', color: '#f8fafc', fontSize: '0.875rem' }}>Symbol</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', color: '#f8fafc', fontSize: '0.875rem' }}>Entry Date</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', color: '#f8fafc', fontSize: '0.875rem' }}>Exit Date</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', color: '#f8fafc', fontSize: '0.875rem' }}>Status</th>
+                <th style={{ padding: '0.75rem', textAlign: 'right', color: '#f8fafc', fontSize: '0.875rem' }}>Entry Price</th>
+                <th style={{ padding: '0.75rem', textAlign: 'right', color: '#f8fafc', fontSize: '0.875rem' }}>Exit Price</th>
+                <th style={{ padding: '0.75rem', textAlign: 'right', color: '#f8fafc', fontSize: '0.875rem' }}>Shares</th>
+                <th style={{ padding: '0.75rem', textAlign: 'right', color: '#f8fafc', fontSize: '0.875rem' }}>P&L</th>
+                <th style={{ padding: '0.75rem', textAlign: 'center', color: '#f8fafc', fontSize: '0.875rem' }}>Rules Followed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentEntry.weekReport.trades.map((trade, index) => {
+                const pnl = parseFloat(trade.pnl || trade.profit || trade.profitLoss || 0);
+                const isPositive = pnl > 0;
+                const status = getTradeStatus(trade);
+                const isOpen = status === 'Open';
+                
+                return (
+                  <tr key={index} style={{ 
+                    borderBottom: '1px solid #334155',
+                    backgroundColor: index % 2 === 0 ? '#1e293b' : '#0f172a'
+                  }}>
+                    <td style={{ padding: '0.75rem', color: '#f8fafc', fontSize: '0.875rem', fontWeight: '600' }}>
+                      {trade.symbol}
+                    </td>
+                    <td style={{ padding: '0.75rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+                      {formatDate(trade.entryDate || trade.date)}
+                    </td>
+                    <td style={{ padding: '0.75rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+                      {formatDate(trade.exitDate)}
+                    </td>
+                    <td style={{ padding: '0.75rem', color: isOpen ? '#fbbf24' : '#10b981', fontSize: '0.875rem', fontWeight: '500' }}>
+                      {status}
+                    </td>
+                    <td style={{ padding: '0.75rem', textAlign: 'right', color: '#cbd5e1', fontSize: '0.875rem' }}>
+                      ${trade.entryPrice ? parseFloat(trade.entryPrice).toFixed(2) : 'N/A'}
+                    </td>
+                    <td style={{ padding: '0.75rem', textAlign: 'right', color: '#cbd5e1', fontSize: '0.875rem' }}>
+                      ${trade.exitPrice ? parseFloat(trade.exitPrice).toFixed(2) : 'N/A'}
+                    </td>
+                    <td style={{ padding: '0.75rem', textAlign: 'right', color: '#cbd5e1', fontSize: '0.875rem' }}>
+                      {trade.shares || trade.positionSize || 'N/A'}
+                    </td>
+                    <td style={{ 
+                      padding: '0.75rem', 
+                      textAlign: 'right', 
+                      color: isPositive ? '#10b981' : '#ef4444', 
+                      fontSize: '0.875rem',
+                      fontWeight: '600'
+                    }}>
+                      ${pnl.toFixed(2)}
+                    </td>
+                    <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                      {trade.ruleAdherence === 'followed' || trade.ruleCompliance === 'followed' || trade.rulesFollowed === true ? (
+                        <span style={{ color: '#10b981', fontSize: '0.75rem' }}>✓</span>
+                      ) : trade.ruleAdherence === 'violated' || trade.ruleCompliance === 'violated' || trade.rulesFollowed === false ? (
+                        <span style={{ color: '#ef4444', fontSize: '0.75rem' }}>✗</span>
+                      ) : (
+                        <span style={{ color: '#64748b', fontSize: '0.75rem' }}>-</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const handleFieldChange = (field, value) => {
+    setCurrentEntry(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   return (
     <div style={{
       backgroundColor: '#0f172a',
@@ -141,7 +345,7 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
         <div style={{ marginBottom: '2rem' }}>
           <WeeklyReportGenerator 
             trades={trades} 
-            onReportGenerated={(report) => {
+            onReportGenerated={(report, aiAnalysis) => {
               // Auto-fill the weekly review form with report data
               setCurrentEntry(prev => ({
                 ...prev,
@@ -155,7 +359,55 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
                   maxDrawdown: report.summary.maxLoss
                 }
               }));
+              
+              // If AI analysis is available, auto-fill with AI data
+              if (aiAnalysis && aiAnalysis.rawText) {
+                const aiText = aiAnalysis.rawText;
+                
+                // Extract data from AI analysis
+                const extractValue = (text, pattern) => {
+                  const match = text.match(pattern);
+                  return match ? parseFloat(match[1]) : 0;
+                };
+                
+                const extractString = (text, pattern) => {
+                  const match = text.match(pattern);
+                  return match ? match[1].trim() : '';
+                };
+                
+                // Extract statistics from AI analysis
+                const winRate = extractValue(aiText, /Win rate:\s*([\d.]+)%/);
+                const totalPnL = extractValue(aiText, /Total net profit\/loss:\s*\$([\d.-]+)/);
+                const avgPnL = extractValue(aiText, /Average profit\/loss per trade:\s*\$([\d.-]+)/);
+                const maxWinner = extractString(aiText, /Maximum winner:\s*([^,]+)/);
+                const maxLoser = extractString(aiText, /Maximum loser:\s*([^,]+)/);
+                const ruleCompliance = extractValue(aiText, /Rule compliance count:\s*(\d+)/);
+                const totalTrades = extractValue(aiText, /Total number of trades:\s*(\d+)/);
+                
+                // Update the weekly review form with AI data
+                setCurrentEntry(prev => ({
+                  ...prev,
+                  weekReport: {
+                    ...prev.weekReport,
+                    winRate: winRate,
+                    avgPnL: avgPnL,
+                    maxDrawdown: Math.abs(extractValue(aiText, /Maximum loser.*?\$([\d.-]+)/))
+                  },
+                  highlights: `AI Analysis Highlights:
+• Win Rate: ${winRate}%
+• Total P&L: $${totalPnL}
+• Average P&L per Trade: $${avgPnL}
+• Best Trade: ${maxWinner}
+• Worst Trade: ${maxLoser}
+• Rule Compliance: ${ruleCompliance}/${totalTrades} (${totalTrades > 0 ? ((ruleCompliance / totalTrades) * 100).toFixed(1) : 0}%)`,
+                  challenges: `AI Analysis Challenges:
+${aiText.includes('Common Mistakes') ? aiText.split('Common Mistakes')[1].split('Trade Status')[0] : 'No specific challenges identified in AI analysis'}`,
+                  insights: `AI Analysis Summary:
+${aiText.includes('Main Observations') ? aiText.split('Main Observations')[1] : 'AI analysis completed successfully'}`
+                }));
+              }
             }}
+            onViewReport={handleViewReport}
           />
         </div>
 
@@ -269,7 +521,7 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
                         min="1"
                         max="53"
                         value={currentEntry.weekNumber}
-                        onChange={(e) => setCurrentEntry(prev => ({ ...prev, weekNumber: e.target.value }))}
+                        onChange={(e) => handleFieldChange('weekNumber', e.target.value)}
                         style={{
                           width: '100%',
                           padding: '0.75rem',
@@ -294,7 +546,7 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
                       <input
                         type="number"
                         value={currentEntry.year}
-                        onChange={(e) => setCurrentEntry(prev => ({ ...prev, year: parseInt(e.target.value) }))}
+                        onChange={(e) => handleFieldChange('year', e.target.value)}
                         style={{
                           width: '100%',
                           padding: '0.75rem',
@@ -308,467 +560,236 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
                     </div>
                   </div>
 
-                  {/* Week Report Metrics */}
-                  <div style={{
-                    backgroundColor: '#334155',
-                    padding: '1.5rem',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #475569'
-                  }}>
-                    <h3 style={{
-                      fontSize: '1.125rem',
-                      fontWeight: '600',
-                      color: '#f8fafc',
-                      marginBottom: '1rem'
-                    }}>
-                      📊 Week Report Metrics
-                    </h3>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
-                      gap: '1rem'
-                    }}>
-                      {[
-                        { key: 'winRate', label: 'Win Rate (%)', type: 'number', step: '0.1' },
-                        { key: 'riskReward', label: 'Risk/Reward Ratio', type: 'number', step: '0.1' },
-                        { key: 'avgPnL', label: 'Average P&L ($)', type: 'number', step: '0.01' },
-                        { key: 'maxDrawdown', label: 'Max Drawdown ($)', type: 'number', step: '0.01' }
-                      ].map(metric => (
-                        <div key={metric.key}>
-                          <label style={{
-                            display: 'block',
-                            fontSize: '0.875rem',
-                            fontWeight: '500',
-                            color: '#94a3b8',
-                            marginBottom: '0.5rem'
-                          }}>
-                            {metric.label}
-                          </label>
-                          <input
-                            type={metric.type}
-                            step={metric.step}
-                            value={currentEntry.weekReport[metric.key]}
-                            onChange={(e) => setCurrentEntry(prev => ({
-                              ...prev,
-                              weekReport: {
-                                ...prev.weekReport,
-                                [metric.key]: parseFloat(e.target.value) || 0
-                              }
-                            }))}
-                            style={{
-                              width: '100%',
-                              padding: '0.75rem',
-                              backgroundColor: '#475569',
-                              border: '1px solid #64748b',
-                              borderRadius: '0.5rem',
-                              color: '#f8fafc',
-                              fontSize: '0.875rem'
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  {/* Trading Matrix */}
+                  {renderTradingMatrix()}
 
-                  {/* Trading Matrix Summary */}
-                  {currentEntry.weekReport.trades && currentEntry.weekReport.trades.length > 0 && (
-                    <div style={{
-                      backgroundColor: '#334155',
-                      padding: '1.5rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #475569'
-                    }}>
-                      <h3 style={{
-                        fontSize: '1.125rem',
-                        fontWeight: '600',
-                        color: '#f8fafc',
-                        marginBottom: '1rem'
-                      }}>
-                        📊 Trading Matrix Summary ({currentEntry.weekReport.trades.length} trades)
-                      </h3>
-                      <div style={{
-                        backgroundColor: '#475569',
-                        borderRadius: '0.5rem',
-                        overflow: 'hidden'
-                      }}>
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
-                          gap: '1px',
-                          backgroundColor: '#64748b'
-                        }}>
-                          {[
-                            'Symbol', 'Date', 'Status', 'P&L', 'Rules'
-                          ].map(header => (
-                            <div key={header} style={{
-                              padding: '0.5rem',
-                              backgroundColor: '#1e293b',
-                              fontSize: '0.75rem',
-                              fontWeight: '600',
-                              color: '#94a3b8',
-                              textAlign: 'center'
-                            }}>
-                              {header}
-                            </div>
-                          ))}
-                        </div>
-                        {currentEntry.weekReport.trades.slice(0, 5).map((trade, index) => (
-                          <div key={index} style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
-                            gap: '1px',
-                            backgroundColor: '#64748b'
-                          }}>
-                            {[
-                              trade.symbol,
-                              new Date(trade.date).toLocaleDateString(),
-                              trade.status,
-                              trade.pnl ? `$${trade.pnl}` : '-',
-                              trade.ruleAdherence === 'followed' ? '✅' : '❌'
-                            ].map((value, index) => (
-                              <div key={index} style={{
-                                padding: '0.5rem',
-                                backgroundColor: '#334155',
-                                fontSize: '0.75rem',
-                                color: '#f8fafc',
-                                textAlign: 'center',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}>
-                                {value}
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                        {currentEntry.weekReport.trades.length > 5 && (
-                          <div style={{
-                            padding: '0.5rem',
-                            backgroundColor: '#334155',
-                            fontSize: '0.75rem',
-                            color: '#94a3b8',
-                            textAlign: 'center'
-                          }}>
-                            ... and {currentEntry.weekReport.trades.length - 5} more trades
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Highlights */}
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#94a3b8',
-                      marginBottom: '0.5rem'
-                    }}>
-                      ✨ Highlights der Woche
+                  {/* 1️⃣ Week Metrics & Highlights */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
+                      1️⃣ Week Metrics & Highlights 📊✨
                     </label>
                     <textarea
-                      value={currentEntry.highlights}
-                      onChange={(e) => setCurrentEntry(prev => ({ ...prev, highlights: e.target.value }))}
-                      rows={4}
-                      placeholder="Was lief besonders gut? Welche Gewohnheit hat sich gefestigt? Projekt-Fortschritt?"
+                      value={currentEntry.weekMetrics || ''}
+                      onChange={(e) => handleFieldChange('weekMetrics', e.target.value)}
                       style={{
                         width: '100%',
+                        minHeight: '100px',
                         padding: '0.75rem',
-                        backgroundColor: '#334155',
+                        backgroundColor: '#1e293b',
                         border: '1px solid #475569',
                         borderRadius: '0.5rem',
                         color: '#f8fafc',
                         fontSize: '0.875rem',
                         resize: 'vertical'
                       }}
+                      placeholder="Win Rate, Risk/Reward, Average P&L, Max Drawdown, Total P&L, Best/Worst Trade, Rule Compliance..."
                     />
                   </div>
 
-                  {/* Challenges */}
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#94a3b8',
-                      marginBottom: '0.5rem'
-                    }}>
-                      🚧 Fehleranalyse & Herausforderungen
+                  {/* 2️⃣ Audit: System & Rule Adherence */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
+                      2️⃣ Audit: System & Rule Adherence
                     </label>
                     <textarea
-                      value={currentEntry.challenges}
-                      onChange={(e) => setCurrentEntry(prev => ({ ...prev, challenges: e.target.value }))}
-                      rows={4}
-                      placeholder="Wo bin ich von meinen Zielen abgewichen? Emotionale Trades? Hauptursache für Regelbrüche?"
+                      value={currentEntry.systemAudit || ''}
+                      onChange={(e) => handleFieldChange('systemAudit', e.target.value)}
                       style={{
                         width: '100%',
+                        minHeight: '100px',
                         padding: '0.75rem',
-                        backgroundColor: '#334155',
+                        backgroundColor: '#1e293b',
                         border: '1px solid #475569',
                         borderRadius: '0.5rem',
                         color: '#f8fafc',
                         fontSize: '0.875rem',
                         resize: 'vertical'
                       }}
+                      placeholder="Alle Entries und Exits, Setup/Ziel dokumentiert? Regelverletzungen/Deviations: Number + kurze Beschreibung. Identified emotional trades: [List, Ursache]..."
                     />
                   </div>
 
-                  {/* Workflow Audit */}
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#94a3b8',
-                      marginBottom: '0.5rem'
-                    }}>
-                      🔧 Workflow & Prozess-Audit
+                  {/* 3️⃣ Log Verification */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
+                      3️⃣ Log Verification
                     </label>
                     <textarea
-                      value={currentEntry.workflowAudit}
-                      onChange={(e) => setCurrentEntry(prev => ({ ...prev, workflowAudit: e.target.value }))}
-                      rows={3}
-                      placeholder="Welche Schritte haben Zeit gekostet? Was hat abgelenkt? Workspace-Design-Audit?"
+                      value={currentEntry.logVerification || ''}
+                      onChange={(e) => handleFieldChange('logVerification', e.target.value)}
                       style={{
                         width: '100%',
+                        minHeight: '100px',
                         padding: '0.75rem',
-                        backgroundColor: '#334155',
+                        backgroundColor: '#1e293b',
                         border: '1px solid #475569',
                         borderRadius: '0.5rem',
                         color: '#f8fafc',
                         fontSize: '0.875rem',
                         resize: 'vertical'
                       }}
+                      placeholder="Trade logs reviewed for accuracy: Stimmt Entry/Exit mit Journal/Historie überein? Fehlende Dokumentation auffallen?..."
                     />
                   </div>
 
-                  {/* Setup Review */}
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#94a3b8',
-                      marginBottom: '0.5rem'
-                    }}>
-                      📈 Setup- & Scan-Review
+                  {/* 4️⃣ Workflow Efficiency */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
+                      4️⃣ Workflow Efficiency 🔧
                     </label>
                     <textarea
-                      value={currentEntry.setupReview}
-                      onChange={(e) => setCurrentEntry(prev => ({ ...prev, setupReview: e.target.value }))}
-                      rows={4}
-                      placeholder="Fokus-/NMS-Liste: Was gefunden? Was gefehlt? Bestes/Schlechtestes Setup? Bottlenecks?"
+                      value={currentEntry.workflowEfficiency || ''}
+                      onChange={(e) => handleFieldChange('workflowEfficiency', e.target.value)}
                       style={{
                         width: '100%',
+                        minHeight: '100px',
                         padding: '0.75rem',
-                        backgroundColor: '#334155',
+                        backgroundColor: '#1e293b',
                         border: '1px solid #475569',
                         borderRadius: '0.5rem',
                         color: '#f8fafc',
                         fontSize: '0.875rem',
                         resize: 'vertical'
                       }}
+                      placeholder="Workflow Steps audited: Bottlenecks, zeitraubende Tasks, ausgelassene Schritte notiert. Vorschläge für Vereinfachung..."
                     />
                   </div>
 
-                  {/* Risk Audit */}
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#94a3b8',
-                      marginBottom: '0.5rem'
-                    }}>
-                      ⚖️ Risiko- und Regel-Audit
+                  {/* 5️⃣ Performance Metrics Comparison */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
+                      5️⃣ Performance Metrics Comparison
                     </label>
                     <textarea
-                      value={currentEntry.riskAudit}
-                      onChange={(e) => setCurrentEntry(prev => ({ ...prev, riskAudit: e.target.value }))}
-                      rows={3}
-                      placeholder="Risiko-Konformität? Änderungen nötig? Systemlücken/Regelverletzungen?"
+                      value={currentEntry.performanceComparison || ''}
+                      onChange={(e) => handleFieldChange('performanceComparison', e.target.value)}
                       style={{
                         width: '100%',
+                        minHeight: '100px',
                         padding: '0.75rem',
-                        backgroundColor: '#334155',
+                        backgroundColor: '#1e293b',
                         border: '1px solid #475569',
                         borderRadius: '0.5rem',
                         color: '#f8fafc',
                         fontSize: '0.875rem',
                         resize: 'vertical'
                       }}
+                      placeholder="Verglichen mit Vorwoche: Entwicklung Win Rate / RRR / Drawdown. Fortschritt, Stagnation oder Rückschritt?..."
                     />
                   </div>
 
-                  {/* Next Week Goals */}
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#94a3b8',
-                      marginBottom: '0.5rem'
-                    }}>
-                      🎯 Anpassungen & Ziele für die nächste Woche
+                  {/* 6️⃣ Workspace/Environment Audit */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
+                      6️⃣ Workspace/Environment Audit
                     </label>
                     <textarea
-                      value={currentEntry.nextWeekGoals}
-                      onChange={(e) => setCurrentEntry(prev => ({ ...prev, nextWeekGoals: e.target.value }))}
-                      rows={4}
-                      placeholder="Top-Ziel, Gewohnheit verbessern, Subprojekt, Mindset-Reminder"
+                      value={currentEntry.workspaceAudit || ''}
+                      onChange={(e) => handleFieldChange('workspaceAudit', e.target.value)}
                       style={{
                         width: '100%',
+                        minHeight: '100px',
                         padding: '0.75rem',
-                        backgroundColor: '#334155',
+                        backgroundColor: '#1e293b',
                         border: '1px solid #475569',
                         borderRadius: '0.5rem',
                         color: '#f8fafc',
                         fontSize: '0.875rem',
                         resize: 'vertical'
                       }}
+                      placeholder="Workspace audited for distraction/clutter: Unnötige Indikatoren entfernt? Layout unterstützt schnellen Einstieg, Review, Fokus?..."
                     />
                   </div>
 
-                  {/* Auto-generated Insights from Trades */}
-                  {currentEntry.weekReport.trades && currentEntry.weekReport.trades.length > 0 && (
-                    <div style={{
-                      backgroundColor: '#334155',
-                      padding: '1.5rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #475569'
-                    }}>
-                      <h3 style={{
-                        fontSize: '1.125rem',
-                        fontWeight: '600',
-                        color: '#f8fafc',
-                        marginBottom: '1rem'
-                      }}>
-                        🤖 Auto-generated Insights from Trades
-                      </h3>
-                      
-                      {/* Mistakes Summary */}
-                      <div style={{ marginBottom: '1rem' }}>
-                        <h4 style={{
-                          fontSize: '1rem',
-                          fontWeight: '600',
-                          color: '#ef4444',
-                          marginBottom: '0.5rem'
-                        }}>
-                          ❌ Common Mistakes Found:
-                        </h4>
-                        <div style={{
-                          backgroundColor: '#475569',
-                          padding: '1rem',
-                          borderRadius: '0.5rem',
-                          fontSize: '0.875rem',
-                          color: '#f8fafc'
-                        }}>
-                          {(() => {
-                            const mistakes = currentEntry.weekReport.trades
-                              .filter(trade => trade.executionNotes && 
-                                (trade.executionNotes.toLowerCase().includes('mistake') || 
-                                 trade.executionNotes.toLowerCase().includes('error') ||
-                                 trade.executionNotes.toLowerCase().includes('fomo')))
-                              .map(trade => `${trade.symbol}: ${trade.executionNotes}`)
-                              .slice(0, 3);
-                            
-                            return mistakes.length > 0 
-                              ? mistakes.join('\n')
-                              : 'No mistakes recorded in execution notes';
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* Highlights Summary */}
-                      <div style={{ marginBottom: '1rem' }}>
-                        <h4 style={{
-                          fontSize: '1rem',
-                          fontWeight: '600',
-                          color: '#10b981',
-                          marginBottom: '0.5rem'
-                        }}>
-                          ✨ Highlights Found:
-                        </h4>
-                        <div style={{
-                          backgroundColor: '#475569',
-                          padding: '1rem',
-                          borderRadius: '0.5rem',
-                          fontSize: '0.875rem',
-                          color: '#f8fafc'
-                        }}>
-                          {(() => {
-                            const highlights = currentEntry.weekReport.trades
-                              .filter(trade => trade.executionNotes && 
-                                (trade.executionNotes.toLowerCase().includes('good') || 
-                                 trade.executionNotes.toLowerCase().includes('perfect') ||
-                                 trade.executionNotes.toLowerCase().includes('excellent')))
-                              .map(trade => `${trade.symbol}: ${trade.executionNotes}`)
-                              .slice(0, 3);
-                            
-                            return highlights.length > 0 
-                              ? highlights.join('\n')
-                              : 'No highlights recorded in execution notes';
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* Rule Compliance Summary */}
-                      <div>
-                        <h4 style={{
-                          fontSize: '1rem',
-                          fontWeight: '600',
-                          color: '#f59e0b',
-                          marginBottom: '0.5rem'
-                        }}>
-                          ⚖️ Rule Compliance Summary:
-                        </h4>
-                        <div style={{
-                          backgroundColor: '#475569',
-                          padding: '1rem',
-                          borderRadius: '0.5rem',
-                          fontSize: '0.875rem',
-                          color: '#f8fafc'
-                        }}>
-                          {(() => {
-                            const followed = currentEntry.weekReport.trades.filter(t => t.ruleAdherence === 'followed').length;
-                            const violated = currentEntry.weekReport.trades.filter(t => t.ruleAdherence === 'violated').length;
-                            const total = currentEntry.weekReport.trades.length;
-                            const complianceRate = total > 0 ? ((followed / total) * 100).toFixed(1) : 0;
-                            
-                            return `Rules followed: ${followed}/${total} (${complianceRate}%)\nRules violated: ${violated}/${total}`;
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Manual Insights */}
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#94a3b8',
-                      marginBottom: '0.5rem'
-                    }}>
-                      📚 Additional Trading Insights
+                  {/* 7️⃣ Setup & Scan Review */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
+                      7️⃣ Setup & Scan Review 📈
                     </label>
                     <textarea
-                      value={currentEntry.insights}
-                      onChange={(e) => setCurrentEntry(prev => ({ ...prev, insights: e.target.value }))}
-                      rows={3}
-                      placeholder="Additional insights, lessons learned, or observations not captured above"
+                      value={currentEntry.setupScanReview || ''}
+                      onChange={(e) => handleFieldChange('setupScanReview', e.target.value)}
                       style={{
                         width: '100%',
+                        minHeight: '100px',
                         padding: '0.75rem',
-                        backgroundColor: '#334155',
+                        backgroundColor: '#1e293b',
                         border: '1px solid #475569',
                         borderRadius: '0.5rem',
                         color: '#f8fafc',
                         fontSize: '0.875rem',
                         resize: 'vertical'
                       }}
+                      placeholder="Fokus/NMS-Liste & Scanning: Hat Scanning die richtigen Stocks geliefert? Setup-Win Rates und Failure-Setups dokumentiert?..."
+                    />
+                  </div>
+
+                  {/* 8️⃣ Risk & Rule Audit */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
+                      8️⃣ Risk & Rule Audit ⚖️
+                    </label>
+                    <textarea
+                      value={currentEntry.riskRuleAudit || ''}
+                      onChange={(e) => handleFieldChange('riskRuleAudit', e.target.value)}
+                      style={{
+                        width: '100%',
+                        minHeight: '100px',
+                        padding: '0.75rem',
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #475569',
+                        borderRadius: '0.5rem',
+                        color: '#f8fafc',
+                        fontSize: '0.875rem',
+                        resize: 'vertical'
+                      }}
+                      placeholder="Risiko-Management geprüft: Risiko je Trade, -Compliance, Sizing analysiert. Systemlücken gefunden? Anpassung oder neue Regel nötig?..."
+                    />
+                  </div>
+
+                  {/* 9️⃣ Adjustments & Week Goals */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
+                      9️⃣ Adjustments & Week Goals 🎯
+                    </label>
+                    <textarea
+                      value={currentEntry.adjustmentsGoals || ''}
+                      onChange={(e) => handleFieldChange('adjustmentsGoals', e.target.value)}
+                      style={{
+                        width: '100%',
+                        minHeight: '100px',
+                        padding: '0.75rem',
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #475569',
+                        borderRadius: '0.5rem',
+                        color: '#f8fafc',
+                        fontSize: '0.875rem',
+                        resize: 'vertical'
+                      }}
+                      placeholder="Pläne/Anpassungen für kommende Woche: Was muss angepasst werden? Ein Ziel (operativ, prozessual, disziplinarisch). Eine Gewohnheit oder Verbesserung (Kaizen). Next Project Step..."
+                    />
+                  </div>
+
+                  {/* 10️⃣ Insights & Learnings */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
+                      10️⃣ Insights & Learnings 📚
+                    </label>
+                    <textarea
+                      value={currentEntry.insights || ''}
+                      onChange={(e) => handleFieldChange('insights', e.target.value)}
+                      style={{
+                        width: '100%',
+                        minHeight: '120px',
+                        padding: '0.75rem',
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #475569',
+                        borderRadius: '0.5rem',
+                        color: '#f8fafc',
+                        fontSize: '0.875rem',
+                        resize: 'vertical'
+                      }}
+                      placeholder="KI-/Mentor Insights: KI-Auto-Highlights (z.B. Win Rate, Regelbrüche, Setup-Statistik, Red Flags). Persönliches Learning/Fokus: Eigene Erkenntnis, die du priorisieren willst..."
                     />
                   </div>
                 </div>
@@ -940,6 +961,31 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
                     >
                       <Edit size={16} />
                       Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this weekly review?')) {
+                          const updatedEntries = entries.filter(e => e.id !== entry.id);
+                          setEntries(updatedEntries);
+                          storage.saveWeeklyReviews(updatedEntries);
+                        }
+                      }}
+                      style={{
+                        padding: '0.5rem',
+                        backgroundColor: '#ef4444',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        color: '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}
+                    >
+                      <Trash2 size={16} />
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -1116,6 +1162,15 @@ const WeeklyReview = ({ trades, onTradeUpdated }) => {
           )}
         </div>
       </div>
+
+      {/* Weekly Report Viewer Modal */}
+      {selectedReport && (
+        <WeeklyReportViewer
+          report={selectedReport}
+          onClose={handleCloseReport}
+          onExport={handleExportReport}
+        />
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, Briefcase, BookOpen, Calendar, Settings, ArrowLeft, Plus, TrendingDown, Target, Brain, BarChart, Zap, Clock, Trash2, ChevronDown, FileText } from 'lucide-react';
+import { BarChart3, Briefcase, BookOpen, Calendar, Settings, ArrowLeft, Plus, TrendingDown, Target, Brain, BarChart, Zap, Clock, Trash2, ChevronDown, FileText, Building2 } from 'lucide-react';
 
 const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, children, renderContent }) => {
   const [reviewsDropdownOpen, setReviewsDropdownOpen] = useState(false);
@@ -9,6 +9,7 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
     { id: 'system-overview', label: 'System Overview', icon: Zap },
     { id: 'trading-routine', label: 'Trading Routine', icon: Clock },
     { id: 'trade-planning', label: 'Trade Planning', icon: Target },
+    { id: 'company-info', label: 'Company Info', icon: Building2 },
     { id: 'ai-agents', label: 'AI Agents', icon: Brain },
     { id: 'trade-entry', label: 'Trade Entry', icon: Plus },
     { id: 'profit-taking', label: 'Profit Taking', icon: TrendingDown },

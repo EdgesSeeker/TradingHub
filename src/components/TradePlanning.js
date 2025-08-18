@@ -14,9 +14,9 @@ const TradePlanning = ({ onNavigate }) => {
     failureReasons: '',
     plannedDate: '',
     checklist: [],
-    atr14: '',
     aptr14: '', // APTR for 14 days
-    screenshotPre: ''
+    screenshotPre: '',
+    ranking: '' // Add ranking field
   });
 
   const [portfolioValue, setPortfolioValue] = useState(0);
@@ -99,6 +99,8 @@ const TradePlanning = ({ onNavigate }) => {
         : [...prev.checklist, item]
     }));
   };
+
+
 
   // Calculate position size and shares needed
   const calculatePosition = () => {
@@ -191,9 +193,9 @@ const TradePlanning = ({ onNavigate }) => {
       failureReasons: '',
       plannedDate: '',
       checklist: [],
-      atr14: '',
       aptr14: '',
-      screenshotPre: ''
+      screenshotPre: '',
+      ranking: '' // Reset ranking
     });
   };
 
@@ -209,9 +211,9 @@ const TradePlanning = ({ onNavigate }) => {
         failureReasons: savedPlan.failureReasons || '',
         plannedDate: savedPlan.plannedDate || '',
         checklist: savedPlan.checklist || [],
-        atr14: savedPlan.atr14 || '',
-      aptr14: savedPlan.aptr14 || '',
-        screenshotPre: savedPlan.screenshotPre || ''
+        aptr14: savedPlan.aptr14 || '',
+        screenshotPre: savedPlan.screenshotPre || '',
+        ranking: savedPlan.ranking || '' // Load ranking
       });
     };
 
@@ -355,9 +357,40 @@ const TradePlanning = ({ onNavigate }) => {
                   fontSize: '0.875rem'
                 }}
               >
-                <option value="LONG">LONG (Buy)</option>
-                <option value="SHORT">SHORT (Sell)</option>
+                <option value="LONG">Long</option>
+                <option value="SHORT">Short</option>
               </select>
+            </div>
+
+            {/* Ranking */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#94a3b8',
+                marginBottom: '0.5rem'
+              }}>
+                Ranking (1-10)
+              </label>
+              <input
+                type="number"
+                name="ranking"
+                min="1"
+                max="10"
+                value={plan.ranking || ''}
+                onChange={handleInputChange}
+                placeholder="1-10"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  backgroundColor: '#334155',
+                  border: '1px solid #475569',
+                  borderRadius: '0.5rem',
+                  color: '#f8fafc',
+                  fontSize: '0.875rem'
+                }}
+              />
             </div>
 
             {/* Setup */}
@@ -499,36 +532,7 @@ const TradePlanning = ({ onNavigate }) => {
                />
              </div>
 
-             {/* ATR(14) Day */}
-             <div>
-               <label style={{
-                 display: 'block',
-                 fontSize: '0.875rem',
-                 fontWeight: '500',
-                 color: '#94a3b8',
-                 marginBottom: '0.5rem'
-               }}>
-                 ATR(14) Day
-               </label>
-               <input
-                 type="number"
-                 name="atr14"
-                 value={plan.atr14}
-                 onChange={handleInputChange}
-                 step="0.01"
-                 min="0"
-                 style={{
-                   width: '100%',
-                   padding: '0.5rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.5rem',
-                   color: '#f8fafc',
-                   fontSize: '0.875rem'
-                 }}
-                 placeholder="Enter ATR value (e.g., 2.45)"
-               />
-             </div>
+
 
              {/* APTR(14) Day */}
              <div>
@@ -539,7 +543,7 @@ const TradePlanning = ({ onNavigate }) => {
                  color: '#94a3b8',
                  marginBottom: '0.5rem'
                }}>
-                 APTR(14) Day (%)
+                 APTR(14) Day (%) - Volatilität
                </label>
                <input
                  type="number"
@@ -712,8 +716,9 @@ const TradePlanning = ({ onNavigate }) => {
                   </div>
                 )}
               </div>
+
+            
           </div>
-        </div>
 
                  {/* Right Column - Calculator & Checklist */}
          <div>
@@ -952,6 +957,8 @@ const TradePlanning = ({ onNavigate }) => {
             </div>
           )}
 
+
+
           {/* Save Button */}
           <button
             onClick={handleSavePlan}
@@ -1054,6 +1061,7 @@ const TradePlanning = ({ onNavigate }) => {
                               <div>
                                 <div style={{ fontWeight: '600', color: '#f8fafc' }}>
                                   {plan.symbol} - {plan.direction || 'LONG'} - {plan.setup || 'No Setup'}
+                                  {plan.ranking && <span style={{ color: '#fbbf24', marginLeft: '0.5rem' }}>⭐ {plan.ranking}/10</span>}
                                 </div>
                                 <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
                                   Entry: ${plan.entryPrice} | Shares: {sharesToBuy.toLocaleString()} | Size: {plan.positionSizePercent}%
@@ -1117,8 +1125,9 @@ const TradePlanning = ({ onNavigate }) => {
             </div>
           )}
         </div>
-     </div>
-   );
- };
+      </div>
+    </div>
+  );
+};
 
 export default TradePlanning;

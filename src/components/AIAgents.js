@@ -125,7 +125,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
       
       // Save reset plans
       await Promise.all([
-        storage.saveTradePlans(resetPlans).catch(() => {}),
+        storage.saveSetting('tradePlans', resetPlans).catch(() => {}),
         storage.updateSetting('tradePlans', resetPlans).catch(() => {})
       ]);
       
@@ -147,7 +147,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
       
       // Update both storage systems
       await Promise.all([
-        storage.saveTradePlans(updatedPlans).catch(() => {}),
+        storage.saveSetting('tradePlans', updatedPlans).catch(() => {}),
         storage.updateSetting('tradePlans', updatedPlans).catch(() => {})
       ]);
       
@@ -176,7 +176,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
       );
       
       await Promise.all([
-        storage.saveTradePlans(updatedPlans).catch(() => {}),
+        storage.saveSetting('tradePlans', updatedPlans).catch(() => {}),
         storage.updateSetting('tradePlans', updatedPlans).catch(() => {})
       ]);
       
@@ -247,7 +247,7 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
     // Save updated plans
     try {
       await Promise.all([
-        storage.saveTradePlans(updatedPlans).catch(() => {}),
+        storage.saveSetting('tradePlans', updatedPlans).catch(() => {}),
         storage.updateSetting('tradePlans', updatedPlans).catch(() => {})
       ]);
     } catch (error) {
@@ -333,6 +333,94 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
       newExpanded.add(date);
     }
     setExpandedDates(newExpanded);
+  };
+
+  const renderTradePlans = () => {
+    if (!tradePlans || tradePlans.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+          No trade plans available
+        </div>
+      );
+    }
+
+    // Sort trade plans by ranking (highest first) and then by date
+    const sortedPlans = [...tradePlans].sort((a, b) => {
+      // First sort by ranking (highest first)
+      const rankingA = a.ranking || 0;
+      const rankingB = b.ranking || 0;
+      if (rankingA !== rankingB) {
+        return rankingB - rankingA;
+      }
+      // Then sort by date (newest first)
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    return (
+      <div style={{ display: 'grid', gap: '1rem' }}>
+        {sortedPlans.map(plan => (
+          <div key={plan.id} style={{
+            backgroundColor: '#1e293b',
+            border: '1px solid #334155',
+            borderRadius: '0.5rem',
+            padding: '1rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontWeight: '600', color: '#f8fafc' }}>
+                  {plan.symbol}
+                </span>
+                <span style={{ 
+                  padding: '0.25rem 0.5rem', 
+                  backgroundColor: plan.direction === 'LONG' ? '#10b981' : '#ef4444',
+                  color: '#ffffff',
+                  borderRadius: '0.25rem',
+                  fontSize: '0.75rem',
+                  fontWeight: '500'
+                }}>
+                  {plan.direction || 'LONG'}
+                </span>
+                {plan.ranking && (
+                  <span style={{ 
+                    color: '#fbbf24', 
+                    fontWeight: '600',
+                    fontSize: '0.875rem'
+                  }}>
+                    ⭐ {plan.ranking}/10
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+                Entry: ${plan.entryPrice} | Stop: ${plan.stopLoss} | Target: ${plan.takeProfit}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                {plan.setup && `Setup: ${plan.setup}`} | Created: {new Date(plan.createdAt).toLocaleDateString()}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => executeTradePlan(plan)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#3b82f6',
+                  border: 'none',
+                  borderRadius: '0.25rem',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+              >
+                Execute
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -553,43 +641,55 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
                     paddingLeft: '1rem',
                     borderLeft: '2px solid #475569'
                   }}>
-                    {plans.map(plan => (
+                    {plans
+                      .sort((a, b) => {
+                        // Sort by ranking (highest first), then by creation date
+                        const rankingA = a.ranking || 0;
+                        const rankingB = b.ranking || 0;
+                        if (rankingA !== rankingB) {
+                          return rankingB - rankingA;
+                        }
+                        return new Date(b.createdAt) - new Date(a.createdAt);
+                      })
+                      .map(plan => (
               <div key={plan.id} style={{
                 backgroundColor: '#334155',
                 borderRadius: '0.5rem',
                 padding: '1rem',
                         border: '1px solid #475569'
                       }}>
-                        {/* Plan Header */}
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          marginBottom: '1rem'
-                        }}>
-                          <div style={{ flex: 1 }}>
-                            <h4 style={{
-                              fontSize: '1.125rem',
-                              fontWeight: '600',
-                              margin: '0 0 0.5rem 0',
-                              color: '#f8fafc'
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <span style={{ 
+                              fontSize: '1.125rem', 
+                              fontWeight: '600', 
+                              color: '#f8fafc' 
                             }}>
-                              {plan.symbol} - {plan.setup || 'Setup'}
-                    </h4>
-                            <div style={{
-                      display: 'flex',
-                              gap: '1rem',
-                              flexWrap: 'wrap',
-                              fontSize: '0.875rem',
-                              color: '#94a3b8'
+                              {plan.symbol}
+                            </span>
+                            <span style={{ 
+                              padding: '0.25rem 0.5rem', 
+                              backgroundColor: plan.direction === 'LONG' ? '#10b981' : '#ef4444',
+                              color: '#ffffff',
+                              borderRadius: '0.25rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '500'
                             }}>
-                              <span>Direction: {plan.direction || 'N/A'}</span>
-                              <span>Status: {plan.status || 'pending'}</span>
-                              {plan.entryPrice && <span>Entry: ${plan.entryPrice}</span>}
-                              {plan.stopLoss && <span>Stop: ${plan.stopLoss}</span>}
-                            </div>
-                  </div>
-                  
+                              {plan.direction || 'LONG'}
+                            </span>
+                            {plan.ranking && (
+                              <span style={{ 
+                                color: '#fbbf24', 
+                                fontWeight: '600',
+                                fontSize: '0.875rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.25rem'
+                              }}>
+                                ⭐ {plan.ranking}/10
+                              </span>
+                            )}
+                          </div>
                           {/* Status and Ranking */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
                             {/* AI Rating Badge */}

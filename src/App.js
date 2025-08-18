@@ -4,6 +4,7 @@ import NewTradeEntry from './components/NewTradeEntry';
 import Portfolio from './components/Portfolio';
 import ProfitTaking from './components/ProfitTaking';
 import TradePlanning from './components/TradePlanning';
+import CompanyInfo from './components/CompanyInfo';
 import SystemOverview from './components/SystemOverview';
 import TradingRoutine from './components/TradingRoutine';
 import BookOfTruth from './components/BookOfTruth';
@@ -224,6 +225,10 @@ function App() {
         case 'trade-planning':
           return (
             <TradePlanning onNavigate={setActiveTab} />
+          );
+        case 'company-info':
+          return (
+            <CompanyInfo />
           );
         case 'portfolio':
           return (
