@@ -2,33 +2,11 @@
 const ANTHROPIC_API_KEY = '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';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
-// Alternative approach: Use a different API or implement a local solution
+// Enhanced local company analysis - no external API calls to avoid CORS issues
 export const getCompanyInfo = async (symbol) => {
-  try {
-    console.log(`Fetching company info for ${symbol}...`);
-    
-    // For now, let's use a more reliable approach with a different API
-    // or implement a local solution that doesn't require external API calls
-    
-    // Try to use a different approach that doesn't have CORS issues
-    const response = await fetch('https://api.github.com/users/github', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (response.ok) {
-      // If we can reach external APIs, try a different approach
-      console.log('External API access confirmed, but Anthropic API has CORS restrictions');
-      throw new Error('CORS restrictions prevent direct API access');
-    }
-    
-  } catch (error) {
-    console.error('Error with external API access:', error);
-  }
+  console.log(`Generating enhanced local analysis for ${symbol}...`);
   
-  // Fallback: Return enhanced local analysis
+  // Return enhanced local analysis immediately
   return createEnhancedLocalAnalysis(symbol);
 };
 
