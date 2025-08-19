@@ -177,29 +177,78 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
     'ETH': 2650.00
   };
 
-  // Helper function to try multiple CORS proxy services
+  // Helper function to try multiple CORS proxy services with better error handling
   const fetchWithProxy = async (url, symbol) => {
     const proxyServices = [
-      'https://cors-anywhere.herokuapp.com/',
       'https://api.allorigins.win/raw?url=',
       'https://corsproxy.io/?',
+      'https://cors-anywhere.herokuapp.com/',
       'https://thingproxy.freeboard.io/fetch/'
     ];
     
-    for (const proxy of proxyServices) {
+    // Add delay between requests to avoid rate limiting
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    
+    for (let i = 0; i < proxyServices.length; i++) {
+      const proxy = proxyServices[i];
       try {
-        console.log(`🔄 Trying proxy: ${proxy} for ${symbol}`);
-        const response = await fetch(proxy + url);
+        console.log(`🔄 Trying proxy ${i + 1}/${proxyServices.length}: ${proxy} for ${symbol}`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch(proxy + url, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+        
+        clearTimeout(timeoutId);
+        
         if (response.ok) {
           console.log(`✅ Proxy ${proxy} succeeded for ${symbol}`);
           return response;
+        } else {
+          console.log(`❌ Proxy ${proxy} failed with status ${response.status} for ${symbol}`);
         }
       } catch (error) {
         console.log(`❌ Proxy ${proxy} failed for ${symbol}:`, error.message);
+        
+        // If it's a rate limit error, wait longer before trying next proxy
+        if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
+          console.log(`⏳ Rate limited, waiting 2 seconds before next proxy...`);
+          await delay(2000);
+        } else {
+          // Short delay for other errors
+          await delay(500);
+        }
         continue;
       }
     }
-    throw new Error('All proxy services failed');
+    
+    // If all proxies fail, try a fallback approach
+    console.log(`⚠️ All proxies failed for ${symbol}, trying fallback...`);
+    return await fetchWithFallback(url, symbol);
+  };
+
+  // Fallback function that tries different approaches
+  const fetchWithFallback = async (url, symbol) => {
+    try {
+      // Try to use a different data source or cached data
+      console.log(`🔄 Trying fallback for ${symbol}...`);
+      
+      // For now, return a mock response to prevent crashes
+      // In a real implementation, you might want to use cached data or a different API
+      return {
+        ok: false,
+        status: 503,
+        json: async () => ({ error: 'Service temporarily unavailable' })
+      };
+    } catch (error) {
+      console.log(`❌ Fallback also failed for ${symbol}:`, error);
+      throw new Error('All data sources failed');
+    }
   };
 
   // Function to fetch ATR(14) data
@@ -382,39 +431,44 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
           }
 
           // Try to fetch real data from Yahoo Finance using multiple CORS proxies
-          let response = await fetchWithProxy(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`, symbol);
-          
-          if (response.ok) {
-            const data = await response.json();
+          let response;
+          try {
+            response = await fetchWithProxy(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`, symbol);
             
-            if (data.chart && data.chart.result && data.chart.result[0]) {
-              const result = data.chart.result[0];
-              const meta = result.meta;
+            if (response.ok) {
+              const data = await response.json();
               
-              if (meta && meta.regularMarketPrice !== undefined) {
-                const currentPrice = meta.regularMarketPrice;
-                const previousClose = meta.previousClose || currentPrice;
-                const change = currentPrice - previousClose;
-                const changePercent = (change / previousClose) * 100;
+              if (data.chart && data.chart.result && data.chart.result[0]) {
+                const result = data.chart.result[0];
+                const meta = result.meta;
                 
-                console.log(`✅ Yahoo Finance: ${symbol} = $${currentPrice} (${change >= 0 ? '+' : ''}${change.toFixed(2)})`);
-                console.log(`📊 Yahoo Finance Debug - ${symbol}: change=${change}, changePercent=${changePercent}%`);
-                
-                mockData[symbol] = {
-                  price: currentPrice.toFixed(2),
-                  change: change.toFixed(2),
-                  changePercent: changePercent.toFixed(2),
-                  isPositive: change >= 0
-                };
-                continue;
+                if (meta && meta.regularMarketPrice !== undefined) {
+                  const currentPrice = meta.regularMarketPrice;
+                  const previousClose = meta.previousClose || currentPrice;
+                  const change = currentPrice - previousClose;
+                  const changePercent = (change / previousClose) * 100;
+                  
+                  console.log(`✅ Yahoo Finance: ${symbol} = $${currentPrice} (${change >= 0 ? '+' : ''}${change.toFixed(2)})`);
+                  console.log(`📊 Yahoo Finance Debug - ${symbol}: change=${change}, changePercent=${changePercent}%`);
+                  
+                  mockData[symbol] = {
+                    price: currentPrice.toFixed(2),
+                    change: change.toFixed(2),
+                    changePercent: changePercent.toFixed(2),
+                    isPositive: change >= 0
+                  };
+                  continue;
+                } else {
+                  console.log(`⚠️ Yahoo Finance: ${symbol} - No price data in response:`, meta);
+                }
               } else {
-                console.log(`⚠️ Yahoo Finance: ${symbol} - No price data in response:`, meta);
+                console.log(`⚠️ Yahoo Finance: ${symbol} - Invalid response structure:`, data);
               }
             } else {
-              console.log(`⚠️ Yahoo Finance: ${symbol} - Invalid response structure:`, data);
+              console.log(`❌ Yahoo Finance: ${symbol} - HTTP ${response.status}: ${response.statusText}`);
             }
-          } else {
-            console.log(`❌ Yahoo Finance: ${symbol} - HTTP ${response.status}: ${response.statusText}`);
+          } catch (error) {
+            console.log(`❌ Yahoo Finance: ${symbol} - Error:`, error.message);
           }
           
           // Fallback: Try Alpha Vantage API (free tier) using multiple CORS proxies
