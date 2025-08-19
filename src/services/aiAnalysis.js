@@ -75,8 +75,35 @@ Unternehmen: ${symbol}`;
     
   } catch (error) {
     console.error('Error fetching company info:', error);
-    throw error; // Re-throw the error so we can see what's happening
+    
+    // Fallback: Return a basic template when API fails
+    return createFallbackCompanyInfo(symbol);
   }
+};
+
+const createFallbackCompanyInfo = (symbol) => {
+  return `**Was macht das Unternehmen?**
+${symbol} ist ein Unternehmen, dessen Geschäftsmodell und Branche analysiert werden sollte. Für detaillierte Informationen empfehle ich eine manuelle Recherche.
+
+**Wichtige aktuelle Katalysten:**
+• Earnings Reports und Quartalszahlen
+• Neue Produktankündigungen oder Partnerschaften
+• Marktentwicklungen und Branchentrends
+
+**Kurshebel & Potenzial:**
+• Wachstum in Kernmärkten
+• Neue Technologien oder Produktlinien
+• Marktanteilsgewinne
+
+**Wichtige geschäftliche Termine:**
+• Nächste Earnings-Veröffentlichung (siehe Finanzkalender)
+• Analysten-Tage oder Investor Relations Events
+
+**Zusätzliche auffällige Risiken oder Gegenargumente:**
+• Marktwettbewerb und Preisdruck
+• Regulatorische Herausforderungen
+
+💡 **Hinweis:** Diese Analyse wurde automatisch generiert, da die KI-API nicht verfügbar war. Für eine vollständige Analyse führen Sie bitte eine manuelle Recherche durch.`;
 };
 
 export const analyzeWeeklyReport = async (reportData) => {
