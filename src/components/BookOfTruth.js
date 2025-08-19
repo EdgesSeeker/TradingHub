@@ -32,16 +32,13 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
         ...relatedTrades.map(trade => trade.notes)
       ].filter(Boolean).join('\n\n--- Profit Taking Entry ---\n\n');
       
-      // Calculate total P&L including all related trades
-      const totalPnL = relatedTrades.reduce((sum, trade) => 
-        sum + parseFloat(trade.pnl || 0), parseFloat(originalTrade.pnl || 0)
-      );
+      // For grouped view, show the original trade P&L and indicate if there are partial sales
+      // Don't try to recalculate P&L as it's complex and error-prone
       
       return {
         ...originalTrade,
         relatedTrades,
         combinedNotes: allNotes,
-        totalPnL: totalPnL.toFixed(2),
         hasProfitTaking: relatedTrades.length > 0
       };
     });
@@ -703,7 +700,7 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                         }}>
                           {trade.symbol}
                         </h3>
-                        {getResultBadge(groupedView ? trade.totalPnL : trade.pnl, trade.status)}
+                        {getResultBadge(trade.pnl, trade.status)}
                         {getSetupBadge(trade.setup)}
                         {getTradeGradeBadge(trade.tradeGrade)}
                         <span style={{
@@ -766,7 +763,7 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             <span><strong>Position Size:</strong> {formatCurrency((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))}</span>
                             <span><strong>% of Capital:</strong> {((((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0)) / 10000) * 100).toFixed(2)}%</span>
-                            <span><strong>P&L in $:</strong> {formatCurrency(groupedView ? trade.totalPnL || 0 : trade.pnl || 0)}</span>
+                            <span><strong>P&L in $:</strong> {formatCurrency(trade.pnl || 0)}</span>
                           </div>
                         </div>
                     </div>
@@ -800,10 +797,10 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                                                <div style={{
                           fontSize: '2rem',
                           fontWeight: '700',
-                          color: getPnlColor(groupedView ? trade.totalPnL : trade.pnl),
+                          color: getPnlColor(trade.pnl),
                           marginBottom: '0.5rem'
                         }}>
-                          {trade.status === 'open' ? 'Open Position' : `${((parseFloat(groupedView ? trade.totalPnL || 0 : trade.pnl || 0) / ((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))) * 100).toFixed(2)}%`}
+                          {trade.status === 'open' ? 'Open Position' : `${((parseFloat(trade.pnl || 0) / ((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))) * 100).toFixed(2)}%`}
                         </div>
                      </div>
                   </div>
@@ -903,65 +900,82 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                      </div>
                    )}
 
-                   {/* Profit Taking Entries - Show in grouped view */}
-                   {groupedView && trade.hasProfitTaking && (
-                     <div style={{ 
-                       backgroundColor: '#1e40af', 
-                       padding: '1rem', 
-                       borderRadius: '0.5rem',
-                       border: '1px solid #3b82f6'
-                     }}>
-                       <h5 style={{
-                         fontSize: '1rem',
-                         fontWeight: '600',
-                         color: '#f8fafc',
-                         marginBottom: '0.75rem',
-                         display: 'flex',
-                         alignItems: 'center',
-                         gap: '0.5rem'
-                       }}>
-                         💰 Profit Taking Entries ({trade.relatedTrades.length})
-                       </h5>
-                       <div style={{ 
-                         fontSize: '0.875rem', 
-                         color: '#cbd5e1',
-                         lineHeight: '1.5'
-                       }}>
-                         {trade.relatedTrades.map((ptTrade, index) => (
-                           <div key={ptTrade.id} style={{
-                             padding: '0.75rem',
-                             backgroundColor: '#334155',
-                             borderRadius: '0.375rem',
-                             marginBottom: '0.5rem',
-                             border: '1px solid #475569'
-                           }}>
-                             <div style={{
-                               display: 'flex',
-                               justifyContent: 'space-between',
-                               alignItems: 'center',
-                               marginBottom: '0.5rem'
-                             }}>
-                               <span style={{ fontWeight: '600', color: '#f8fafc' }}>
-                                 Entry {index + 1}: {ptTrade.entryDate}
-                               </span>
-                               <span style={{ 
-                                 color: getPnlColor(ptTrade.pnl),
-                                 fontWeight: '600'
-                               }}>
-                                 {formatCurrency(ptTrade.pnl)}
-                               </span>
-                             </div>
-                             <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                               <span><strong>Quantity:</strong> {ptTrade.quantity} shares</span>
-                               <span style={{ marginLeft: '1rem' }}>
-                                 <strong>Price:</strong> {formatCurrency(ptTrade.entryPrice)}
-                               </span>
-                             </div>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                   )}
+                                       {/* Profit Taking Entries - Show in grouped view */}
+                    {groupedView && trade.hasProfitTaking && (
+                      <div style={{ 
+                        backgroundColor: '#1e40af', 
+                        padding: '1rem', 
+                        borderRadius: '0.5rem',
+                        border: '1px solid #3b82f6'
+                      }}>
+                        <h5 style={{
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          color: '#f8fafc',
+                          marginBottom: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          💰 Partial Sales ({trade.relatedTrades.length})
+                        </h5>
+                        <div style={{ 
+                          fontSize: '0.875rem', 
+                          color: '#cbd5e1',
+                          lineHeight: '1.5',
+                          marginBottom: '0.75rem'
+                        }}>
+                          <div style={{
+                            padding: '0.5rem',
+                            backgroundColor: '#334155',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #475569',
+                            fontSize: '0.75rem',
+                            color: '#94a3b8'
+                          }}>
+                            💡 <strong>Note:</strong> P&L shown above is for the original position. Partial sales are listed below with their individual P&L.
+                          </div>
+                        </div>
+                        <div style={{ 
+                          fontSize: '0.875rem', 
+                          color: '#cbd5e1',
+                          lineHeight: '1.5'
+                        }}>
+                          {trade.relatedTrades.map((ptTrade, index) => (
+                            <div key={ptTrade.id} style={{
+                              padding: '0.75rem',
+                              backgroundColor: '#334155',
+                              borderRadius: '0.375rem',
+                              marginBottom: '0.5rem',
+                              border: '1px solid #475569'
+                            }}>
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: '0.5rem'
+                              }}>
+                                <span style={{ fontWeight: '600', color: '#f8fafc' }}>
+                                  Partial Sale {index + 1}: {ptTrade.entryDate}
+                                </span>
+                                <span style={{ 
+                                  color: getPnlColor(ptTrade.pnl),
+                                  fontWeight: '600'
+                                }}>
+                                  {formatCurrency(ptTrade.pnl)}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                <span><strong>Quantity:</strong> {ptTrade.quantity} shares</span>
+                                <span style={{ marginLeft: '1rem' }}>
+                                  <strong>Price:</strong> {formatCurrency(ptTrade.entryPrice)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                    {/* Trade Planning - DRITTER (statt "Notes") */}
                    {(groupedView ? trade.combinedNotes : trade.notes) && (
