@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Calculator, Save, FileText, Target, AlertTriangle, Camera, X } from 'lucide-react';
+import { TrendingUp, Calculator, Save, FileText, Target, AlertTriangle, Camera, X, Calendar } from 'lucide-react';
 import storage from '../utils/storage';
 
 const TradePlanning = ({ onNavigate }) => {
@@ -16,8 +16,7 @@ const TradePlanning = ({ onNavigate }) => {
     checklist: [],
     aptr14: '', // APTR for 14 days
     screenshotPre: '',
-    ranking: '', // Add ranking field
-    setupQuality: '' // Add setup quality field
+    ranking: '' // Add ranking field
   });
 
   const [portfolioValue, setPortfolioValue] = useState(0);
@@ -162,7 +161,7 @@ const TradePlanning = ({ onNavigate }) => {
       createdAt: new Date().toISOString(),
       calculations: calculatePosition(),
       status: 'pending', // For AI review
-      direction: plan.direction === 'LONG' ? 'BUY' : 'SELL', // Use the selected direction
+      direction: plan.direction, // Keep the original direction (LONG/SHORT)
       targets: plan.targets || [],
       thesis: plan.tradePlan || '',
       failureReasons: plan.failureReasons || '',
@@ -196,15 +195,14 @@ const TradePlanning = ({ onNavigate }) => {
       checklist: [],
       aptr14: '',
       screenshotPre: '',
-      ranking: '', // Reset ranking
-      setupQuality: '' // Reset setup quality
+      ranking: '' // Reset ranking
     });
   };
 
            const handleLoadPlan = (savedPlan) => {
       setPlan({
         symbol: savedPlan.symbol || '',
-        direction: savedPlan.direction || 'LONG',
+        direction: savedPlan.direction === 'BUY' ? 'LONG' : savedPlan.direction === 'SELL' ? 'SHORT' : savedPlan.direction || 'LONG',
         setup: savedPlan.setup || '',
         entryPrice: savedPlan.entryPrice || '',
         stopLoss: savedPlan.stopLoss || '',
@@ -215,8 +213,7 @@ const TradePlanning = ({ onNavigate }) => {
         checklist: savedPlan.checklist || [],
         aptr14: savedPlan.aptr14 || '',
         screenshotPre: savedPlan.screenshotPre || '',
-        ranking: savedPlan.ranking || '', // Load ranking
-        setupQuality: savedPlan.setupQuality || '' // Load setup quality
+        ranking: savedPlan.ranking || '' // Load ranking
       });
     };
 
@@ -259,7 +256,7 @@ const TradePlanning = ({ onNavigate }) => {
   const sortedDates = Object.keys(groupedPlans).sort((a, b) => {
     if (a === 'No Date') return 1;
     if (b === 'No Date') return -1;
-    return new Date(a) - new Date(b);
+    return new Date(b) - new Date(a); // Changed to newest first
   });
 
   const calculations = calculatePosition();
@@ -317,22 +314,22 @@ const TradePlanning = ({ onNavigate }) => {
               }}>
                 Symbol *
               </label>
-                             <input
-                 type="text"
-                 name="symbol"
-                 value={plan.symbol}
-                 onChange={handleInputChange}
-                 placeholder="e.g., AAPL"
-                 style={{
-                   width: '100%',
-                   padding: '0.5rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.5rem',
-                   color: '#f8fafc',
-                   fontSize: '0.875rem'
-                 }}
-               />
+              <input
+                type="text"
+                name="symbol"
+                value={plan.symbol}
+                onChange={handleInputChange}
+                placeholder="e.g., AAPL"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  backgroundColor: '#334155',
+                  border: '1px solid #475569',
+                  borderRadius: '0.5rem',
+                  color: '#f8fafc',
+                  fontSize: '0.875rem'
+                }}
+              />
             </div>
 
             {/* Trade Direction */}
@@ -363,6 +360,188 @@ const TradePlanning = ({ onNavigate }) => {
                 <option value="LONG">Long</option>
                 <option value="SHORT">Short</option>
               </select>
+            </div>
+
+            {/* Setup */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#94a3b8',
+                marginBottom: '0.5rem'
+              }}>
+                Setup
+              </label>
+              <select
+                name="setup"
+                value={plan.setup}
+                onChange={handleInputChange}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  backgroundColor: '#334155',
+                  border: '1px solid #475569',
+                  borderRadius: '0.5rem',
+                  color: '#f8fafc',
+                  fontSize: '0.875rem'
+                }}
+              >
+                <option value="">Select Setup</option>
+                {setupOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Trigger */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#94a3b8',
+                marginBottom: '0.5rem'
+              }}>
+                Trigger Price *
+              </label>
+              <input
+                type="number"
+                name="entryPrice"
+                value={plan.entryPrice}
+                onChange={handleInputChange}
+                step="0.01"
+                placeholder="e.g., 150.00"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  backgroundColor: '#334155',
+                  border: '1px solid #475569',
+                  borderRadius: '0.5rem',
+                  color: '#f8fafc',
+                  fontSize: '0.875rem'
+                }}
+              />
+            </div>
+
+            {/* Stop Loss */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#94a3b8',
+                marginBottom: '0.5rem'
+              }}>
+                Stop Loss
+              </label>
+              <input
+                type="number"
+                name="stopLoss"
+                value={plan.stopLoss}
+                onChange={handleInputChange}
+                step="0.01"
+                placeholder="e.g., 145.00"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  backgroundColor: '#334155',
+                  border: '1px solid #475569',
+                  borderRadius: '0.5rem',
+                  color: '#f8fafc',
+                  fontSize: '0.875rem'
+                }}
+              />
+            </div>
+
+            {/* Position Size */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#94a3b8',
+                marginBottom: '0.5rem'
+              }}>
+                Position Size (% of Portfolio) *
+              </label>
+              <input
+                type="number"
+                name="positionSizePercent"
+                value={plan.positionSizePercent}
+                onChange={handleInputChange}
+                step="0.1"
+                placeholder="e.g., 5.0"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  backgroundColor: '#334155',
+                  border: '1px solid #475569',
+                  borderRadius: '0.5rem',
+                  color: '#f8fafc',
+                  fontSize: '0.875rem'
+                }}
+              />
+            </div>
+
+            {/* Trade Plan */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#94a3b8',
+                marginBottom: '0.5rem'
+              }}>
+                Trade Plan
+              </label>
+              <textarea
+                name="tradePlan"
+                value={plan.tradePlan}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="Describe your trade plan..."
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  backgroundColor: '#334155',
+                  border: '1px solid #475569',
+                  borderRadius: '0.5rem',
+                  color: '#f8fafc',
+                  fontSize: '0.875rem',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            {/* Failure Reasons */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#94a3b8',
+                marginBottom: '0.5rem'
+              }}>
+                Why the trade could fail
+              </label>
+              <textarea
+                name="failureReasons"
+                value={plan.failureReasons}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="List potential failure reasons..."
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  backgroundColor: '#334155',
+                  border: '1px solid #475569',
+                  borderRadius: '0.5rem',
+                  color: '#f8fafc',
+                  fontSize: '0.875rem',
+                  resize: 'vertical'
+                }}
+              />
             </div>
 
             {/* Ranking */}
@@ -396,7 +575,7 @@ const TradePlanning = ({ onNavigate }) => {
               />
             </div>
 
-            {/* Setup Quality */}
+            {/* Screenshots */}
             <div>
               <label style={{
                 display: 'block',
@@ -405,16 +584,12 @@ const TradePlanning = ({ onNavigate }) => {
                 color: '#94a3b8',
                 marginBottom: '0.5rem'
               }}>
-                Setup Quality (1-10)
+                Screenshots
               </label>
               <input
-                type="number"
-                name="setupQuality"
-                min="1"
-                max="10"
-                value={plan.setupQuality || ''}
-                onChange={handleInputChange}
-                placeholder="1-10"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload('screenshotPre', e.target.files?.[0])}
                 style={{
                   width: '100%',
                   padding: '0.5rem',
@@ -425,370 +600,124 @@ const TradePlanning = ({ onNavigate }) => {
                   fontSize: '0.875rem'
                 }}
               />
+              {plan.screenshotPre && (
+                <div style={{ marginTop: '0.5rem', position: 'relative' }}>
+                  <img
+                    src={plan.screenshotPre}
+                    alt="Pre-trade"
+                    style={{
+                      width: '100%',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #475569'
+                    }}
+                  />
+                  <button
+                    onClick={() => removeImage('screenshotPre')}
+                    style={{
+                      position: 'absolute',
+                      top: '0.25rem',
+                      right: '0.25rem',
+                      background: 'rgba(0, 0, 0, 0.7)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '1.5rem',
+                      height: '1.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: '#f8fafc'
+                    }}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Setup */}
-            <div>
-              <label style={{
-                display: 'block',
+            {/* Save Button */}
+            <button
+              onClick={handleSavePlan}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#10b981',
+                border: 'none',
+                borderRadius: '0.5rem',
+                color: '#ffffff',
+                cursor: 'pointer',
                 fontSize: '0.875rem',
                 fontWeight: '500',
-                color: '#94a3b8',
-                marginBottom: '0.5rem'
-              }}>
-                Setup
-              </label>
-                             <select
-                 name="setup"
-                 value={plan.setup}
-                 onChange={handleInputChange}
-                 style={{
-                   width: '100%',
-                   padding: '0.5rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.5rem',
-                   color: '#f8fafc',
-                   fontSize: '0.875rem'
-                 }}
-               >
-                <option value="">Select Setup</option>
-                {setupOptions.map(setup => (
-                  <option key={setup} value={setup}>{setup}</option>
-                ))}
-              </select>
-            </div>
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <Save size={16} />
+              Save Trade Plan
+            </button>
+          </div>
+        </div>
 
-                         {/* Trigger */}
-             <div>
-               <label style={{
-                 display: 'block',
-                 fontSize: '0.875rem',
-                 fontWeight: '500',
-                 color: '#94a3b8',
-                 marginBottom: '0.5rem'
-               }}>
-                 Trigger *
-               </label>
-               <input
-                 type="number"
-                 name="entryPrice"
-                 value={plan.entryPrice}
-                 onChange={handleInputChange}
-                 step="0.01"
-                 style={{
-                   width: '100%',
-                   padding: '0.5rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.5rem',
-                   color: '#f8fafc',
-                   fontSize: '0.875rem'
-                 }}
-               />
-               <textarea
-                 name="triggerNotes"
-                 value={plan.triggerNotes}
-                 onChange={handleInputChange}
-                 rows="2"
-                 placeholder="Add notes about your trigger..."
-                 style={{
-                   width: '100%',
-                   padding: '0.5rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.5rem',
-                   color: '#f8fafc',
-                   fontSize: '0.875rem',
-                   resize: 'vertical',
-                   marginTop: '0.5rem'
-                 }}
-               />
-             </div>
+        {/* Right Column - Calculator & Checklist */}
+        <div>
+          <h2 style={{
+            fontSize: '1.5rem',
+            fontWeight: '600',
+            marginBottom: '1.5rem',
+            color: '#f8fafc'
+          }}>
+            Position Calculator
+          </h2>
 
-
-
-                         {/* Stop Loss */}
-             <div>
-               <label style={{
-                 display: 'block',
-                 fontSize: '0.875rem',
-                 fontWeight: '500',
-                 color: '#94a3b8',
-                 marginBottom: '0.5rem'
-               }}>
-                 Stop Loss *
-               </label>
-               <input
-                 type="number"
-                 name="stopLoss"
-                 value={plan.stopLoss}
-                 onChange={handleInputChange}
-                 step="0.01"
-                 style={{
-                   width: '100%',
-                   padding: '0.5rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.5rem',
-                   color: '#f8fafc',
-                   fontSize: '0.875rem'
-                 }}
-               />
-             </div>
-
-                         {/* Position Size */}
-             <div>
-               <label style={{
-                 display: 'block',
-                 fontSize: '0.875rem',
-                 fontWeight: '500',
-                 color: '#94a3b8',
-                 marginBottom: '0.5rem'
-               }}>
-                 Position Size (% of Portfolio) *
-               </label>
-               <input
-                 type="number"
-                 name="positionSizePercent"
-                 value={plan.positionSizePercent}
-                 onChange={handleInputChange}
-                 step="0.1"
-                 style={{
-                   width: '100%',
-                   padding: '0.5rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.5rem',
-                   color: '#f8fafc',
-                   fontSize: '0.875rem'
-                 }}
-               />
-             </div>
-
-
-
-             {/* APTR(14) Day */}
-             <div>
-               <label style={{
-                 display: 'block',
-                 fontSize: '0.875rem',
-                 fontWeight: '500',
-                 color: '#94a3b8',
-                 marginBottom: '0.5rem'
-               }}>
-                 APTR(14) Day (%) - Volatilität
-               </label>
-               <input
-                 type="number"
-                 name="aptr14"
-                 value={plan.aptr14}
-                 onChange={handleInputChange}
-                 step="0.01"
-                 min="0"
-                 max="100"
-                 style={{
-                   width: '100%',
-                   padding: '0.5rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.5rem',
-                   color: '#f8fafc',
-                   fontSize: '0.875rem'
-                 }}
-                 placeholder="Enter APTR percentage (e.g., 7.5)"
-               />
-             </div>
-
-             {/* Planned Date */}
-             <div>
-               <label style={{
-                 display: 'block',
-                 fontSize: '0.875rem',
-                 fontWeight: '500',
-                 color: '#94a3b8',
-                 marginBottom: '0.5rem'
-               }}>
-                 Planned Date
-               </label>
-               <input
-                 type="date"
-                 name="plannedDate"
-                 value={plan.plannedDate}
-                 onChange={handleInputChange}
-                 style={{
-                   width: '100%',
-                   padding: '0.5rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.5rem',
-                   color: '#f8fafc',
-                   fontSize: '0.875rem'
-                 }}
-               />
-             </div>
-
-            
-
-                         {/* Trade Plan */}
-             <div>
-               <label style={{
-                 display: 'block',
-                 fontSize: '0.875rem',
-                 fontWeight: '500',
-                 color: '#94a3b8',
-                 marginBottom: '0.5rem'
-               }}>
-                 Trade Plan
-               </label>
-               <textarea
-                 name="tradePlan"
-                 value={plan.tradePlan}
-                 onChange={handleInputChange}
-                 rows="4"
-                 placeholder="Describe your trade plan, reasoning, and strategy..."
-                 style={{
-                   width: '100%',
-                   padding: '0.5rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.5rem',
-                   color: '#f8fafc',
-                   fontSize: '0.875rem',
-                   resize: 'vertical'
-                 }}
-               />
-             </div>
-
-             {/* Why the Trade Could Fail */}
-             <div>
-               <label style={{
-                 display: 'block',
-                 fontSize: '0.875rem',
-                 fontWeight: '500',
-                 color: '#94a3b8',
-                 marginBottom: '0.5rem'
-               }}>
-                 Why the Trade Could Fail
-               </label>
-               <textarea
-                 name="failureReasons"
-                 value={plan.failureReasons}
-                 onChange={handleInputChange}
-                 rows="3"
-                 placeholder="e.g., Overhead resistance, earnings ahead, not tight enough, market conditions..."
-                 style={{
-                   width: '100%',
-                   padding: '0.5rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.5rem',
-                   color: '#f8fafc',
-                   fontSize: '0.875rem',
-                   resize: 'vertical'
-                 }}
-               />
-             </div>
-
-                           {/* Pre-Trade Screenshot */}
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: '#94a3b8',
-                  marginBottom: '0.5rem'
-                }}>
-                  <Camera size={14} style={{ marginRight: '0.5rem', display: 'inline' }} />
-                  Pre-Trade Screenshot
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload('screenshotPre', e.target.files?.[0])}
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem',
-                    backgroundColor: '#334155',
-                    border: '1px solid #475569',
-                    borderRadius: '0.5rem',
-                    color: '#f8fafc',
-                    fontSize: '0.875rem'
-                  }}
-                />
-                {plan.screenshotPre && (
-                  <div style={{ marginTop: '0.5rem', position: 'relative' }}>
-                    <img
-                      src={plan.screenshotPre}
-                      alt="Pre-trade"
-                      style={{
-                        width: '100%',
-                        borderRadius: '0.375rem',
-                        border: '1px solid #475569'
-                      }}
-                    />
-                    <button
-                      onClick={() => removeImage('screenshotPre')}
-                      style={{
-                        position: 'absolute',
-                        top: '0.25rem',
-                        right: '0.25rem',
-                        background: 'rgba(0, 0, 0, 0.7)',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '1.5rem',
-                        height: '1.5rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        color: '#f8fafc'
-                      }}
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-            
+          {/* Portfolio Value */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#94a3b8',
+              marginBottom: '0.5rem'
+            }}>
+              Portfolio Value ($)
+            </label>
+            <input
+              type="number"
+              value={portfolioValue}
+              onChange={(e) => setPortfolioValue(parseFloat(e.target.value) || 0)}
+              step="100"
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                backgroundColor: '#334155',
+                border: '1px solid #475569',
+                borderRadius: '0.5rem',
+                color: '#f8fafc',
+                fontSize: '0.875rem'
+              }}
+            />
           </div>
 
-                 {/* Right Column - Calculator & Checklist */}
-         <div>
-           <h2 style={{
-             fontSize: '1.5rem',
-             fontWeight: '600',
-             marginBottom: '1.5rem',
-             color: '#f8fafc'
-           }}>
-             <Calculator style={{ marginRight: '0.75rem', display: 'inline' }} />
-             Position Calculator
-           </h2>
-           
-           
-
-                                           {/* Calculator Results */}
-                        {calculations ? (
-               <>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: '#94a3b8',
-                  marginBottom: '0.5rem'
+          {/* Calculations */}
+          {calculations ? (
+            <>
+              <div style={{
+                backgroundColor: '#1e293b',
+                borderRadius: '0.5rem',
+                padding: '1rem',
+                marginBottom: '1.5rem',
+                border: '1px solid #334155'
+              }}>
+                <h3 style={{
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  marginBottom: '1rem',
+                  color: '#f8fafc'
                 }}>
-                  Calculation Results
-                </label>
-                <div style={{
-                  backgroundColor: '#334155',
-                  border: '1px solid #475569',
-                  borderRadius: '0.5rem',
-                  padding: '1.5rem',
-                  marginBottom: '1.5rem'
-                }}>
-               
-                              <div style={{ display: 'grid', gap: '1rem' }}>
+                  <Calculator size={16} style={{ marginRight: '0.5rem', display: 'inline' }} />
+                  Position Calculations
+                </h3>
+                
+                <div style={{ display: 'grid', gap: '0.5rem' }}>
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -799,19 +728,6 @@ const TradePlanning = ({ onNavigate }) => {
                     <span style={{ color: '#94a3b8' }}>Position Size:</span>
                     <span style={{ color: '#f8fafc', fontWeight: '600' }}>
                       ${calculations.positionSize.toLocaleString()}
-                    </span>
-                  </div>
-                  
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '0.75rem',
-                    backgroundColor: '#1e293b',
-                    borderRadius: '0.25rem'
-                  }}>
-                    <span style={{ color: '#94a3b8' }}>Exact Shares:</span>
-                    <span style={{ color: '#f8fafc', fontWeight: '600' }}>
-                      {calculations.exactShares.toFixed(2)}
                     </span>
                   </div>
                   
@@ -888,7 +804,7 @@ const TradePlanning = ({ onNavigate }) => {
                   )}
                 </div>
 
-                              {calculations.hasStopLoss && calculations.riskPercent > 5 && (
+                {calculations.hasStopLoss && calculations.riskPercent > 5 && (
                   <div style={{
                     marginTop: '1rem',
                     padding: '0.75rem',
@@ -904,262 +820,246 @@ const TradePlanning = ({ onNavigate }) => {
                       High risk! Consider reducing position size.
                     </span>
                   </div>
-                                )}
-                </div>
-                </>
-                       ) : (
-               <>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: '#94a3b8',
-                  marginBottom: '0.5rem'
-                }}>
-                  Enter Symbol
-                </label>
-                <div style={{
-                  backgroundColor: '#334155',
-                  border: '1px solid #475569',
-                  borderRadius: '0.5rem',
-                  padding: '1.5rem',
-                  marginBottom: '1.5rem',
-                  textAlign: 'center',
-                  color: '#94a3b8'
-                }}>
-                  Enter symbol, trigger price, and position size to see calculations. Stop loss is optional.
-                </div>
-               </>
-            )}
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#94a3b8',
+                marginBottom: '0.5rem'
+              }}>
+                Enter Symbol
+              </label>
+              <div style={{
+                backgroundColor: '#334155',
+                border: '1px solid #475569',
+                borderRadius: '0.5rem',
+                padding: '1.5rem',
+                marginBottom: '1.5rem',
+                textAlign: 'center',
+                color: '#94a3b8'
+              }}>
+                Enter symbol, trigger price, and position size to see calculations. Stop loss is optional.
+              </div>
+            </>
+          )}
 
-                     {/* Breakout Checklist */}
-           {plan.setup === 'Breakout' && (
-             <div style={{
-               backgroundColor: '#334155',
-               border: '1px solid #475569',
-               borderRadius: '0.5rem',
-               padding: '1.5rem',
-               marginBottom: '1.5rem'
-             }}>
+          {/* Checklist */}
+          {plan.setup === 'Breakout' && (
+            <div style={{
+              backgroundColor: '#1e293b',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              border: '1px solid #334155'
+            }}>
               <h3 style={{
-                fontSize: '1.125rem',
+                fontSize: '1rem',
                 fontWeight: '600',
                 marginBottom: '1rem',
                 color: '#f8fafc'
               }}>
+                <FileText size={16} style={{ marginRight: '0.5rem', display: 'inline' }} />
                 Breakout Checklist
               </h3>
+              
               <div style={{ display: 'grid', gap: '0.5rem' }}>
-                {breakoutChecklist.map((item, index) => (
-                  <div key={index} style={{
+                {breakoutChecklist.map(item => (
+                  <label key={item} style={{
                     display: 'flex',
                     alignItems: 'center',
-                    cursor: 'pointer'
-                  }} onClick={() => handleChecklistChange(item)}>
+                    gap: '0.5rem',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    color: '#f8fafc'
+                  }}>
                     <input
                       type="checkbox"
                       checked={plan.checklist.includes(item)}
                       onChange={() => handleChecklistChange(item)}
                       style={{
-                        marginRight: '0.75rem',
                         width: '1rem',
                         height: '1rem',
-                        cursor: 'pointer'
+                        accentColor: '#3b82f6'
                       }}
                     />
-                    <span style={{
-                      fontSize: '0.875rem',
-                      color: '#f8fafc',
-                      cursor: 'pointer'
-                    }}>
-                      {item}
-                    </span>
-                  </div>
+                    {item}
+                  </label>
                 ))}
               </div>
-              <div style={{
-                marginTop: '1rem',
-                padding: '0.5rem',
-                backgroundColor: '#1e293b',
-                borderRadius: '0.25rem',
-                fontSize: '0.75rem',
-                color: '#94a3b8',
-                textAlign: 'center'
-              }}>
-                Completed: {plan.checklist.length} / {breakoutChecklist.length} items
-              </div>
-            </div>
-          )}
-
-
-
-          {/* Save Button */}
-          <button
-            onClick={handleSavePlan}
-            style={{
-              width: '100%',
-              padding: '1rem',
-              backgroundColor: '#059669',
-              border: 'none',
-              borderRadius: '0.5rem',
-              color: '#f8fafc',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: '600',
-              marginTop: '2rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            <Save size={20} />
-            Save Trade Plan
-          </button>
-                 </div>
-       </div>
-
-               {/* Planned Trades by Date - Bottom Section */}
-        <div style={{
-          backgroundColor: '#334155',
-          border: '1px solid #475569',
-          borderRadius: '0.5rem',
-          padding: '1.5rem',
-          marginTop: '2rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: '#f8fafc' }}>Planned Trades by Date</h3>
-          {savedPlans.length === 0 ? (
-            <p style={{ color: '#94a3b8' }}>No saved plans yet.</p>
-          ) : (
-            <div style={{ display: 'grid', gap: '1rem' }}>
-              {sortedDates.map(date => (
-                <div key={date} style={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #475569',
-                  borderRadius: '0.5rem',
-                  overflow: 'hidden'
-                }}>
-                  <div
-                    onClick={() => toggleDateGroup(date)}
-                    style={{
-                      padding: '1rem',
-                      backgroundColor: '#334155',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      borderBottom: expandedDates.has(date) ? '1px solid #475569' : 'none'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ 
-                        transform: expandedDates.has(date) ? 'rotate(90deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s',
-                        fontSize: '1.2rem'
-                      }}>
-                        ▶
-                      </span>
-                      <span style={{ fontWeight: '600', color: '#f8fafc' }}>
-                        {date === 'No Date' ? 'No Date Assigned' : new Date(date).toLocaleDateString()}
-                      </span>
-                      <span style={{ 
-                        fontSize: '0.75rem', 
-                        color: '#94a3b8',
-                        backgroundColor: '#475569',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '0.25rem'
-                      }}>
-                        {groupedPlans[date].length} {groupedPlans[date].length === 1 ? 'trade' : 'trades'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {expandedDates.has(date) && (
-                    <div style={{ padding: '1rem' }}>
-                      <div style={{ display: 'grid', gap: '0.75rem' }}>
-                        {groupedPlans[date].map(plan => {
-                          // Calculate shares for this plan
-                          const planCalculations = plan.calculations || {};
-                          const sharesToBuy = planCalculations.sharesNeeded || 0;
-                          
-                          return (
-                            <div key={plan.id} style={{
-                              backgroundColor: '#334155',
-                              border: '1px solid #475569',
-                              borderRadius: '0.5rem',
-                              padding: '0.75rem',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center'
-                            }}>
-                              <div>
-                                <div style={{ fontWeight: '600', color: '#f8fafc' }}>
-                                  {plan.symbol} - {plan.direction || 'LONG'} - {plan.setup || 'No Setup'}
-                                  {plan.ranking && <span style={{ color: '#fbbf24', marginLeft: '0.5rem' }}>⭐ {plan.ranking}/10</span>}
-                                  {plan.setupQuality && <span style={{ color: '#10b981', marginLeft: '0.5rem' }}>🎯 {plan.setupQuality}/10</span>}
-                                </div>
-                                <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
-                                  Entry: ${plan.entryPrice} | Shares: {sharesToBuy.toLocaleString()} | Size: {plan.positionSizePercent}%
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                  Created: {new Date(plan.createdAt).toLocaleDateString()}
-                                </div>
-                              </div>
-                              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <button
-                                  onClick={() => handleLoadPlan(plan)}
-                                  style={{
-                                    padding: '0.5rem 1rem',
-                                    backgroundColor: '#059669',
-                                    border: 'none',
-                                    borderRadius: '0.25rem',
-                                    color: '#f8fafc',
-                                    cursor: 'pointer',
-                                    fontSize: '0.75rem'
-                                  }}
-                                >
-                                  Load
-                                </button>
-                                <button
-                                  onClick={() => handleExecutePlan(plan)}
-                                  style={{
-                                    padding: '0.5rem 1rem',
-                                    backgroundColor: '#3b82f6',
-                                    border: 'none',
-                                    borderRadius: '0.25rem',
-                                    color: '#f8fafc',
-                                    cursor: 'pointer',
-                                    fontSize: '0.75rem'
-                                  }}
-                                >
-                                  Execute
-                                </button>
-                                <button
-                                  onClick={() => handleDeletePlan(plan.id)}
-                                  style={{
-                                    padding: '0.5rem 1rem',
-                                    backgroundColor: '#dc2626',
-                                    border: 'none',
-                                    borderRadius: '0.25rem',
-                                    color: '#f8fafc',
-                                    cursor: 'pointer',
-                                    fontSize: '0.75rem'
-                                  }}
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
             </div>
           )}
         </div>
+      </div>
+
+      {/* Trade Plans by Date - Full Width at Bottom */}
+      <div style={{ marginTop: '2rem' }}>
+        <h2 style={{
+          fontSize: '1.5rem',
+          fontWeight: '600',
+          marginBottom: '1.5rem',
+          color: '#f8fafc'
+        }}>
+          Planned Trades by Date
+        </h2>
+        
+        {savedPlans.length === 0 ? (
+          <div style={{
+            backgroundColor: '#1e293b',
+            padding: '2rem',
+            borderRadius: '0.5rem',
+            border: '1px solid #334155',
+            textAlign: 'center',
+            color: '#94a3b8'
+          }}>
+            No trade plans saved yet. Create your first plan above.
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {sortedDates.map(date => (
+              <div key={date} style={{
+                backgroundColor: '#1e293b',
+                borderRadius: '0.5rem',
+                border: '1px solid #334155',
+                overflow: 'hidden'
+              }}>
+                <div 
+                  onClick={() => toggleDateGroup(date)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '1rem 1.5rem',
+                    backgroundColor: '#334155',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#475569';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#334155';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Calendar size={20} color="#10b981" />
+                    <h4 style={{ 
+                      fontSize: '1.125rem', 
+                      fontWeight: '600', 
+                      margin: 0,
+                      color: '#f8fafc'
+                    }}>
+                      {date}
+                    </h4>
+                    <span style={{
+                      padding: '0.25rem 0.5rem',
+                      backgroundColor: '#475569',
+                      borderRadius: '0.25rem',
+                      fontSize: '0.75rem',
+                      color: '#94a3b8'
+                    }}>
+                      {groupedPlans[date].length} {groupedPlans[date].length === 1 ? 'trade' : 'trades'}
+                    </span>
+                  </div>
+                  
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: '#94a3b8',
+                    fontSize: '1.25rem',
+                    fontWeight: 'bold',
+                    transition: 'transform 0.2s ease'
+                  }}>
+                    {expandedDates.has(date) ? '−' : '+'}
+                  </div>
+                </div>
+                
+                {expandedDates.has(date) && (
+                  <div style={{ padding: '1rem' }}>
+                    <div style={{ display: 'grid', gap: '0.75rem' }}>
+                      {groupedPlans[date].map(plan => {
+                        const planCalculations = plan.calculations || {};
+                        const sharesToBuy = planCalculations.sharesNeeded || 0;
+                        
+                        return (
+                          <div key={plan.id} style={{
+                            backgroundColor: '#334155',
+                            border: '1px solid #475569',
+                            borderRadius: '0.5rem',
+                            padding: '0.75rem',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <div>
+                              <div style={{ fontWeight: '600', color: '#f8fafc' }}>
+                                {plan.symbol} - {plan.direction || 'LONG'} - {plan.setup || 'No Setup'}
+                                {plan.ranking && <span style={{ color: '#fbbf24', marginLeft: '0.5rem' }}>⭐ {plan.ranking}/10</span>}
+                              </div>
+                              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+                                Entry: ${plan.entryPrice} | Shares: {sharesToBuy.toLocaleString()} | Size: {plan.positionSizePercent}%
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                Created: {new Date(plan.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <button
+                                onClick={() => handleLoadPlan(plan)}
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  backgroundColor: '#059669',
+                                  border: 'none',
+                                  borderRadius: '0.25rem',
+                                  color: '#f8fafc',
+                                  cursor: 'pointer',
+                                  fontSize: '0.75rem'
+                                }}
+                              >
+                                Load
+                              </button>
+                              <button
+                                onClick={() => handleExecutePlan(plan)}
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  backgroundColor: '#3b82f6',
+                                  border: 'none',
+                                  borderRadius: '0.25rem',
+                                  color: '#f8fafc',
+                                  cursor: 'pointer',
+                                  fontSize: '0.75rem'
+                                }}
+                              >
+                                Execute
+                              </button>
+                              <button
+                                onClick={() => handleDeletePlan(plan.id)}
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  backgroundColor: '#dc2626',
+                                  border: 'none',
+                                  borderRadius: '0.25rem',
+                                  color: '#f8fafc',
+                                  cursor: 'pointer',
+                                  fontSize: '0.75rem'
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

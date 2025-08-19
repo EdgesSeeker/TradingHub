@@ -566,7 +566,7 @@ ${aiText.includes('Main Observations') ? aiText.split('Main Observations')[1] : 
                   {/* 1️⃣ Week Metrics & Highlights */}
                   <div style={{ marginBottom: '1.5rem' }}>
                     <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
-                      1️⃣ Week Metrics & Highlights 📊✨
+                      1️⃣ Week Matrix 📊✨
                     </label>
                     <textarea
                       value={currentEntry.weekMetrics || ''}
@@ -773,7 +773,7 @@ ${aiText.includes('Main Observations') ? aiText.split('Main Observations')[1] : 
                   {/* 10️⃣ Insights & Learnings */}
                   <div style={{ marginBottom: '1.5rem' }}>
                     <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>
-                      10️⃣ Insights & Learnings 📚
+                      1️⃣0️⃣ Insights & Learnings 📚
                     </label>
                     <textarea
                       value={currentEntry.insights || ''}

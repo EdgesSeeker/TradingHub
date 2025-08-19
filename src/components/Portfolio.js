@@ -99,12 +99,33 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
   // Fetch ATR data for the first open trade (if any)
   useEffect(() => {
     if (openTrades.length > 0) {
-      // Fetch ATR for the first open trade as a representative
-      fetchATR14(openTrades[0].symbol);
+      // Only fetch ATR if we don't have it cached or if it's been more than 1 hour
+      const symbol = openTrades[0].symbol;
+      const cacheKey = `atr_${symbol}`;
+      const cachedData = localStorage.getItem(cacheKey);
+      
+      if (!cachedData) {
+        // No cached data, fetch it
+        fetchATR14(symbol);
+      } else {
+        // Check if cached data is still valid (less than 1 hour old)
+        const { timestamp } = JSON.parse(cachedData);
+        const now = Date.now();
+        const oneHour = 60 * 60 * 1000;
+        
+        if (now - timestamp >= oneHour) {
+          // Cache expired, fetch new data
+          fetchATR14(symbol);
+        } else {
+          // Use cached data
+          const { value } = JSON.parse(cachedData);
+          setAtr14Value(value);
+        }
+      }
     } else {
       setAtr14Value('N/A');
     }
-  }, [openTrades]);
+  }, [openTrades.length]); // Only run when number of open trades changes, not on every trade update
 
   // Handle custom price updates
   const updateCustomPrice = async (symbol, price) => {
@@ -185,6 +206,21 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
   const fetchATR14 = async (symbol) => {
     if (!symbol) return;
     
+    // Check if we already have ATR data for this symbol and it's recent (within 1 hour)
+    const cacheKey = `atr_${symbol}`;
+    const cachedData = localStorage.getItem(cacheKey);
+    if (cachedData) {
+      const { value, timestamp } = JSON.parse(cachedData);
+      const now = Date.now();
+      const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+      
+      if (now - timestamp < oneHour) {
+        console.log(`📋 Using cached ATR data for ${symbol}: ${value}`);
+        setAtr14Value(value);
+        return;
+      }
+    }
+    
     setAtrLoading(true);
     try {
       // Try to get ATR data from Alpha Vantage (Technical Indicators)
@@ -203,7 +239,14 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
           const atrValue = parseFloat(data['Technical Analysis: ATR'][latestDate]['ATR']);
           
           console.log(`✅ ATR(14) for ${symbol}: ${atrValue}`);
-          setAtr14Value(atrValue.toFixed(2));
+          const formattedValue = atrValue.toFixed(2);
+          setAtr14Value(formattedValue);
+          
+          // Cache the result
+          localStorage.setItem(cacheKey, JSON.stringify({
+            value: formattedValue,
+            timestamp: Date.now()
+          }));
         } else {
           console.log(`⚠️ No ATR data available for ${symbol}`);
           setAtr14Value('N/A');

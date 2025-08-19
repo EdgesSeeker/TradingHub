@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Filter, TrendingUp, TrendingDown, Calendar, DollarSign, Target, Camera, X, Edit } from 'lucide-react';
+import { BookOpen, Filter, TrendingUp, TrendingDown, Calendar, DollarSign, Target, Camera, X, Edit, Layers, List } from 'lucide-react';
 
 const BookOfTruth = ({ trades, onTradeUpdated }) => {
   const [filteredTrades, setFilteredTrades] = useState([]);
@@ -11,9 +11,41 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingTrade, setEditingTrade] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [groupedView, setGroupedView] = useState(true); // New state for grouped view
 
   // Get unique setup types from trades
   const setupTypes = ['all', ...new Set(trades.map(trade => trade.setup).filter(Boolean))];
+
+  // Function to group trades with their profit-taking entries
+  const groupTradesWithProfitTaking = (tradesList) => {
+    const originalTrades = tradesList.filter(trade => !trade.originalTradeId && !trade.isPartialSale);
+    const profitTakingTrades = tradesList.filter(trade => trade.originalTradeId || trade.isPartialSale);
+    
+    return originalTrades.map(originalTrade => {
+      const relatedTrades = profitTakingTrades.filter(trade => 
+        trade.originalTradeId === originalTrade.id
+      );
+      
+      // Combine notes from original trade and all related trades
+      const allNotes = [
+        originalTrade.notes,
+        ...relatedTrades.map(trade => trade.notes)
+      ].filter(Boolean).join('\n\n--- Profit Taking Entry ---\n\n');
+      
+      // Calculate total P&L including all related trades
+      const totalPnL = relatedTrades.reduce((sum, trade) => 
+        sum + parseFloat(trade.pnl || 0), parseFloat(originalTrade.pnl || 0)
+      );
+      
+      return {
+        ...originalTrade,
+        relatedTrades,
+        combinedNotes: allNotes,
+        totalPnL: totalPnL.toFixed(2),
+        hasProfitTaking: relatedTrades.length > 0
+      };
+    });
+  };
 
   useEffect(() => {
     let filtered = [...trades];
@@ -79,8 +111,13 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
       }
     });
 
+    // Apply grouping if enabled
+    if (groupedView) {
+      filtered = groupTradesWithProfitTaking(filtered);
+    }
+
     setFilteredTrades(filtered);
-  }, [trades, setupFilter, resultFilter, gradeFilter, searchTerm, sortBy, sortOrder]);
+  }, [trades, setupFilter, resultFilter, gradeFilter, searchTerm, sortBy, sortOrder, groupedView]);
 
   // Helper functions
   const formatCurrency = (amount) => {
@@ -361,6 +398,65 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
           gap: '1rem',
           marginBottom: '2rem'
         }}>
+          
+          {/* View Toggle */}
+          <div style={{
+            gridColumn: '1 / -1',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            padding: '1rem',
+            backgroundColor: '#334155',
+            borderRadius: '0.5rem',
+            border: '1px solid #475569',
+            marginBottom: '1rem'
+          }}>
+            <span style={{
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#94a3b8'
+            }}>
+              View Mode:
+            </span>
+            <button
+              onClick={() => setGroupedView(true)}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: groupedView ? '#3b82f6' : '#475569',
+                border: 'none',
+                borderRadius: '0.375rem',
+                color: '#ffffff',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <Layers size={16} />
+              Grouped (Original + Profit Taking)
+            </button>
+            <button
+              onClick={() => setGroupedView(false)}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: !groupedView ? '#3b82f6' : '#475569',
+                border: 'none',
+                borderRadius: '0.375rem',
+                color: '#ffffff',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <List size={16} />
+              All Individual Trades
+            </button>
+          </div>
           <div>
             <label style={{
               display: 'block',
@@ -607,7 +703,7 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                         }}>
                           {trade.symbol}
                         </h3>
-                        {getResultBadge(trade.pnl, trade.status)}
+                        {getResultBadge(groupedView ? trade.totalPnL : trade.pnl, trade.status)}
                         {getSetupBadge(trade.setup)}
                         {getTradeGradeBadge(trade.tradeGrade)}
                         <span style={{
@@ -620,6 +716,18 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                         }}>
                           {trade.side === 'BUY' ? 'LONG' : 'SHORT'}
                         </span>
+                        {groupedView && trade.hasProfitTaking && (
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            color: '#fbbf24',
+                            backgroundColor: '#92400e'
+                          }}>
+                            💰 Profit Taking ({trade.relatedTrades.length})
+                          </span>
+                        )}
                       </div>
                                                                                                                                          {/* Trading Details - Organized in columns */}
                                               <div style={{
@@ -658,7 +766,7 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             <span><strong>Position Size:</strong> {formatCurrency((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))}</span>
                             <span><strong>% of Capital:</strong> {((((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0)) / 10000) * 100).toFixed(2)}%</span>
-                            <span><strong>P&L in $:</strong> {formatCurrency(trade.pnl || 0)}</span>
+                            <span><strong>P&L in $:</strong> {formatCurrency(groupedView ? trade.totalPnL || 0 : trade.pnl || 0)}</span>
                           </div>
                         </div>
                     </div>
@@ -692,10 +800,10 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                                                <div style={{
                           fontSize: '2rem',
                           fontWeight: '700',
-                          color: getPnlColor(trade.pnl),
+                          color: getPnlColor(groupedView ? trade.totalPnL : trade.pnl),
                           marginBottom: '0.5rem'
                         }}>
-                          {trade.status === 'open' ? 'Open Position' : `${((parseFloat(trade.pnl || 0) / ((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))) * 100).toFixed(2)}%`}
+                          {trade.status === 'open' ? 'Open Position' : `${((parseFloat(groupedView ? trade.totalPnL || 0 : trade.pnl || 0) / ((trade.quantity || trade.shares || 0) * (trade.entryPrice || 0))) * 100).toFixed(2)}%`}
                         </div>
                      </div>
                   </div>
@@ -795,8 +903,68 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                      </div>
                    )}
 
+                   {/* Profit Taking Entries - Show in grouped view */}
+                   {groupedView && trade.hasProfitTaking && (
+                     <div style={{ 
+                       backgroundColor: '#1e40af', 
+                       padding: '1rem', 
+                       borderRadius: '0.5rem',
+                       border: '1px solid #3b82f6'
+                     }}>
+                       <h5 style={{
+                         fontSize: '1rem',
+                         fontWeight: '600',
+                         color: '#f8fafc',
+                         marginBottom: '0.75rem',
+                         display: 'flex',
+                         alignItems: 'center',
+                         gap: '0.5rem'
+                       }}>
+                         💰 Profit Taking Entries ({trade.relatedTrades.length})
+                       </h5>
+                       <div style={{ 
+                         fontSize: '0.875rem', 
+                         color: '#cbd5e1',
+                         lineHeight: '1.5'
+                       }}>
+                         {trade.relatedTrades.map((ptTrade, index) => (
+                           <div key={ptTrade.id} style={{
+                             padding: '0.75rem',
+                             backgroundColor: '#334155',
+                             borderRadius: '0.375rem',
+                             marginBottom: '0.5rem',
+                             border: '1px solid #475569'
+                           }}>
+                             <div style={{
+                               display: 'flex',
+                               justifyContent: 'space-between',
+                               alignItems: 'center',
+                               marginBottom: '0.5rem'
+                             }}>
+                               <span style={{ fontWeight: '600', color: '#f8fafc' }}>
+                                 Entry {index + 1}: {ptTrade.entryDate}
+                               </span>
+                               <span style={{ 
+                                 color: getPnlColor(ptTrade.pnl),
+                                 fontWeight: '600'
+                               }}>
+                                 {formatCurrency(ptTrade.pnl)}
+                               </span>
+                             </div>
+                             <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                               <span><strong>Quantity:</strong> {ptTrade.quantity} shares</span>
+                               <span style={{ marginLeft: '1rem' }}>
+                                 <strong>Price:</strong> {formatCurrency(ptTrade.entryPrice)}
+                               </span>
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   )}
+
                    {/* Trade Planning - DRITTER (statt "Notes") */}
-                   {trade.notes && (
+                   {(groupedView ? trade.combinedNotes : trade.notes) && (
                      <div style={{ 
                        backgroundColor: '#334155', 
                        padding: '1rem', 
@@ -809,7 +977,7 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                          color: '#f8fafc',
                          marginBottom: '0.75rem'
                        }}>
-                         📝 Trade Planning
+                         📝 {groupedView && trade.hasProfitTaking ? 'Complete Trade Notes (Original + Profit Taking)' : 'Trade Planning'}
                        </h5>
                        <div style={{ 
                          fontSize: '0.875rem', 
@@ -817,7 +985,7 @@ const BookOfTruth = ({ trades, onTradeUpdated }) => {
                          lineHeight: '1.5',
                          whiteSpace: 'pre-wrap'
                        }}>
-                         {trade.notes}
+                         {groupedView ? trade.combinedNotes : trade.notes}
                        </div>
                      </div>
                    )}
