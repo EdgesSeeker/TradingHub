@@ -2,6 +2,15 @@
 const ANTHROPIC_API_KEY = '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';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
+// CORS Proxy URLs to try in order
+const CORS_PROXIES = [
+  'https://cors-anywhere.herokuapp.com/',
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://thingproxy.freeboard.io/fetch/',
+  'https://cors.bridged.cc/'
+];
+
 export const getCompanyInfo = async (symbol) => {
   try {
     console.log(`Fetching company info for ${symbol}...`);
@@ -30,31 +39,74 @@ Keine unnötigen Floskeln, Fokus auf Fakten und Relevanz für kurzfristiges/swin
 Unternehmen: ${symbol}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 Sekunden Timeout
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 Sekunden Timeout
     
-    console.log('🌐 Making API request to:', ANTHROPIC_API_URL);
-    console.log('🔑 Using API key:', ANTHROPIC_API_KEY.substring(0, 20) + '...');
-    console.log('📝 Prompt length:', prompt.length);
-    
-    const response = await fetch(ANTHROPIC_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-sonnet-20240229',
-        max_tokens: 1000,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
+    // Try direct API call first
+    let response;
+    try {
+      console.log('🌐 Trying direct API request...');
+      response = await fetch(ANTHROPIC_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-sonnet-20240229',
+          max_tokens: 1000,
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ]
+        }),
+        signal: controller.signal
+      });
+    } catch (directError) {
+      console.log('Direct API call failed, trying CORS proxies...');
+      
+      // Try CORS proxies
+      for (const proxy of CORS_PROXIES) {
+        try {
+          console.log(`🔄 Trying proxy: ${proxy}`);
+          
+          const proxyUrl = proxy + ANTHROPIC_API_URL;
+          response = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': ANTHROPIC_API_KEY,
+              'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+              model: 'claude-3-sonnet-20240229',
+              max_tokens: 1000,
+              messages: [
+                {
+                  role: 'user',
+                  content: prompt
+                }
+              ]
+            }),
+            signal: controller.signal
+          });
+          
+          if (response.ok) {
+            console.log(`✅ Proxy ${proxy} succeeded!`);
+            break;
           }
-        ]
-      }),
-      signal: controller.signal
-    });
+        } catch (proxyError) {
+          console.log(`❌ Proxy ${proxy} failed:`, proxyError.message);
+          continue;
+        }
+      }
+      
+      if (!response || !response.ok) {
+        throw new Error('All API attempts failed');
+      }
+    }
 
     clearTimeout(timeoutId);
 
