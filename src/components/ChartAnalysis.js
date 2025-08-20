@@ -21,6 +21,7 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
   const getTradePlanningData = () => {
     try {
       const tradePlans = JSON.parse(localStorage.getItem('tradePlans') || '[]');
+      console.log('Trade Plans loaded:', tradePlans);
       return tradePlans;
     } catch (error) {
       console.log('Error loading trade planning data:', error);
@@ -39,7 +40,9 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
   const getGroupedTradePlans = () => {
     const tradePlans = getTradePlanningData();
     const grouped = tradePlans.reduce((groups, plan) => {
-      const date = new Date(plan.createdAt).toLocaleDateString('de-DE', { 
+      // Handle both createdAt and plannedDate fields
+      const dateString = plan.createdAt || plan.plannedDate || new Date().toISOString();
+      const date = new Date(dateString).toLocaleDateString('de-DE', { 
         day: 'numeric', 
         month: 'numeric', 
         year: 'numeric' 
@@ -57,11 +60,13 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
   // Get sorted dates
   const getSortedDates = () => {
     const grouped = getGroupedTradePlans();
-    return Object.keys(grouped).sort((a, b) => {
+    const dates = Object.keys(grouped).sort((a, b) => {
       const [dayA, monthA, yearA] = a.split('.');
       const [dayB, monthB, yearB] = b.split('.');
       return new Date(yearB, monthB - 1, dayB) - new Date(yearA, monthA - 1, dayA);
     });
+    console.log('Available dates:', dates);
+    return dates;
   };
 
   // Filter plans by selected date
@@ -70,7 +75,9 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
     if (selectedDate === 'all') return tradePlans;
     
     return tradePlans.filter(plan => {
-      const planDate = new Date(plan.createdAt).toLocaleDateString('de-DE', { 
+      // Handle both createdAt and plannedDate fields
+      const dateString = plan.createdAt || plan.plannedDate || new Date().toISOString();
+      const planDate = new Date(dateString).toLocaleDateString('de-DE', { 
         day: 'numeric', 
         month: 'numeric', 
         year: 'numeric' 
