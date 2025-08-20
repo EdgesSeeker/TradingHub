@@ -216,30 +216,23 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
                  Symbol Search
                </h3>
                
-                         <div style={{ position: 'relative', marginBottom: '1rem' }}>
-               <Search size={12} style={{
-                 position: 'absolute',
-                 left: '0.375rem',
-                 top: '50%',
-                 transform: 'translateY(-50%)',
-                 color: '#94a3b8'
-               }} />
-               <input
-                 type="text"
-                 placeholder="Search..."
-                 value={searchQuery}
-                 onChange={(e) => setSearchQuery(e.target.value)}
-                 style={{
-                   width: '100%',
-                   padding: '0.25rem 0.25rem 0.25rem 1.25rem',
-                   backgroundColor: '#334155',
-                   border: '1px solid #475569',
-                   borderRadius: '0.375rem',
-                   color: '#f8fafc',
-                   fontSize: '0.75rem'
-                 }}
-               />
-             </div>
+                                                   <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.25rem',
+                    backgroundColor: '#334155',
+                    border: '1px solid #475569',
+                    borderRadius: '0.375rem',
+                    color: '#f8fafc',
+                    fontSize: '0.75rem'
+                  }}
+                />
+              </div>
             
                          {/* Current Portfolio Positions */}
              <div style={{ marginBottom: '1rem' }}>
