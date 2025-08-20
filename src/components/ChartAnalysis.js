@@ -14,6 +14,18 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
 
   // Get unique symbols from trades
   const tradeSymbols = [...new Set(trades.map(trade => trade.symbol))];
+  
+  // Get trade planning symbols from localStorage
+  const getTradePlanningSymbols = () => {
+    try {
+      const tradePlans = JSON.parse(localStorage.getItem('tradePlans') || '[]');
+      const symbols = [...new Set(tradePlans.map(plan => plan.symbol).filter(symbol => symbol))];
+      return symbols;
+    } catch (error) {
+      console.log('Error loading trade planning symbols:', error);
+      return [];
+    }
+  };
 
   // Common symbols for quick access
   const commonSymbols = [
@@ -113,13 +125,24 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
             borderRadius: '0.5rem',
             border: '1px solid #475569'
           }}>
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600', color: '#f8fafc' }}>
-              Symbol Search
-            </h3>
+                           <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600', color: '#f8fafc' }}>
+                 Symbol Search
+               </h3>
+               <div style={{
+                 padding: '0.5rem',
+                 backgroundColor: '#334155',
+                 borderRadius: '0.375rem',
+                 border: '1px solid #475569',
+                 fontSize: '0.75rem',
+                 color: '#94a3b8',
+                 marginBottom: '1rem'
+               }}>
+                 💡 <strong>Hinweis:</strong> TradingView Widget speichert keine Einstellungen. Indikatoren müssen nach jedem Neuladen neu hinzugefügt werden.
+               </div>
                          <div style={{ position: 'relative', marginBottom: '1rem' }}>
-               <Search size={14} style={{
+               <Search size={12} style={{
                  position: 'absolute',
-                 left: '0.5rem',
+                 left: '0.375rem',
                  top: '50%',
                  transform: 'translateY(-50%)',
                  color: '#94a3b8'
@@ -131,7 +154,7 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
                  onChange={(e) => setSearchQuery(e.target.value)}
                  style={{
                    width: '100%',
-                   padding: '0.375rem 0.375rem 0.375rem 1.5rem',
+                   padding: '0.25rem 0.25rem 0.25rem 1.25rem',
                    backgroundColor: '#334155',
                    border: '1px solid #475569',
                    borderRadius: '0.375rem',
@@ -201,34 +224,55 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
                )}
              </div>
 
-            {/* Trade Symbols */}
-            {tradeSymbols.length > 0 && (
-              <div>
-                <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '500', color: '#cbd5e1' }}>
-                  Your Trades
-                </h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                  {tradeSymbols.map(symbol => (
-                    <button
-                      key={symbol}
-                      onClick={() => setSelectedSymbol(symbol)}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        backgroundColor: selectedSymbol === symbol ? '#3b82f6' : '#475569',
-                        border: 'none',
-                        borderRadius: '0.25rem',
-                        color: '#ffffff',
-                        cursor: 'pointer',
-                        fontSize: '0.75rem',
-                        fontWeight: '500'
-                      }}
-                    >
-                      {symbol}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+                         {/* Trade Planning Symbols */}
+             <div>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                 <h4 style={{ margin: 0, fontSize: '0.875rem', fontWeight: '500', color: '#cbd5e1' }}>
+                   Trade Planning
+                 </h4>
+                 <button
+                   onClick={() => onNavigate('trade-planning')}
+                   style={{
+                     padding: '0.125rem 0.25rem',
+                     backgroundColor: '#475569',
+                     border: 'none',
+                     borderRadius: '0.25rem',
+                     color: '#ffffff',
+                     cursor: 'pointer',
+                     fontSize: '0.625rem',
+                     fontWeight: '500'
+                   }}
+                 >
+                   Manage
+                 </button>
+               </div>
+               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                 {getTradePlanningSymbols().length > 0 ? (
+                   getTradePlanningSymbols().map(symbol => (
+                     <button
+                       key={symbol}
+                       onClick={() => setSelectedSymbol(symbol)}
+                       style={{
+                         padding: '0.25rem 0.5rem',
+                         backgroundColor: selectedSymbol === symbol ? '#3b82f6' : '#475569',
+                         border: 'none',
+                         borderRadius: '0.25rem',
+                         color: '#ffffff',
+                         cursor: 'pointer',
+                         fontSize: '0.75rem',
+                         fontWeight: '500'
+                       }}
+                     >
+                       {symbol}
+                     </button>
+                   ))
+                 ) : (
+                   <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                     No trade plans yet
+                   </p>
+                 )}
+               </div>
+             </div>
           </div>
 
           
