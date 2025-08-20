@@ -123,10 +123,10 @@ const CompanyInfo = () => {
   };
 
   const handleNewAnalysis = () => {
-    setSelectedAnalysis(null);
+    setSelectedAnalysis({ id: 'new', symbol: '', analysis: '' });
     setSymbol('');
     setCompanyAnalysis('');
-    setIsEditing(false);
+    setIsEditing(true);
   };
 
   const handleEditAnalysis = () => {
@@ -255,7 +255,7 @@ const CompanyInfo = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '2rem' }}>
+             <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem' }}>
         {/* Left Column - Saved Analyses List */}
         <div>
           <div style={{
@@ -403,7 +403,7 @@ const CompanyInfo = () => {
                 {selectedAnalysis ? `${selectedAnalysis.symbol} Analysis` : 'New Analysis'}
               </h2>
               
-              {selectedAnalysis && !isEditing && (
+              {selectedAnalysis && selectedAnalysis.id !== 'new' && !isEditing && (
                 <button
                   onClick={handleEditAnalysis}
                   style={{
@@ -426,7 +426,7 @@ const CompanyInfo = () => {
               )}
             </div>
 
-            {!selectedAnalysis && !isEditing ? (
+            {selectedAnalysis === null && !isEditing ? (
               <div style={{
                 textAlign: 'center',
                 color: '#94a3b8',
