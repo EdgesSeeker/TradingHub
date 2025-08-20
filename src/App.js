@@ -17,6 +17,7 @@ import TradingMetrics from './components/TradingMetrics';
 import Trash from './components/Trash';
 import Settings from './components/Settings';
 import ChartAnalysis from './components/ChartAnalysis';
+import PineScriptManager from './components/PineScriptManager';
 // import TradingLogExport from './components/TradingLogExport';
 import storage from './utils/storage';
 import './styles/dashboard.css';
@@ -278,6 +279,10 @@ function App() {
         case 'chart-analysis':
           return (
             <ChartAnalysis trades={trades} onNavigate={setActiveTab} />
+          );
+        case 'pine-scripts':
+          return (
+            <PineScriptManager />
           );
         default:
           return <Portfolio trades={filteredTrades} onTradeDeleted={handleTradeDeleted} onTradeUpdated={handleTradeAdded} onNavigate={setActiveTab} />;

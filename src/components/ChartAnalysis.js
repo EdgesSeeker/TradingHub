@@ -116,30 +116,30 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
             <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600', color: '#f8fafc' }}>
               Symbol Search
             </h3>
-            <div style={{ position: 'relative', marginBottom: '1rem' }}>
-              <Search size={16} style={{
-                position: 'absolute',
-                left: '0.75rem',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#94a3b8'
-              }} />
-              <input
-                type="text"
-                placeholder="Search symbol..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem 0.5rem 0.5rem 2rem',
-                  backgroundColor: '#334155',
-                  border: '1px solid #475569',
-                  borderRadius: '0.375rem',
-                  color: '#f8fafc',
-                  fontSize: '0.875rem'
-                }}
-              />
-            </div>
+                         <div style={{ position: 'relative', marginBottom: '1rem' }}>
+               <Search size={14} style={{
+                 position: 'absolute',
+                 left: '0.5rem',
+                 top: '50%',
+                 transform: 'translateY(-50%)',
+                 color: '#94a3b8'
+               }} />
+               <input
+                 type="text"
+                 placeholder="Search..."
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+                 style={{
+                   width: '100%',
+                   padding: '0.375rem 0.375rem 0.375rem 1.5rem',
+                   backgroundColor: '#334155',
+                   border: '1px solid #475569',
+                   borderRadius: '0.375rem',
+                   color: '#f8fafc',
+                   fontSize: '0.75rem'
+                 }}
+               />
+             </div>
             
                          {/* Current Portfolio Positions */}
              <div style={{ marginBottom: '1rem' }}>
@@ -231,87 +231,7 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
             )}
           </div>
 
-          {/* Chart Controls */}
-          <div style={{
-            padding: '1rem',
-            backgroundColor: '#1e293b',
-            borderRadius: '0.5rem',
-            border: '1px solid #475569'
-          }}>
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600', color: '#f8fafc' }}>
-              Chart Settings
-            </h3>
-            
-            {/* Interval Selection */}
-            <div style={{ marginBottom: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '500', color: '#cbd5e1' }}>
-                Timeframe
-              </h4>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                {intervals.map(interval => (
-                  <button
-                    key={interval.value}
-                    onClick={() => setChartInterval(interval.value)}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      backgroundColor: chartInterval === interval.value ? '#3b82f6' : '#475569',
-                      border: 'none',
-                      borderRadius: '0.25rem',
-                      color: '#ffffff',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem',
-                      fontWeight: '500',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem'
-                    }}
-                  >
-                    {interval.icon}
-                    {interval.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Theme Selection */}
-            <div>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '500', color: '#cbd5e1' }}>
-                Theme
-              </h4>
-              <div style={{ display: 'flex', gap: '0.25rem' }}>
-                <button
-                  onClick={() => setChartTheme('dark')}
-                  style={{
-                    padding: '0.25rem 0.5rem',
-                    backgroundColor: chartTheme === 'dark' ? '#3b82f6' : '#475569',
-                    border: 'none',
-                    borderRadius: '0.25rem',
-                    color: '#ffffff',
-                    cursor: 'pointer',
-                    fontSize: '0.75rem',
-                    fontWeight: '500'
-                  }}
-                >
-                  Dark
-                </button>
-                <button
-                  onClick={() => setChartTheme('light')}
-                  style={{
-                    padding: '0.25rem 0.5rem',
-                    backgroundColor: chartTheme === 'light' ? '#3b82f6' : '#475569',
-                    border: 'none',
-                    borderRadius: '0.25rem',
-                    color: '#ffffff',
-                    cursor: 'pointer',
-                    fontSize: '0.75rem',
-                    fontWeight: '500'
-                  }}
-                >
-                  Light
-                </button>
-              </div>
-            </div>
-          </div>
+          
 
           {/* Watchlist */}
           <div style={{
