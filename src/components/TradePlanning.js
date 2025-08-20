@@ -944,7 +944,8 @@ const TradePlanning = ({ onNavigate }) => {
               placeholder="Enter your company analysis here... (Business model, financials, growth prospects, risks, etc.)"
               style={{
                 width: '100%',
-                minHeight: '120px',
+                minHeight: '80px',
+                maxHeight: '200px',
                 padding: '0.75rem',
                 backgroundColor: '#334155',
                 border: '1px solid #475569',
