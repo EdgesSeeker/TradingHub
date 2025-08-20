@@ -22,6 +22,21 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
     try {
       const tradePlans = JSON.parse(localStorage.getItem('tradePlans') || '[]');
       console.log('Trade Plans loaded:', tradePlans);
+      
+      // Log each plan's date information
+      tradePlans.forEach((plan, index) => {
+        console.log(`Plan ${index + 1}:`, {
+          symbol: plan.symbol,
+          createdAt: plan.createdAt,
+          plannedDate: plan.plannedDate,
+          formattedDate: new Date(plan.createdAt || plan.plannedDate || new Date()).toLocaleDateString('de-DE', { 
+            day: 'numeric', 
+            month: 'numeric', 
+            year: 'numeric' 
+          })
+        });
+      });
+      
       return tradePlans;
     } catch (error) {
       console.log('Error loading trade planning data:', error);
@@ -66,6 +81,15 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
       return new Date(yearB, monthB - 1, dayB) - new Date(yearA, monthA - 1, dayA);
     });
     console.log('Available dates:', dates);
+    console.log('Grouped plans:', grouped);
+    
+    // Debug: Check if "18.8.2025" exists in any format
+    const allDates = Object.keys(grouped);
+    console.log('All available dates:', allDates);
+    console.log('Looking for 18.8.2025:', allDates.includes('18.8.2025'));
+    console.log('Looking for 18.08.2025:', allDates.includes('18.08.2025'));
+    console.log('Looking for 8.18.2025:', allDates.includes('8.18.2025'));
+    
     return dates;
   };
 
@@ -82,6 +106,12 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
         month: 'numeric', 
         year: 'numeric' 
       });
+      
+      // Debug: Log the comparison
+      if (selectedDate === '18.8.2025' || selectedDate === '18.08.2025') {
+        console.log('Filtering for date:', selectedDate, 'Plan date:', planDate, 'Match:', planDate === selectedDate);
+      }
+      
       return planDate === selectedDate;
     });
   };
