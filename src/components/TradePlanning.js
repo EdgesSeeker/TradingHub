@@ -16,7 +16,8 @@ const TradePlanning = ({ onNavigate }) => {
     checklist: [],
     aptr14: '', // APTR for 14 days
     screenshotPre: '',
-    ranking: '' // Add ranking field
+    ranking: '', // Add ranking field
+    companyAnalysis: '' // Add company analysis field
   });
 
   const [portfolioValue, setPortfolioValue] = useState(0);
@@ -917,6 +918,44 @@ const TradePlanning = ({ onNavigate }) => {
               </div>
             </div>
           )}
+
+          {/* Company Analysis */}
+          <div style={{
+            backgroundColor: '#1e293b',
+            borderRadius: '0.5rem',
+            padding: '1rem',
+            border: '1px solid #334155',
+            marginTop: '1rem'
+          }}>
+            <h3 style={{
+              fontSize: '1rem',
+              fontWeight: '600',
+              marginBottom: '1rem',
+              color: '#f8fafc'
+            }}>
+              <TrendingUp size={16} style={{ marginRight: '0.5rem', display: 'inline' }} />
+              Company Analysis
+            </h3>
+            
+            <textarea
+              name="companyAnalysis"
+              value={plan.companyAnalysis}
+              onChange={handleInputChange}
+              placeholder="Enter your company analysis here... (Business model, financials, growth prospects, risks, etc.)"
+              style={{
+                width: '100%',
+                minHeight: '120px',
+                padding: '0.75rem',
+                backgroundColor: '#334155',
+                border: '1px solid #475569',
+                borderRadius: '0.375rem',
+                color: '#f8fafc',
+                fontSize: '0.875rem',
+                fontFamily: 'inherit',
+                resize: 'vertical'
+              }}
+            />
+          </div>
         </div>
       </div>
 
