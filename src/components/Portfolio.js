@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Edit, Trash2, Eye, Plus, RefreshCw, Briefcase } from 'lucide-react';
+import { Edit, Trash2, Eye, Plus, RefreshCw, Briefcase, BarChart3 } from 'lucide-react';
 import TradeEditModal from './TradeEditModal';
 import TradeDetailsModal from './TradeDetailsModal';
+import TradingViewMiniChart from './TradingViewMiniChart';
 import storage from '../utils/storage';
 
 const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
