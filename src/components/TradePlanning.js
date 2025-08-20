@@ -943,7 +943,7 @@ const TradePlanning = ({ onNavigate }) => {
               onChange={handleInputChange}
               placeholder="Enter your company analysis here... (Business model, financials, growth prospects, risks, etc.)"
               style={{
-                width: '100%',
+                width: '90%',
                 minHeight: '80px',
                 maxHeight: '200px',
                 padding: '0.75rem',
