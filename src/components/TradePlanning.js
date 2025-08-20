@@ -22,6 +22,7 @@ const TradePlanning = ({ onNavigate }) => {
   const [portfolioValue, setPortfolioValue] = useState(0);
   const [savedPlans, setSavedPlans] = useState([]);
   const [expandedDates, setExpandedDates] = useState(new Set());
+  const [selectedDate, setSelectedDate] = useState('all');
 
 
   // Setup options
@@ -244,7 +245,11 @@ const TradePlanning = ({ onNavigate }) => {
 
   // Group plans by date
   const groupedPlans = savedPlans.reduce((groups, plan) => {
-    const date = plan.plannedDate || 'No Date';
+    const date = new Date(plan.createdAt).toLocaleDateString('de-DE', { 
+      day: 'numeric', 
+      month: 'numeric', 
+      year: 'numeric' 
+    });
     if (!groups[date]) {
       groups[date] = [];
     }
@@ -254,10 +259,30 @@ const TradePlanning = ({ onNavigate }) => {
 
   // Sort dates
   const sortedDates = Object.keys(groupedPlans).sort((a, b) => {
-    if (a === 'No Date') return 1;
-    if (b === 'No Date') return -1;
-    return new Date(b) - new Date(a); // Changed to newest first
+    const [dayA, monthA, yearA] = a.split('.');
+    const [dayB, monthB, yearB] = b.split('.');
+    return new Date(yearB, monthB - 1, dayB) - new Date(yearA, monthA - 1, dayA);
   });
+
+  // Filter plans by selected date
+  const filteredPlans = selectedDate === 'all' 
+    ? savedPlans 
+    : savedPlans.filter(plan => {
+        const planDate = new Date(plan.createdAt).toLocaleDateString('de-DE', { 
+          day: 'numeric', 
+          month: 'numeric', 
+          year: 'numeric' 
+        });
+        return planDate === selectedDate;
+      });
+
+  const filteredGroupedPlans = selectedDate === 'all' 
+    ? groupedPlans 
+    : { [selectedDate]: filteredPlans };
+
+  const filteredSortedDates = selectedDate === 'all' 
+    ? sortedDates 
+    : [selectedDate];
 
   const calculations = calculatePosition();
 
@@ -897,14 +922,52 @@ const TradePlanning = ({ onNavigate }) => {
 
       {/* Trade Plans by Date - Full Width at Bottom */}
       <div style={{ marginTop: '2rem' }}>
-        <h2 style={{
-          fontSize: '1.5rem',
-          fontWeight: '600',
-          marginBottom: '1.5rem',
-          color: '#f8fafc'
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1.5rem'
         }}>
-          Planned Trades by Date
-        </h2>
+          <h2 style={{
+            fontSize: '1.5rem',
+            fontWeight: '600',
+            margin: 0,
+            color: '#f8fafc'
+          }}>
+            Planned Trades by Date
+          </h2>
+          
+          {/* Date Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <label style={{
+              fontSize: '0.875rem',
+              color: '#94a3b8',
+              fontWeight: '500'
+            }}>
+              Filter by Date:
+            </label>
+            <select
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              style={{
+                padding: '0.375rem 0.75rem',
+                backgroundColor: '#334155',
+                border: '1px solid #475569',
+                borderRadius: '0.375rem',
+                color: '#f8fafc',
+                fontSize: '0.875rem',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="all">All Dates</option>
+              {sortedDates.map(date => (
+                <option key={date} value={date}>
+                  {date}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         
         {savedPlans.length === 0 ? (
           <div style={{
@@ -919,7 +982,7 @@ const TradePlanning = ({ onNavigate }) => {
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
-            {sortedDates.map(date => (
+            {filteredSortedDates.map(date => (
               <div key={date} style={{
                 backgroundColor: '#1e293b',
                 borderRadius: '0.5rem',
@@ -961,7 +1024,7 @@ const TradePlanning = ({ onNavigate }) => {
                       fontSize: '0.75rem',
                       color: '#94a3b8'
                     }}>
-                      {groupedPlans[date].length} {groupedPlans[date].length === 1 ? 'trade' : 'trades'}
+                      {filteredGroupedPlans[date].length} {filteredGroupedPlans[date].length === 1 ? 'trade' : 'trades'}
                     </span>
                   </div>
                   
@@ -980,7 +1043,7 @@ const TradePlanning = ({ onNavigate }) => {
                 {expandedDates.has(date) && (
                   <div style={{ padding: '1rem' }}>
                     <div style={{ display: 'grid', gap: '0.75rem' }}>
-                      {groupedPlans[date].map(plan => {
+                      {filteredGroupedPlans[date].map(plan => {
                         const planCalculations = plan.calculations || {};
                         const sharesToBuy = planCalculations.sharesNeeded || 0;
                         
@@ -994,16 +1057,32 @@ const TradePlanning = ({ onNavigate }) => {
                             justifyContent: 'space-between',
                             alignItems: 'center'
                           }}>
-                            <div>
-                              <div style={{ fontWeight: '600', color: '#f8fafc' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ 
+                                fontWeight: '600', 
+                                color: '#f8fafc',
+                                fontSize: '1rem',
+                                marginBottom: '0.25rem'
+                              }}>
                                 {plan.symbol} - {plan.direction || 'LONG'} - {plan.setup || 'No Setup'}
                                 {plan.ranking && <span style={{ color: '#fbbf24', marginLeft: '0.5rem' }}>⭐ {plan.ranking}/10</span>}
                               </div>
-                              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
-                                Entry: ${plan.entryPrice} | Shares: {sharesToBuy.toLocaleString()} | Size: {plan.positionSizePercent}%
+                              <div style={{ 
+                                fontSize: '0.875rem', 
+                                color: '#94a3b8',
+                                marginBottom: '0.125rem'
+                              }}>
+                                Entry: ${parseFloat(plan.entryPrice).toFixed(2)} | Shares: {sharesToBuy.toLocaleString()} | Size: {plan.positionSizePercent}%
                               </div>
-                              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                Created: {new Date(plan.createdAt).toLocaleDateString()}
+                              <div style={{ 
+                                fontSize: '0.75rem', 
+                                color: '#64748b'
+                              }}>
+                                Created: {new Date(plan.createdAt).toLocaleDateString('de-DE', { 
+                                  day: 'numeric', 
+                                  month: 'numeric', 
+                                  year: 'numeric' 
+                                })}
                               </div>
                             </div>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
