@@ -92,7 +92,7 @@ const CompanyInfo = () => {
   };
 
   const handleDeleteAnalysis = async (analysisId) => {
-    if (!confirm('Are you sure you want to delete this analysis?')) {
+    if (!window.confirm('Are you sure you want to delete this analysis?')) {
       return;
     }
 
