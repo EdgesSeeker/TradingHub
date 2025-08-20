@@ -11,20 +11,85 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
   const [showCompanyInfo, setShowCompanyInfo] = useState(false);
   const [watchlist, setWatchlist] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDate, setSelectedDate] = useState('all');
+  const [expandedDates, setExpandedDates] = useState(new Set());
 
   // Get unique symbols from trades
   const tradeSymbols = [...new Set(trades.map(trade => trade.symbol))];
   
-  // Get trade planning symbols from localStorage
-  const getTradePlanningSymbols = () => {
+  // Get trade planning data from localStorage
+  const getTradePlanningData = () => {
     try {
       const tradePlans = JSON.parse(localStorage.getItem('tradePlans') || '[]');
-      const symbols = [...new Set(tradePlans.map(plan => plan.symbol).filter(symbol => symbol))];
-      return symbols;
+      return tradePlans;
     } catch (error) {
-      console.log('Error loading trade planning symbols:', error);
+      console.log('Error loading trade planning data:', error);
       return [];
     }
+  };
+
+  // Get trade planning symbols from localStorage
+  const getTradePlanningSymbols = () => {
+    const tradePlans = getTradePlanningData();
+    const symbols = [...new Set(tradePlans.map(plan => plan.symbol).filter(symbol => symbol))];
+    return symbols;
+  };
+
+  // Group trade plans by date
+  const getGroupedTradePlans = () => {
+    const tradePlans = getTradePlanningData();
+    const grouped = tradePlans.reduce((groups, plan) => {
+      const date = new Date(plan.createdAt).toLocaleDateString('de-DE', { 
+        day: 'numeric', 
+        month: 'numeric', 
+        year: 'numeric' 
+      });
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(plan);
+      return groups;
+    }, {});
+
+    return grouped;
+  };
+
+  // Get sorted dates
+  const getSortedDates = () => {
+    const grouped = getGroupedTradePlans();
+    return Object.keys(grouped).sort((a, b) => {
+      const [dayA, monthA, yearA] = a.split('.');
+      const [dayB, monthB, yearB] = b.split('.');
+      return new Date(yearB, monthB - 1, dayB) - new Date(yearA, monthA - 1, dayA);
+    });
+  };
+
+  // Filter plans by selected date
+  const getFilteredTradePlans = () => {
+    const tradePlans = getTradePlanningData();
+    if (selectedDate === 'all') return tradePlans;
+    
+    return tradePlans.filter(plan => {
+      const planDate = new Date(plan.createdAt).toLocaleDateString('de-DE', { 
+        day: 'numeric', 
+        month: 'numeric', 
+        year: 'numeric' 
+      });
+      return planDate === selectedDate;
+    });
+  };
+
+  // Toggle date group expansion
+  const toggleDateGroup = (date) => {
+    setExpandedDates(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(date)) {
+        newSet.delete(date);
+      } else {
+        newSet.add(date);
+      }
+      return newSet;
+    });
   };
 
   // Common symbols for quick access
@@ -224,52 +289,103 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
                )}
              </div>
 
-                         {/* Trade Planning Symbols */}
+                         {/* Trade Planning with Date Filter */}
              <div>
                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                  <h4 style={{ margin: 0, fontSize: '0.875rem', fontWeight: '500', color: '#cbd5e1' }}>
-                   Trade Planning
+                   Trade Plans
                  </h4>
-                 <button
-                   onClick={() => onNavigate('trade-planning')}
-                   style={{
-                     padding: '0.125rem 0.25rem',
-                     backgroundColor: '#475569',
-                     border: 'none',
-                     borderRadius: '0.25rem',
-                     color: '#ffffff',
-                     cursor: 'pointer',
-                     fontSize: '0.625rem',
-                     fontWeight: '500'
-                   }}
-                 >
-                   Manage
-                 </button>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                   <select
+                     value={selectedDate}
+                     onChange={(e) => setSelectedDate(e.target.value)}
+                     style={{
+                       padding: '0.125rem 0.25rem',
+                       backgroundColor: '#334155',
+                       border: '1px solid #475569',
+                       borderRadius: '0.25rem',
+                       color: '#f8fafc',
+                       fontSize: '0.625rem',
+                       cursor: 'pointer'
+                     }}
+                   >
+                     <option value="all">All Dates</option>
+                     {getSortedDates().map(date => (
+                       <option key={date} value={date}>
+                         {date}
+                       </option>
+                     ))}
+                   </select>
+                   <button
+                     onClick={() => onNavigate('trade-planning')}
+                     style={{
+                       padding: '0.125rem 0.25rem',
+                       backgroundColor: '#475569',
+                       border: 'none',
+                       borderRadius: '0.25rem',
+                       color: '#ffffff',
+                       cursor: 'pointer',
+                       fontSize: '0.625rem',
+                       fontWeight: '500'
+                     }}
+                   >
+                     Manage
+                   </button>
+                 </div>
                </div>
-               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                 {getTradePlanningSymbols().length > 0 ? (
-                   getTradePlanningSymbols().map(symbol => (
-                     <button
-                       key={symbol}
-                       onClick={() => setSelectedSymbol(symbol)}
-                       style={{
-                         padding: '0.25rem 0.5rem',
-                         backgroundColor: selectedSymbol === symbol ? '#3b82f6' : '#475569',
-                         border: 'none',
-                         borderRadius: '0.25rem',
-                         color: '#ffffff',
-                         cursor: 'pointer',
-                         fontSize: '0.75rem',
-                         fontWeight: '500'
-                       }}
-                     >
-                       {symbol}
-                     </button>
-                   ))
-                 ) : (
+               
+               {/* Trade Plans List */}
+               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                 {getFilteredTradePlans().length === 0 ? (
                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                     No trade plans yet
+                     No trade plans found
                    </p>
+                 ) : (
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                     {getFilteredTradePlans().map(plan => {
+                       const planCalculations = plan.calculations || {};
+                       const sharesToBuy = planCalculations.sharesNeeded || 0;
+                       
+                       return (
+                         <div key={plan.id} style={{
+                           padding: '0.5rem',
+                           backgroundColor: selectedSymbol === plan.symbol ? '#3b82f6' : '#334155',
+                           borderRadius: '0.375rem',
+                           border: '1px solid #475569',
+                           cursor: 'pointer'
+                         }}
+                         onClick={() => setSelectedSymbol(plan.symbol)}
+                         >
+                           <div style={{ 
+                             fontWeight: '600', 
+                             color: '#f8fafc',
+                             fontSize: '0.875rem',
+                             marginBottom: '0.125rem'
+                           }}>
+                             {plan.symbol} - {plan.direction || 'LONG'} - {plan.setup || 'No Setup'}
+                             {plan.ranking && <span style={{ color: '#fbbf24', marginLeft: '0.25rem' }}>⭐ {plan.ranking}/10</span>}
+                           </div>
+                           <div style={{ 
+                             fontSize: '0.75rem', 
+                             color: '#94a3b8',
+                             marginBottom: '0.125rem'
+                           }}>
+                             Entry: ${parseFloat(plan.entryPrice).toFixed(2)} | Shares: {sharesToBuy.toLocaleString()} | Size: {plan.positionSizePercent}%
+                           </div>
+                           <div style={{ 
+                             fontSize: '0.625rem', 
+                             color: '#64748b'
+                           }}>
+                             {new Date(plan.createdAt).toLocaleDateString('de-DE', { 
+                               day: 'numeric', 
+                               month: 'numeric', 
+                               year: 'numeric' 
+                             })}
+                           </div>
+                         </div>
+                       );
+                     })}
+                   </div>
                  )}
                </div>
              </div>
