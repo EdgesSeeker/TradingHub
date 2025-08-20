@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Settings, BarChart3, TrendingUp, Calendar, Clock } from 'lucide-react';
+import { BarChart3, TrendingUp, Calendar, Clock } from 'lucide-react';
 import TradingViewChart from './TradingViewChart';
 import TradingViewMiniChart from './TradingViewMiniChart';
 import CompanyInfo from './CompanyInfo';
@@ -10,7 +10,6 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
   const [chartTheme, setChartTheme] = useState('dark');
   const [showCompanyInfo, setShowCompanyInfo] = useState(false);
   const [watchlist, setWatchlist] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState('all');
   const [expandedDates, setExpandedDates] = useState(new Set());
 
@@ -212,27 +211,7 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
             borderRadius: '0.5rem',
             border: '1px solid #475569'
           }}>
-                           <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600', color: '#f8fafc' }}>
-                 Symbol Search
-               </h3>
-               
-                                                   <div style={{ position: 'relative', marginBottom: '1rem' }}>
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.25rem',
-                    backgroundColor: '#334155',
-                    border: '1px solid #475569',
-                    borderRadius: '0.375rem',
-                    color: '#f8fafc',
-                    fontSize: '0.75rem'
-                  }}
-                />
-              </div>
+                           
             
                          {/* Current Portfolio Positions */}
              <div style={{ marginBottom: '1rem' }}>
