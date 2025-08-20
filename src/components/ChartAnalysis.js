@@ -17,85 +17,75 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
   // Get unique symbols from trades
   const tradeSymbols = [...new Set(trades.map(trade => trade.symbol))];
   
-  // Get trade planning data from localStorage
-  const getTradePlanningData = () => {
+  // Get trade planning data from storage utility
+  const getTradePlanningData = async () => {
     try {
-      const tradePlans = JSON.parse(localStorage.getItem('tradePlans') || '[]');
-      console.log('Trade Plans loaded:', tradePlans);
-      
-      // Log each plan's date information
-      tradePlans.forEach((plan, index) => {
-        console.log(`Plan ${index + 1}:`, {
-          symbol: plan.symbol,
-          createdAt: plan.createdAt,
-          plannedDate: plan.plannedDate,
-          formattedDate: new Date(plan.createdAt || plan.plannedDate || new Date()).toLocaleDateString('de-DE', { 
-            day: 'numeric', 
-            month: 'numeric', 
-            year: 'numeric' 
-          })
-        });
-      });
-      
+      // Try to load from storage utility first (like TradePlanning does)
+      const storage = await import('../utils/storage');
+      const tradePlans = await storage.default.loadSetting('tradePlans') || [];
       return tradePlans;
     } catch (error) {
-      console.log('Error loading trade planning data:', error);
-      return [];
+      // Fallback to localStorage
+      try {
+        const tradePlans = JSON.parse(localStorage.getItem('tradePlans') || '[]');
+        return tradePlans;
+      } catch (localError) {
+        console.log('Error loading trade planning data:', error);
+        return [];
+      }
     }
   };
 
-  // Get trade planning symbols from localStorage
+  // State for trade planning data
+  const [tradePlans, setTradePlans] = useState([]);
+  const [groupedTradePlans, setGroupedTradePlans] = useState({});
+  const [sortedDates, setSortedDates] = useState([]);
+
+  // Load trade planning data on component mount
+  useEffect(() => {
+    const loadTradePlanningData = async () => {
+      const plans = await getTradePlanningData();
+      setTradePlans(plans);
+      
+      // Group plans by date
+      const grouped = plans.reduce((groups, plan) => {
+        // Handle both createdAt and plannedDate fields
+        const dateString = plan.createdAt || plan.plannedDate || new Date().toISOString();
+        const date = new Date(dateString).toLocaleDateString('de-DE', { 
+          day: 'numeric', 
+          month: 'numeric', 
+          year: 'numeric' 
+        });
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(plan);
+        return groups;
+      }, {});
+      
+      setGroupedTradePlans(grouped);
+      
+      // Sort dates
+      const dates = Object.keys(grouped).sort((a, b) => {
+        const [dayA, monthA, yearA] = a.split('.');
+        const [dayB, monthB, yearB] = b.split('.');
+        return new Date(yearB, monthB - 1, dayB) - new Date(yearA, monthA - 1, dayA);
+      });
+      
+      setSortedDates(dates);
+    };
+    
+    loadTradePlanningData();
+  }, []);
+
+  // Get trade planning symbols
   const getTradePlanningSymbols = () => {
-    const tradePlans = getTradePlanningData();
     const symbols = [...new Set(tradePlans.map(plan => plan.symbol).filter(symbol => symbol))];
     return symbols;
   };
 
-  // Group trade plans by date
-  const getGroupedTradePlans = () => {
-    const tradePlans = getTradePlanningData();
-    const grouped = tradePlans.reduce((groups, plan) => {
-      // Handle both createdAt and plannedDate fields
-      const dateString = plan.createdAt || plan.plannedDate || new Date().toISOString();
-      const date = new Date(dateString).toLocaleDateString('de-DE', { 
-        day: 'numeric', 
-        month: 'numeric', 
-        year: 'numeric' 
-      });
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(plan);
-      return groups;
-    }, {});
-
-    return grouped;
-  };
-
-  // Get sorted dates
-  const getSortedDates = () => {
-    const grouped = getGroupedTradePlans();
-    const dates = Object.keys(grouped).sort((a, b) => {
-      const [dayA, monthA, yearA] = a.split('.');
-      const [dayB, monthB, yearB] = b.split('.');
-      return new Date(yearB, monthB - 1, dayB) - new Date(yearA, monthA - 1, dayA);
-    });
-    console.log('Available dates:', dates);
-    console.log('Grouped plans:', grouped);
-    
-    // Debug: Check if "18.8.2025" exists in any format
-    const allDates = Object.keys(grouped);
-    console.log('All available dates:', allDates);
-    console.log('Looking for 18.8.2025:', allDates.includes('18.8.2025'));
-    console.log('Looking for 18.08.2025:', allDates.includes('18.08.2025'));
-    console.log('Looking for 8.18.2025:', allDates.includes('8.18.2025'));
-    
-    return dates;
-  };
-
   // Filter plans by selected date
   const getFilteredTradePlans = () => {
-    const tradePlans = getTradePlanningData();
     if (selectedDate === 'all') return tradePlans;
     
     return tradePlans.filter(plan => {
@@ -106,11 +96,6 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
         month: 'numeric', 
         year: 'numeric' 
       });
-      
-      // Debug: Log the comparison
-      if (selectedDate === '18.8.2025' || selectedDate === '18.08.2025') {
-        console.log('Filtering for date:', selectedDate, 'Plan date:', planDate, 'Match:', planDate === selectedDate);
-      }
       
       return planDate === selectedDate;
     });
@@ -230,17 +215,7 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
                            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '600', color: '#f8fafc' }}>
                  Symbol Search
                </h3>
-               <div style={{
-                 padding: '0.5rem',
-                 backgroundColor: '#334155',
-                 borderRadius: '0.375rem',
-                 border: '1px solid #475569',
-                 fontSize: '0.75rem',
-                 color: '#94a3b8',
-                 marginBottom: '1rem'
-               }}>
-                 💡 <strong>Hinweis:</strong> TradingView Widget speichert keine Einstellungen. Indikatoren müssen nach jedem Neuladen neu hinzugefügt werden.
-               </div>
+               
                          <div style={{ position: 'relative', marginBottom: '1rem' }}>
                <Search size={12} style={{
                  position: 'absolute',
@@ -346,12 +321,12 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
                        cursor: 'pointer'
                      }}
                    >
-                     <option value="all">All Dates</option>
-                     {getSortedDates().map(date => (
-                       <option key={date} value={date}>
-                         {date}
-                       </option>
-                     ))}
+                                           <option value="all">All Dates</option>
+                      {sortedDates.map(date => (
+                        <option key={date} value={date}>
+                          {date}
+                        </option>
+                      ))}
                    </select>
                    <button
                      onClick={() => onNavigate('trade-planning')}
