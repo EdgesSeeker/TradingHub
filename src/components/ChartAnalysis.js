@@ -50,7 +50,15 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
     return trades.filter(trade => trade.symbol === symbol);
   };
 
+  // Get current open positions
+  const getCurrentPositions = () => {
+    return trades.filter(trade => 
+      trade.status === 'open' && parseFloat(trade.quantity) > 0
+    );
+  };
+
   const selectedTradeData = getTradeData(selectedSymbol);
+  const currentPositions = getCurrentPositions();
 
   return (
     <div style={{ padding: '1rem', height: '100vh', overflow: 'hidden' }}>
@@ -133,32 +141,65 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
               />
             </div>
             
-            {/* Quick Symbols */}
-            <div style={{ marginBottom: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '500', color: '#cbd5e1' }}>
-                Quick Access
-              </h4>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                {commonSymbols.map(symbol => (
-                  <button
-                    key={symbol}
-                    onClick={() => setSelectedSymbol(symbol)}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      backgroundColor: selectedSymbol === symbol ? '#3b82f6' : '#475569',
-                      border: 'none',
-                      borderRadius: '0.25rem',
-                      color: '#ffffff',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem',
-                      fontWeight: '500'
-                    }}
-                  >
-                    {symbol}
-                  </button>
-                ))}
-              </div>
-            </div>
+                         {/* Current Portfolio Positions */}
+             <div style={{ marginBottom: '1rem' }}>
+               <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '500', color: '#cbd5e1' }}>
+                 Portfolio
+               </h4>
+               {currentPositions.length === 0 ? (
+                 <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                   No open positions
+                 </p>
+               ) : (
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                   {currentPositions.map(trade => (
+                     <div key={trade.id} style={{
+                       display: 'flex',
+                       justifyContent: 'space-between',
+                       alignItems: 'center',
+                       padding: '0.5rem',
+                       backgroundColor: selectedSymbol === trade.symbol ? '#3b82f6' : '#334155',
+                       borderRadius: '0.375rem',
+                       border: '1px solid #475569',
+                       cursor: 'pointer'
+                     }}
+                     onClick={() => setSelectedSymbol(trade.symbol)}
+                     >
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+                         <span style={{
+                           fontSize: '0.875rem',
+                           fontWeight: '600',
+                           color: '#f8fafc'
+                         }}>
+                           {trade.symbol}
+                         </span>
+                         <span style={{
+                           fontSize: '0.75rem',
+                           color: '#94a3b8'
+                         }}>
+                           {trade.quantity} shares @ ${parseFloat(trade.entryPrice).toFixed(2)}
+                         </span>
+                       </div>
+                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.125rem' }}>
+                         <span style={{
+                           fontSize: '0.75rem',
+                           fontWeight: '500',
+                           color: trade.side === 'BUY' ? '#10b981' : '#ef4444'
+                         }}>
+                           {trade.side}
+                         </span>
+                         <span style={{
+                           fontSize: '0.75rem',
+                           color: '#94a3b8'
+                         }}>
+                           {trade.entryDate}
+                         </span>
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
 
             {/* Trade Symbols */}
             {tradeSymbols.length > 0 && (
@@ -368,13 +409,13 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#f8fafc' }}>
-                {selectedSymbol} Chart
-              </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
-                  {selectedTradeData.length} trades
-                </span>
+                             <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#f8fafc' }}>
+                 {selectedSymbol} Chart
+               </h2>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                 <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+                   {selectedTradeData.length} trades • {currentPositions.length} open positions
+                 </span>
                 <button
                   onClick={() => onNavigate('portfolio')}
                   style={{
