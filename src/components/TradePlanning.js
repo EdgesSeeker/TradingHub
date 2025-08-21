@@ -85,12 +85,32 @@ const TradePlanning = ({ onNavigate }) => {
 
 
 
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const { name, value, type, checked } = e.target;
     setPlan(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+
+    // Auto-fill company analysis when symbol is entered and analysis exists
+    if (name === 'symbol' && value.trim()) {
+      try {
+        const existingAnalyses = await storage.loadSetting('companyAnalyses') || [];
+        const existingAnalysis = existingAnalyses.find(analysis => 
+          analysis.symbol === value.toUpperCase()
+        );
+
+        if (existingAnalysis && existingAnalysis.analysis) {
+          setPlan(prev => ({
+            ...prev,
+            companyAnalysis: existingAnalysis.analysis
+          }));
+          console.log('Auto-filled company analysis for symbol:', value.toUpperCase());
+        }
+      } catch (error) {
+        console.error('Error auto-filling company analysis:', error);
+      }
+    }
   };
 
   const handleChecklistChange = (item) => {
