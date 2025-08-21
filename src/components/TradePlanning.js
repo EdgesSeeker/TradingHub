@@ -169,7 +169,8 @@ const TradePlanning = ({ onNavigate }) => {
       failureReasons: plan.failureReasons || '',
       trigger: plan.entryPrice,
       riskAmount: calculations.riskAmount,
-      positionSize: calculations.positionSize
+      positionSize: calculations.positionSize,
+      companyAnalysis: plan.companyAnalysis || '' // Ensure company analysis is saved
     };
 
     // Save to both old system and new AI system
@@ -197,7 +198,8 @@ const TradePlanning = ({ onNavigate }) => {
       checklist: [],
       aptr14: '',
       screenshotPre: '',
-      ranking: '' // Reset ranking
+      ranking: '', // Reset ranking
+      companyAnalysis: '' // Reset company analysis
     });
   };
 
@@ -215,7 +217,8 @@ const TradePlanning = ({ onNavigate }) => {
         checklist: savedPlan.checklist || [],
         aptr14: savedPlan.aptr14 || '',
         screenshotPre: savedPlan.screenshotPre || '',
-        ranking: savedPlan.ranking || '' // Load ranking
+        ranking: savedPlan.ranking || '', // Load ranking
+        companyAnalysis: savedPlan.companyAnalysis || '' // Load company analysis
       });
     };
 
