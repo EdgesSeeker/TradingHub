@@ -9,11 +9,122 @@ const CompanyInfo = () => {
   const [savedAnalyses, setSavedAnalyses] = useState([]);
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [parsedData, setParsedData] = useState({
+    companyName: '',
+    hashtags: '',
+    description: '',
+    catalysts: [],
+    news: [],
+    overallScore: '',
+    strengths: '',
+    risks: '',
+    riskReward: ''
+  });
 
   // Load saved analyses on component mount
   useEffect(() => {
     loadSavedAnalyses();
   }, []);
+
+  // Parse company analysis text into structured data
+  const parseCompanyAnalysis = (text) => {
+    if (!text.trim()) {
+      setParsedData({
+        companyName: '',
+        hashtags: '',
+        description: '',
+        catalysts: [],
+        news: [],
+        overallScore: '',
+        strengths: '',
+        risks: '',
+        riskReward: ''
+      });
+      return;
+    }
+
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+    const parsed = {
+      companyName: '',
+      hashtags: '',
+      description: '',
+      catalysts: [],
+      news: [],
+      overallScore: '',
+      strengths: '',
+      risks: '',
+      riskReward: ''
+    };
+
+    let currentSection = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Company Name and hashtags
+      if (line.includes('– Company Snapshot')) {
+        parsed.companyName = line.replace('– Company Snapshot', '').trim();
+        // Look for hashtags in next line
+        if (i + 1 < lines.length && lines[i + 1].includes('#')) {
+          parsed.hashtags = lines[i + 1];
+          i++; // Skip next line
+        }
+      }
+      
+      // Company Description
+      else if (line.includes('🏢 Company Description')) {
+        currentSection = 'description';
+      }
+      else if (currentSection === 'description' && line && !line.includes('🚀')) {
+        parsed.description = line;
+        currentSection = '';
+      }
+      
+      // Catalysts
+      else if (line.includes('🚀 Major Near-term Catalysts')) {
+        currentSection = 'catalysts';
+      }
+      else if (currentSection === 'catalysts' && line && !line.includes('📰')) {
+        if (line.trim()) {
+          parsed.catalysts.push(line);
+        }
+      }
+      else if (line.includes('📰 Latest Important News Headlines')) {
+        currentSection = 'news';
+      }
+      else if (currentSection === 'news' && line && !line.includes('⭐')) {
+        if (line.trim()) {
+          parsed.news.push(line);
+        }
+      }
+      
+      // Overall Score
+      else if (line.includes('⭐ Overall Score')) {
+        currentSection = 'score';
+      }
+      else if (currentSection === 'score' && line.includes('➡️ Strengths:')) {
+        parsed.strengths = line.replace('➡️ Strengths:', '').trim();
+      }
+      else if (currentSection === 'score' && line.includes('➡️ Risks:')) {
+        parsed.risks = line.replace('➡️ Risks:', '').trim();
+        currentSection = '';
+      }
+      else if (currentSection === 'score' && line && !line.includes('➡️')) {
+        parsed.overallScore = line;
+      }
+      
+      // Risk/Reward Summary
+      else if (line.includes('⚖️ Risk/Reward Summary')) {
+        currentSection = 'riskReward';
+      }
+      else if (currentSection === 'riskReward' && line) {
+        parsed.riskReward = line;
+        currentSection = '';
+      }
+    }
+
+    setParsedData(parsed);
+  };
 
   const loadSavedAnalyses = async () => {
     try {
@@ -120,6 +231,7 @@ const CompanyInfo = () => {
     setSelectedAnalysis(analysis);
     setSymbol(analysis.symbol);
     setCompanyAnalysis(analysis.analysis);
+    parseCompanyAnalysis(analysis.analysis);
     setIsEditing(false);
   };
 
@@ -127,6 +239,17 @@ const CompanyInfo = () => {
     setSelectedAnalysis({ id: 'new', symbol: '', analysis: '' });
     setSymbol('');
     setCompanyAnalysis('');
+    setParsedData({
+      companyName: '',
+      hashtags: '',
+      description: '',
+      catalysts: [],
+      news: [],
+      overallScore: '',
+      strengths: '',
+      risks: '',
+      riskReward: ''
+    });
     setIsEditing(true);
   };
 
@@ -137,8 +260,20 @@ const CompanyInfo = () => {
   const handleCancelEdit = () => {
     if (selectedAnalysis) {
       setCompanyAnalysis(selectedAnalysis.analysis);
+      parseCompanyAnalysis(selectedAnalysis.analysis);
     } else {
       setCompanyAnalysis('');
+      setParsedData({
+        companyName: '',
+        hashtags: '',
+        description: '',
+        catalysts: [],
+        news: [],
+        overallScore: '',
+        strengths: '',
+        risks: '',
+        riskReward: ''
+      });
     }
     setIsEditing(false);
   };
@@ -174,6 +309,10 @@ const CompanyInfo = () => {
         await storage.saveSetting('companyAnalyses', newAnalyses);
         setSavedAnalyses(newAnalyses);
         alert(`Loaded ${analysesFromPlans.length} analyses from Trade Planning!`);
+        // Parse the first loaded analysis if any
+        if (analysesFromPlans.length > 0) {
+          parseCompanyAnalysis(analysesFromPlans[0].analysis);
+        }
       } else {
         alert('No company analyses found in Trade Planning');
       }
@@ -480,16 +619,19 @@ const CompanyInfo = () => {
                     color: '#94a3b8',
                     marginBottom: '0.5rem'
                   }}>
-                    Company Analysis *
+                    Raw Analysis Text *
                   </label>
                   <textarea
                     value={companyAnalysis}
-                    onChange={(e) => setCompanyAnalysis(e.target.value)}
-                    placeholder="Enter your company analysis here... (Business model, financials, growth prospects, risks, etc.)"
+                    onChange={(e) => {
+                      setCompanyAnalysis(e.target.value);
+                      parseCompanyAnalysis(e.target.value);
+                    }}
+                    placeholder="Paste your structured analysis here... (Company Snapshot, Catalysts, News, etc.)"
                     disabled={selectedAnalysis && !isEditing}
                     style={{
                       width: '100%',
-                      minHeight: '300px',
+                      minHeight: '200px',
                       padding: '0.75rem',
                       backgroundColor: '#334155',
                       border: '1px solid #475569',
@@ -502,6 +644,144 @@ const CompanyInfo = () => {
                     }}
                   />
                 </div>
+
+                {/* Structured View */}
+                {companyAnalysis.trim() && (
+                  <div style={{ marginTop: '1rem' }}>
+                    <h3 style={{
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      color: '#f8fafc',
+                      marginBottom: '1rem',
+                      borderBottom: '1px solid #334155',
+                      paddingBottom: '0.5rem'
+                    }}>
+                      📊 Structured Analysis View
+                    </h3>
+                    
+                    <div style={{ display: 'grid', gap: '1rem' }}>
+                      {/* Company Name & Hashtags */}
+                      {parsedData.companyName && (
+                        <div style={{
+                          backgroundColor: '#334155',
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                          <h4 style={{ color: '#3b82f6', margin: '0 0 0.5rem 0', fontSize: '1rem' }}>
+                            {parsedData.companyName}
+                          </h4>
+                          {parsedData.hashtags && (
+                            <p style={{ color: '#94a3b8', margin: 0, fontSize: '0.875rem' }}>
+                              {parsedData.hashtags}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Company Description */}
+                      {parsedData.description && (
+                        <div style={{
+                          backgroundColor: '#334155',
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                          <h4 style={{ color: '#f8fafc', margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '600' }}>
+                            🏢 Company Description
+                          </h4>
+                          <p style={{ color: '#cbd5e1', margin: 0, fontSize: '0.875rem', lineHeight: '1.5' }}>
+                            {parsedData.description}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Catalysts */}
+                      {parsedData.catalysts.length > 0 && (
+                        <div style={{
+                          backgroundColor: '#334155',
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                          <h4 style={{ color: '#f8fafc', margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '600' }}>
+                            🚀 Major Near-term Catalysts
+                          </h4>
+                          <ul style={{ color: '#cbd5e1', margin: 0, paddingLeft: '1.5rem', fontSize: '0.875rem', lineHeight: '1.5' }}>
+                            {parsedData.catalysts.map((catalyst, index) => (
+                              <li key={index} style={{ marginBottom: '0.25rem' }}>{catalyst}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* News */}
+                      {parsedData.news.length > 0 && (
+                        <div style={{
+                          backgroundColor: '#334155',
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                          <h4 style={{ color: '#f8fafc', margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '600' }}>
+                            📰 Latest Important News Headlines
+                          </h4>
+                          <ul style={{ color: '#cbd5e1', margin: 0, paddingLeft: '1.5rem', fontSize: '0.875rem', lineHeight: '1.5' }}>
+                            {parsedData.news.map((news, index) => (
+                              <li key={index} style={{ marginBottom: '0.25rem' }}>{news}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Overall Score */}
+                      {(parsedData.overallScore || parsedData.strengths || parsedData.risks) && (
+                        <div style={{
+                          backgroundColor: '#334155',
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                          <h4 style={{ color: '#f8fafc', margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '600' }}>
+                            ⭐ Overall Score
+                          </h4>
+                          {parsedData.overallScore && (
+                            <p style={{ color: '#cbd5e1', margin: '0 0 0.5rem 0', fontSize: '0.875rem' }}>
+                              {parsedData.overallScore}
+                            </p>
+                          )}
+                          {parsedData.strengths && (
+                            <p style={{ color: '#10b981', margin: '0 0 0.25rem 0', fontSize: '0.875rem' }}>
+                              <strong>Strengths:</strong> {parsedData.strengths}
+                            </p>
+                          )}
+                          {parsedData.risks && (
+                            <p style={{ color: '#ef4444', margin: 0, fontSize: '0.875rem' }}>
+                              <strong>Risks:</strong> {parsedData.risks}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Risk/Reward Summary */}
+                      {parsedData.riskReward && (
+                        <div style={{
+                          backgroundColor: '#334155',
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          border: '1px solid #475569'
+                        }}>
+                          <h4 style={{ color: '#f8fafc', margin: '0 0 0.5rem 0', fontSize: '0.875rem', fontWeight: '600' }}>
+                            ⚖️ Risk/Reward Summary
+                          </h4>
+                          <p style={{ color: '#cbd5e1', margin: 0, fontSize: '0.875rem', lineHeight: '1.5' }}>
+                            {parsedData.riskReward}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                   {isEditing && (
