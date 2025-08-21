@@ -184,6 +184,42 @@ const TradePlanning = ({ onNavigate }) => {
     } catch (error) {
       console.error('Error saving to AI system:', error);
     }
+
+    // Auto-save company analysis to Company Info if analysis exists
+    if (plan.companyAnalysis && plan.companyAnalysis.trim()) {
+      try {
+        const existingAnalyses = await storage.loadSetting('companyAnalyses') || [];
+        
+        // Check if analysis for this symbol already exists
+        const existingIndex = existingAnalyses.findIndex(analysis => 
+          analysis.symbol === plan.symbol.toUpperCase()
+        );
+
+        const newAnalysis = {
+          id: existingIndex >= 0 ? existingAnalyses[existingIndex].id : Date.now().toString(),
+          symbol: plan.symbol.toUpperCase(),
+          analysis: plan.companyAnalysis,
+          createdAt: existingIndex >= 0 ? existingAnalyses[existingIndex].createdAt : new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          source: 'trade_planning'
+        };
+
+        let updatedAnalyses;
+        if (existingIndex >= 0) {
+          // Update existing analysis
+          updatedAnalyses = [...existingAnalyses];
+          updatedAnalyses[existingIndex] = newAnalysis;
+        } else {
+          // Add new analysis
+          updatedAnalyses = [...existingAnalyses, newAnalysis];
+        }
+
+        await storage.saveSetting('companyAnalyses', updatedAnalyses);
+        console.log('Company analysis auto-saved to Company Info');
+      } catch (error) {
+        console.error('Error auto-saving company analysis:', error);
+      }
+    }
     
     setPlan({
       symbol: '',
