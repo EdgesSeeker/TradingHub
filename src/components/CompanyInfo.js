@@ -20,6 +20,7 @@ const CompanyInfo = () => {
     risks: '',
     riskReward: ''
   });
+  const [showTextInput, setShowTextInput] = useState(false);
 
   // Load saved analyses on component mount
   useEffect(() => {
@@ -250,6 +251,7 @@ const CompanyInfo = () => {
       risks: '',
       riskReward: ''
     });
+    setShowTextInput(false);
     setIsEditing(true);
   };
 
@@ -275,6 +277,7 @@ const CompanyInfo = () => {
         riskReward: ''
       });
     }
+    setShowTextInput(false);
     setIsEditing(false);
   };
 
@@ -612,37 +615,78 @@ const CompanyInfo = () => {
                 </div>
 
                 <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    color: '#94a3b8',
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     marginBottom: '0.5rem'
                   }}>
-                    Raw Analysis Text *
-                  </label>
-                  <textarea
-                    value={companyAnalysis}
-                    onChange={(e) => {
-                      setCompanyAnalysis(e.target.value);
-                      parseCompanyAnalysis(e.target.value);
-                    }}
-                    placeholder="Paste your structured analysis here... (Company Snapshot, Catalysts, News, etc.)"
-                    disabled={selectedAnalysis && !isEditing}
-                    style={{
-                      width: '100%',
-                      minHeight: '200px',
-                      padding: '0.75rem',
+                    <label style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#94a3b8'
+                    }}>
+                      Analysis Content *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowTextInput(!showTextInput)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#3b82f6',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        textDecoration: 'underline',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '0.25rem',
+                        backgroundColor: showTextInput ? '#1e3a8a' : 'transparent'
+                      }}
+                    >
+                      {showTextInput ? 'Hide Text Input' : 'Show Text Input'}
+                    </button>
+                  </div>
+                  
+                  {showTextInput && (
+                    <textarea
+                      value={companyAnalysis}
+                      onChange={(e) => {
+                        setCompanyAnalysis(e.target.value);
+                        parseCompanyAnalysis(e.target.value);
+                      }}
+                      placeholder="Paste your structured analysis here... (Company Snapshot, Catalysts, News, etc.)"
+                      disabled={selectedAnalysis && !isEditing}
+                      style={{
+                        width: '100%',
+                        minHeight: '150px',
+                        padding: '0.75rem',
+                        backgroundColor: '#334155',
+                        border: '1px solid #475569',
+                        borderRadius: '0.375rem',
+                        color: '#f8fafc',
+                        fontSize: '0.875rem',
+                        fontFamily: 'inherit',
+                        resize: 'vertical',
+                        lineHeight: '1.5',
+                        marginBottom: '1rem'
+                      }}
+                    />
+                  )}
+                  
+                  {!showTextInput && !companyAnalysis.trim() && (
+                    <div style={{
+                      padding: '1rem',
                       backgroundColor: '#334155',
                       border: '1px solid #475569',
                       borderRadius: '0.375rem',
-                      color: '#f8fafc',
+                      color: '#94a3b8',
                       fontSize: '0.875rem',
-                      fontFamily: 'inherit',
-                      resize: 'vertical',
-                      lineHeight: '1.5'
-                    }}
-                  />
+                      textAlign: 'center',
+                      borderStyle: 'dashed'
+                    }}>
+                      Click "Show Text Input" to add your analysis
+                    </div>
+                  )}
                 </div>
 
                 {/* Structured View */}
