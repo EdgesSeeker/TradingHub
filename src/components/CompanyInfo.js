@@ -60,8 +60,8 @@ const CompanyInfo = () => {
   };
 
   const handleUpdateAnalysis = async () => {
-    if (!selectedAnalysis || !companyAnalysis.trim()) {
-      alert('Please enter analysis content');
+    if (!selectedAnalysis || !symbol.trim() || !companyAnalysis.trim()) {
+      alert('Please enter both symbol and analysis content');
       return;
     }
 
@@ -69,6 +69,7 @@ const CompanyInfo = () => {
     try {
       const updatedAnalysis = {
         ...selectedAnalysis,
+        symbol: symbol.toUpperCase(),
         analysis: companyAnalysis,
         updatedAt: new Date().toISOString()
       };
