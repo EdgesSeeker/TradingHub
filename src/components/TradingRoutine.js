@@ -72,7 +72,7 @@ const TradingRoutine = () => {
     loadData();
   }, []);
 
-  // Manual save function
+  // Manual save function - only saves when button is clicked
   const saveData = async () => {
     try {
       await storage.saveSetting('tradingRoutines', routines);
@@ -85,14 +85,7 @@ const TradingRoutine = () => {
     }
   };
 
-  // Auto-save with debouncing (optional - can be disabled)
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      saveData();
-    }, 2000); // Auto-save after 2 seconds of inactivity
-
-    return () => clearTimeout(timeoutId);
-  }, [routines, stats]);
+  // Auto-save disabled - only manual save via button
 
   // Calculate stats
   useEffect(() => {
