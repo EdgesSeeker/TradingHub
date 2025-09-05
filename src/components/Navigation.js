@@ -3,28 +3,36 @@ import { BarChart3, Briefcase, BookOpen, Calendar, Settings, ArrowLeft, Plus, Tr
 
 const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, children, renderContent }) => {
   const [reviewsDropdownOpen, setReviewsDropdownOpen] = useState(false);
-  const [setupStudyDropdownOpen, setSetupStudyDropdownOpen] = useState(false);
+  const [tradeWorkflowDropdownOpen, setTradeWorkflowDropdownOpen] = useState(false);
+  const [analysisDropdownOpen, setAnalysisDropdownOpen] = useState(false);
+  const [studyDataDropdownOpen, setStudyDataDropdownOpen] = useState(false);
+  const [routineDropdownOpen, setRoutineDropdownOpen] = useState(false);
+  const [systemDropdownOpen, setSystemDropdownOpen] = useState(false);
   
         const tabs = [
-    { id: 'portfolio', label: 'Dashboard', icon: Briefcase },
+    // 1. Portfolio & Dashboard
+    { id: 'portfolio', label: 'Portfolio Dashboard', icon: Briefcase },
+    
+    // 2. Marktüberwachung & Sektoren
     { id: 'market-monitor', label: 'Market Monitor', icon: Activity },
-    { id: 'sector-dashboard', label: 'Sector Dashboard', icon: Layers },
-    { id: 'chart-analysis', label: 'Chart Analysis', icon: TrendingUp },
-    { id: 'system-overview', label: 'System Overview', icon: Zap },
-    { id: 'trading-routine', label: 'Trading Routine', icon: Clock },
-    { id: 'weekly-task', label: 'Weekly Task', icon: CheckSquare },
-    { id: 'trade-planning', label: 'Trade Planning', icon: Target },
-    { id: 'company-info', label: 'Company Info', icon: Building2 },
-    { id: 'ai-agents', label: 'AI Agents', icon: Brain },
-    { id: 'ai-agent-plans-overview', label: 'AI Plans Overview', icon: Star },
-    { id: 'setup-study', label: 'Setup Study', icon: Rocket, hasDropdown: true },
-    { id: 'trade-entry', label: 'Trade Entry', icon: Plus },
-    { id: 'profit-taking', label: 'Profit Taking', icon: TrendingDown },
-    { id: 'book-of-truth', label: 'Book of Truth', icon: BookOpen },
-    { id: 'trading-metrics', label: 'Trading Metrics', icon: BarChart },
+    
+    // 3. Trade-Workflow (Dropdown)
+    { id: 'trade-workflow', label: 'Trade-Workflow', icon: Target, hasDropdown: true },
+    
+    // 4. Analyse (Dropdown)
+    { id: 'analysis', label: 'Analyse', icon: TrendingUp, hasDropdown: true },
+    
+    // 5. Study & Data (Dropdown)
+    { id: 'study-data', label: 'Study & Data', icon: BarChart3, hasDropdown: true },
+    
+    // 6. Routine & Tasks (Dropdown)
+    { id: 'routine', label: 'Routine & Tasks', icon: Clock, hasDropdown: true },
+    
+    // 7. Reviews (Dropdown)
     { id: 'reviews', label: 'Reviews', icon: FileText, hasDropdown: true },
-    { id: 'trash', label: 'Papierkorb', icon: Trash2 },
-    { id: 'settings', label: 'Einstellungen', icon: Settings }
+    
+    // 8. System & Einstellungen (Dropdown)
+    { id: 'system', label: 'System & Einstellungen', icon: Settings, hasDropdown: true }
   ];
 
   const reviewSubTabs = [
@@ -34,9 +42,36 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
     { id: 'yearly-review', label: 'Yearly Review', icon: Target }
   ];
 
-  const setupStudySubTabs = [
+  const tradeWorkflowSubTabs = [
+    { id: 'trade-planning', label: 'Trade Planning', icon: Target },
+    { id: 'trade-entry', label: 'Trade Entry', icon: Plus },
+    { id: 'profit-taking', label: 'Profit Taking', icon: TrendingDown },
+    { id: 'ai-agents', label: 'AI Agents', icon: Brain },
+    { id: 'ai-agent-plans-overview', label: 'AI Plans Overview', icon: Star },
+    { id: 'chart-analysis', label: 'Chart Analysis', icon: TrendingUp },
+    { id: 'book-of-truth', label: 'Book of Truth', icon: BookOpen }
+  ];
+
+  const analysisSubTabs = [
+    { id: 'sector-dashboard', label: 'Sector Dashboard', icon: Layers },
+    { id: 'company-info', label: 'Company Info', icon: Building2 }
+  ];
+
+  const studyDataSubTabs = [
     { id: 'top-ops', label: 'Best Opportunities Study', icon: Rocket },
-    { id: 'best-100-charts-study', label: 'Best 100 Charts Study', icon: BarChart3 }
+    { id: 'best-100-charts-study', label: 'Best 100 Charts Study', icon: BarChart3 },
+    { id: 'trading-metrics', label: 'Trading Metrics', icon: BarChart }
+  ];
+
+  const routineSubTabs = [
+    { id: 'trading-routine', label: 'Trading Routine', icon: Clock },
+    { id: 'weekly-task', label: 'Weekly Task Board', icon: CheckSquare }
+  ];
+
+  const systemSubTabs = [
+    { id: 'system-overview', label: 'System Overview', icon: Zap },
+    { id: 'trash', label: 'Papierkorb', icon: Trash2 },
+    { id: 'settings', label: 'Einstellungen', icon: Settings }
   ];
 
   const getCurrentPageTitle = () => {
@@ -46,10 +81,34 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
       return currentReviewTab.label;
     }
     
-    // Check if it's a setup study sub-tab
-    const currentSetupStudyTab = setupStudySubTabs.find(tab => tab.id === activeTab);
-    if (currentSetupStudyTab) {
-      return currentSetupStudyTab.label;
+    // Check if it's a trade workflow sub-tab
+    const currentTradeWorkflowTab = tradeWorkflowSubTabs.find(tab => tab.id === activeTab);
+    if (currentTradeWorkflowTab) {
+      return currentTradeWorkflowTab.label;
+    }
+    
+    // Check if it's an analysis sub-tab
+    const currentAnalysisTab = analysisSubTabs.find(tab => tab.id === activeTab);
+    if (currentAnalysisTab) {
+      return currentAnalysisTab.label;
+    }
+    
+    // Check if it's a study data sub-tab
+    const currentStudyDataTab = studyDataSubTabs.find(tab => tab.id === activeTab);
+    if (currentStudyDataTab) {
+      return currentStudyDataTab.label;
+    }
+    
+    // Check if it's a routine sub-tab
+    const currentRoutineTab = routineSubTabs.find(tab => tab.id === activeTab);
+    if (currentRoutineTab) {
+      return currentRoutineTab.label;
+    }
+    
+    // Check if it's a system sub-tab
+    const currentSystemTab = systemSubTabs.find(tab => tab.id === activeTab);
+    if (currentSystemTab) {
+      return currentSystemTab.label;
     }
     
     // Then check main tabs
@@ -131,25 +190,60 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
             const isActive = activeTab === tab.id || 
               (tab.hasDropdown && (
                 (tab.id === 'reviews' && reviewSubTabs.some(subTab => activeTab === subTab.id)) ||
-                (tab.id === 'setup-study' && setupStudySubTabs.some(subTab => activeTab === subTab.id))
+                (tab.id === 'trade-workflow' && tradeWorkflowSubTabs.some(subTab => activeTab === subTab.id)) ||
+                (tab.id === 'analysis' && analysisSubTabs.some(subTab => activeTab === subTab.id)) ||
+                (tab.id === 'study-data' && studyDataSubTabs.some(subTab => activeTab === subTab.id)) ||
+                (tab.id === 'routine' && routineSubTabs.some(subTab => activeTab === subTab.id)) ||
+                (tab.id === 'system' && systemSubTabs.some(subTab => activeTab === subTab.id))
               ));
             
             if (tab.hasDropdown) {
               const isReviewsTab = tab.id === 'reviews';
-              const isSetupStudyTab = tab.id === 'setup-study';
-              const dropdownOpen = isReviewsTab ? reviewsDropdownOpen : (isSetupStudyTab ? setupStudyDropdownOpen : false);
-              const subTabs = isReviewsTab ? reviewSubTabs : (isSetupStudyTab ? setupStudySubTabs : []);
+              const isTradeWorkflowTab = tab.id === 'trade-workflow';
+              const isAnalysisTab = tab.id === 'analysis';
+              const isStudyDataTab = tab.id === 'study-data';
+              const isRoutineTab = tab.id === 'routine';
+              const isSystemTab = tab.id === 'system';
+              
+              const dropdownOpen = isReviewsTab ? reviewsDropdownOpen : 
+                                 (isTradeWorkflowTab ? tradeWorkflowDropdownOpen :
+                                 (isAnalysisTab ? analysisDropdownOpen :
+                                 (isStudyDataTab ? studyDataDropdownOpen :
+                                 (isRoutineTab ? routineDropdownOpen :
+                                 (isSystemTab ? systemDropdownOpen : false)))));
+              
+              const subTabs = isReviewsTab ? reviewSubTabs : 
+                            (isTradeWorkflowTab ? tradeWorkflowSubTabs :
+                            (isAnalysisTab ? analysisSubTabs :
+                            (isStudyDataTab ? studyDataSubTabs :
+                            (isRoutineTab ? routineSubTabs :
+                            (isSystemTab ? systemSubTabs : [])))));
               
               return (
                 <div key={tab.id}>
                   <button
                     onClick={() => {
+                      // Close all other dropdowns first
+                      setReviewsDropdownOpen(false);
+                      setTradeWorkflowDropdownOpen(false);
+                      setAnalysisDropdownOpen(false);
+                      setStudyDataDropdownOpen(false);
+                      setRoutineDropdownOpen(false);
+                      setSystemDropdownOpen(false);
+                      
+                      // Toggle the clicked dropdown
                       if (isReviewsTab) {
                         setReviewsDropdownOpen(!reviewsDropdownOpen);
-                        setSetupStudyDropdownOpen(false); // Close other dropdown
-                      } else if (isSetupStudyTab) {
-                        setSetupStudyDropdownOpen(!setupStudyDropdownOpen);
-                        setReviewsDropdownOpen(false); // Close other dropdown
+                      } else if (isTradeWorkflowTab) {
+                        setTradeWorkflowDropdownOpen(!tradeWorkflowDropdownOpen);
+                      } else if (isAnalysisTab) {
+                        setAnalysisDropdownOpen(!analysisDropdownOpen);
+                      } else if (isStudyDataTab) {
+                        setStudyDataDropdownOpen(!studyDataDropdownOpen);
+                      } else if (isRoutineTab) {
+                        setRoutineDropdownOpen(!routineDropdownOpen);
+                      } else if (isSystemTab) {
+                        setSystemDropdownOpen(!systemDropdownOpen);
                       }
                     }}
                     style={{
@@ -205,8 +299,16 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
                               // Close dropdown after selection
                               if (isReviewsTab) {
                                 setReviewsDropdownOpen(false);
-                              } else if (isSetupStudyTab) {
-                                setSetupStudyDropdownOpen(false);
+                              } else if (isTradeWorkflowTab) {
+                                setTradeWorkflowDropdownOpen(false);
+                              } else if (isAnalysisTab) {
+                                setAnalysisDropdownOpen(false);
+                              } else if (isStudyDataTab) {
+                                setStudyDataDropdownOpen(false);
+                              } else if (isRoutineTab) {
+                                setRoutineDropdownOpen(false);
+                              } else if (isSystemTab) {
+                                setSystemDropdownOpen(false);
                               }
                             }}
                             style={{
