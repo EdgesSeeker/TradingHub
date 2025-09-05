@@ -24,12 +24,30 @@ const TradePlanning = ({ onNavigate }) => {
   const [savedPlans, setSavedPlans] = useState([]);
   const [expandedDates, setExpandedDates] = useState(new Set());
   const [selectedDate, setSelectedDate] = useState('all');
+  const [marketHealthStatus, setMarketHealthStatus] = useState(null);
 
 
   // Setup options
   const setupOptions = ['Breakout', 'SMA Touch', 'Mean Reversion', 'UnR', 'No Clear Setup'];
 
-  // Breakout checklist items
+  // Pre-Trade Entry Checklist (Before the Trade)
+  const preTradeChecklist = [
+    'Market trend determined (Green/Yellow/Red)',
+    'Volume > 30 million',
+    'ADR > 5%',
+    'Sector verified as "hot"',
+    'Stock moved approx. +30% in last 30 days',
+    'Linear pullback & undercut/reclaim of 10/20 SMA',
+    'At least 1 surf day above 10/20 SMA',
+    'Clear daily trendline visible in chart',
+    'Setup type precisely chosen (e.g., Breakout, SMA Touch)',
+    'Position size calculated properly for equity and risk (max 2%)',
+    'Stop loss logically defined (below structure)',
+    'Mental Game: Do I have rational reasons for this trade? (yes=1/no=0)',
+    'Pre-trade screenshot taken for documentation'
+  ];
+
+  // Breakout checklist items (legacy - keeping for backward compatibility)
   const breakoutChecklist = [
     '~30% move up in the last 30-days',
     'Linear pullback and undercut of the 10 and/or 20 day moving averages',
@@ -81,7 +99,41 @@ const TradePlanning = ({ onNavigate }) => {
 
     loadPortfolioValue();
     loadSavedPlans();
+    loadMarketHealthStatus();
+    
+    // Also try to load market health status after a short delay
+    setTimeout(() => {
+      loadMarketHealthStatus();
+    }, 1000);
+
+    // Listen for market health status changes
+    const handleStorageChange = (e) => {
+      if (e.key === 'marketHealthStatus') {
+        loadMarketHealthStatus();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
+
+  // Load market health status from MarketMonitor
+  const loadMarketHealthStatus = async () => {
+    try {
+      const healthStatus = await storage.loadSetting('marketHealthStatus');
+      console.log('Loaded market health status:', healthStatus);
+      if (healthStatus) {
+        setMarketHealthStatus(healthStatus);
+      } else {
+        console.log('No market health status found in storage');
+      }
+    } catch (error) {
+      console.error('Error loading market health status:', error);
+    }
+  };
 
 
 
@@ -120,6 +172,60 @@ const TradePlanning = ({ onNavigate }) => {
         ? prev.checklist.filter(i => i !== item)
         : [...prev.checklist, item]
     }));
+  };
+
+  // Auto-check market trend based on market health status
+  const autoCheckMarketTrend = () => {
+    if (marketHealthStatus && marketHealthStatus.status) {
+      const marketTrendItem = 'Market trend determined (Green/Yellow/Red)';
+      
+      // Auto-check if market is bullish (green) or neutral (yellow)
+      if (marketHealthStatus.status === 'bullish' || marketHealthStatus.status === 'neutral') {
+        if (!plan.checklist.includes(marketTrendItem)) {
+          setPlan(prev => ({
+            ...prev,
+            checklist: [...prev.checklist, marketTrendItem]
+          }));
+        }
+      } else {
+        // Remove from checklist if market is bearish
+        if (plan.checklist.includes(marketTrendItem)) {
+          setPlan(prev => ({
+            ...prev,
+            checklist: prev.checklist.filter(i => i !== marketTrendItem)
+          }));
+        }
+      }
+    }
+  };
+
+  // Auto-check market trend when market health status changes
+  useEffect(() => {
+    if (marketHealthStatus) {
+      autoCheckMarketTrend();
+    }
+  }, [marketHealthStatus]);
+
+  // Calculate checklist completion percentage
+  const calculateChecklistCompletion = () => {
+    const completedItems = plan.checklist.length;
+    const totalItems = preTradeChecklist.length;
+    const percentage = (completedItems / totalItems) * 100;
+    return { completedItems, totalItems, percentage };
+  };
+
+  // Get checklist status color
+  const getChecklistStatusColor = (percentage) => {
+    if (percentage >= 80) return '#10b981'; // Green
+    if (percentage >= 60) return '#f59e0b'; // Yellow
+    return '#ef4444'; // Red
+  };
+
+  // Get checklist status text
+  const getChecklistStatusText = (percentage) => {
+    if (percentage >= 80) return '✅ Green Light to Trade';
+    if (percentage >= 60) return '⚠️ Proceed with Caution';
+    return '❌ Not Ready to Trade';
   };
 
 
@@ -177,19 +283,20 @@ const TradePlanning = ({ onNavigate }) => {
        return;
      }
 
+    const calculations = calculatePosition();
     const newPlan = {
       ...plan,
       id: Date.now(),
       createdAt: new Date().toISOString(),
-      calculations: calculatePosition(),
+      calculations: calculations,
       status: 'pending', // For AI review
       direction: plan.direction, // Keep the original direction (LONG/SHORT)
       targets: plan.targets || [],
       thesis: plan.tradePlan || '',
       failureReasons: plan.failureReasons || '',
       trigger: plan.entryPrice,
-      riskAmount: calculations.riskAmount,
-      positionSize: calculations.positionSize,
+      riskAmount: calculations ? calculations.totalRisk : 0,
+      positionSize: calculations ? calculations.positionSize : 0,
       companyAnalysis: plan.companyAnalysis || '' // Ensure company analysis is saved
     };
 
@@ -271,16 +378,16 @@ const TradePlanning = ({ onNavigate }) => {
         failureReasons: savedPlan.failureReasons || '',
         plannedDate: savedPlan.plannedDate || '',
         checklist: savedPlan.checklist || [],
-        aptr14: savedPlan.aptr14 || '',
-        screenshotPre: savedPlan.screenshotPre || '',
-        ranking: savedPlan.ranking || '', // Load ranking
-        companyAnalysis: savedPlan.companyAnalysis || '' // Load company analysis
+                  aptr14: savedPlan.aptr14 || '',
+          screenshotPre: savedPlan.screenshotPre || '',
+          ranking: savedPlan.ranking || '', // Load ranking
+          companyAnalysis: savedPlan.companyAnalysis || '' // Load company analysis
       });
     };
 
   const handleExecutePlan = (savedPlan) => {
     // Save the plan data to localStorage so Trade Entry can access it
-    localStorage.setItem('planToExecute', JSON.stringify(savedPlan));
+    localStorage.setItem('executedTradePlan', JSON.stringify(savedPlan));
     // Navigate to trade entry
     onNavigate('trade-entry');
   };
@@ -578,7 +685,7 @@ const TradePlanning = ({ onNavigate }) => {
                 color: '#94a3b8',
                 marginBottom: '0.5rem'
               }}>
-                Trade Plan
+                Trade Plan + History of clean large moves?
               </label>
               <textarea
                 name="tradePlan"
@@ -628,6 +735,7 @@ const TradePlanning = ({ onNavigate }) => {
                 }}
               />
             </div>
+
 
             {/* Ranking */}
             <div>
@@ -933,50 +1041,278 @@ const TradePlanning = ({ onNavigate }) => {
             </>
           )}
 
-          {/* Checklist */}
-          {plan.setup === 'Breakout' && (
+          {/* Market Health Status */}
+          <div style={{
+            backgroundColor: '#1e293b',
+            borderRadius: '0.5rem',
+            padding: '1rem',
+            border: '1px solid #334155',
+            marginBottom: '1rem'
+          }}>
             <div style={{
-              backgroundColor: '#1e293b',
-              borderRadius: '0.5rem',
-              padding: '1rem',
-              border: '1px solid #334155'
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '0.5rem'
             }}>
               <h3 style={{
                 fontSize: '1rem',
                 fontWeight: '600',
-                marginBottom: '1rem',
-                color: '#f8fafc'
+                margin: 0,
+                color: '#f8fafc',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
               }}>
-                <FileText size={16} style={{ marginRight: '0.5rem', display: 'inline' }} />
-                Breakout Checklist
+                <TrendingUp size={16} />
+                Market Health Status
               </h3>
-              
-              <div style={{ display: 'grid', gap: '0.5rem' }}>
-                {breakoutChecklist.map(item => (
-                  <label key={item} style={{
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                {marketHealthStatus ? (
+                  <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    color: '#f8fafc'
+                    padding: '0.5rem 1rem',
+                    backgroundColor: marketHealthStatus.color + '20',
+                    border: `1px solid ${marketHealthStatus.color}`,
+                    borderRadius: '0.375rem'
                   }}>
-                    <input
-                      type="checkbox"
-                      checked={plan.checklist.includes(item)}
-                      onChange={() => handleChecklistChange(item)}
-                      style={{
-                        width: '1rem',
-                        height: '1rem',
-                        accentColor: '#3b82f6'
-                      }}
-                    />
-                    {item}
-                  </label>
-                ))}
+                    <span style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                      color: marketHealthStatus.color
+                    }}>
+                      {marketHealthStatus.text}
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#64748b20',
+                    border: '1px solid #64748b',
+                    borderRadius: '0.375rem'
+                  }}>
+                    <span style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                      color: '#64748b'
+                    }}>
+                      No Data
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+            {marketHealthStatus ? (
+              <div style={{
+                fontSize: '0.75rem',
+                color: '#94a3b8'
+              }}>
+                {marketHealthStatus.status === 'bullish' && '✅ Market conditions are favorable for trading'}
+                {marketHealthStatus.status === 'neutral' && '⚠️ Market conditions are mixed - proceed with caution'}
+                {marketHealthStatus.status === 'bearish' && '❌ Market conditions are unfavorable - avoid trading'}
+              </div>
+            ) : (
+              <div style={{
+                fontSize: '0.75rem',
+                color: '#94a3b8'
+              }}>
+                Market health status will be loaded automatically
+              </div>
+            )}
+          </div>
+
+          {/* Pre-Trade Entry Checklist */}
+          <div style={{
+            backgroundColor: '#1e293b',
+            borderRadius: '0.5rem',
+            padding: '1rem',
+            border: '1px solid #334155'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1rem'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem'
+              }}>
+                <h3 style={{
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  margin: 0,
+                  color: '#f8fafc'
+                }}>
+                  <FileText size={16} style={{ marginRight: '0.5rem', display: 'inline' }} />
+                  Pre-Trade Entry Checklist
+                </h3>
+              </div>
+              {(() => {
+                const { completedItems, totalItems, percentage } = calculateChecklistCompletion();
+                return (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <span style={{
+                      fontSize: '0.875rem',
+                      color: '#94a3b8'
+                    }}>
+                      {completedItems}/{totalItems}
+                    </span>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      color: getChecklistStatusColor(percentage),
+                      backgroundColor: getChecklistStatusColor(percentage) + '20',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '0.25rem'
+                    }}>
+                      {percentage.toFixed(0)}%
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Checklist Status */}
+            {(() => {
+              const { percentage } = calculateChecklistCompletion();
+              return (
+                <div style={{
+                  marginBottom: '1rem',
+                  padding: '0.75rem',
+                  backgroundColor: getChecklistStatusColor(percentage) + '20',
+                  border: `1px solid ${getChecklistStatusColor(percentage)}`,
+                  borderRadius: '0.375rem',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    color: getChecklistStatusColor(percentage)
+                  }}>
+                    {getChecklistStatusText(calculateChecklistCompletion().percentage)}
+                  </div>
+                  <div style={{
+                    fontSize: '0.75rem',
+                    color: '#94a3b8',
+                    marginTop: '0.25rem'
+                  }}>
+                    {percentage >= 80 ? 'All systems go! Ready to execute trade.' : 
+                     percentage >= 60 ? 'Most criteria met. Review missing items.' : 
+                     'Critical items missing. Do not trade yet.'}
+                  </div>
+                </div>
+              );
+            })()}
+            
+            <div style={{ display: 'grid', gap: '0.5rem' }}>
+              {preTradeChecklist.map((item, index) => (
+                <label key={item} style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.5rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  color: '#f8fafc',
+                  padding: '0.5rem',
+                  backgroundColor: plan.checklist.includes(item) ? '#10b98120' : '#334155',
+                  borderRadius: '0.25rem',
+                  border: plan.checklist.includes(item) ? '1px solid #10b981' : '1px solid #475569',
+                  transition: 'all 0.2s ease'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={plan.checklist.includes(item)}
+                    onChange={() => handleChecklistChange(item)}
+                    style={{
+                      width: '1rem',
+                      height: '1rem',
+                      accentColor: '#3b82f6',
+                      marginTop: '0.125rem',
+                      flexShrink: 0
+                    }}
+                  />
+                  <span style={{
+                    lineHeight: '1.4',
+                    flex: 1
+                  }}>
+                    <span style={{
+                      fontWeight: '600',
+                      color: '#3b82f6',
+                      marginRight: '0.5rem'
+                    }}>
+                      {index + 1}.
+                    </span>
+                    {item}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {/* Progress Bar */}
+            {(() => {
+              const { completedItems, totalItems, percentage } = calculateChecklistCompletion();
+              return (
+                <div style={{
+                  marginTop: '1rem',
+                  padding: '0.75rem',
+                  backgroundColor: '#334155',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #475569'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '0.5rem'
+                  }}>
+                    <span style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#f8fafc'
+                    }}>
+                      Checklist Progress
+                    </span>
+                    <span style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '600',
+                      color: getChecklistStatusColor(percentage)
+                    }}>
+                      {completedItems}/{totalItems} ({percentage.toFixed(0)}%)
+                    </span>
+                  </div>
+                  <div style={{
+                    width: '100%',
+                    height: '8px',
+                    backgroundColor: '#1e293b',
+                    borderRadius: '4px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${percentage}%`,
+                      height: '100%',
+                      backgroundColor: getChecklistStatusColor(percentage),
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
 
           {/* Company Analysis */}
           <div style={{
@@ -1017,6 +1353,8 @@ const TradePlanning = ({ onNavigate }) => {
             />
           </div>
         </div>
+
+
       </div>
 
       {/* Trade Plans by Date - Full Width at Bottom */}
@@ -1036,35 +1374,37 @@ const TradePlanning = ({ onNavigate }) => {
             Planned Trades by Date
           </h2>
           
-          {/* Date Filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <label style={{
-              fontSize: '0.875rem',
-              color: '#94a3b8',
-              fontWeight: '500'
-            }}>
-              Filter by Date:
-            </label>
-            <select
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              style={{
-                padding: '0.375rem 0.75rem',
-                backgroundColor: '#334155',
-                border: '1px solid #475569',
-                borderRadius: '0.375rem',
-                color: '#f8fafc',
+            {/* Date Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <label style={{
                 fontSize: '0.875rem',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="all">All Dates</option>
-              {sortedDates.map(date => (
-                <option key={date} value={date}>
-                  {date}
-                </option>
-              ))}
-            </select>
+                color: '#94a3b8',
+                fontWeight: '500'
+              }}>
+                Filter by Date:
+              </label>
+              <select
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                style={{
+                  padding: '0.375rem 0.75rem',
+                  backgroundColor: '#334155',
+                  border: '1px solid #475569',
+                  borderRadius: '0.375rem',
+                  color: '#f8fafc',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="all">All Dates</option>
+                {sortedDates.map(date => (
+                  <option key={date} value={date}>
+                    {date}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
         
@@ -1162,10 +1502,10 @@ const TradePlanning = ({ onNavigate }) => {
                                 color: '#f8fafc',
                                 fontSize: '1rem',
                                 marginBottom: '0.25rem'
-                              }}>
-                                {plan.symbol} - {plan.direction || 'LONG'} - {plan.setup || 'No Setup'}
-                                {plan.ranking && <span style={{ color: '#fbbf24', marginLeft: '0.5rem' }}>⭐ {plan.ranking}/10</span>}
-                              </div>
+                                                              }}>
+                                  {plan.symbol} - {plan.direction || 'LONG'} - {plan.setup || 'No Setup'}
+                                  {plan.ranking && <span style={{ color: '#fbbf24', marginLeft: '0.5rem' }}>⭐ {plan.ranking}/10</span>}
+                                </div>
                               <div style={{ 
                                 fontSize: '0.875rem', 
                                 color: '#94a3b8',

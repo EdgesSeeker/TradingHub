@@ -1,439 +1,525 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, TrendingUp, Shield, Target, Zap, CheckCircle, XCircle, AlertTriangle, Clock, Star, BarChart3, MessageSquare, Trash2, DollarSign, Layers, Calendar, Play, RefreshCw } from 'lucide-react';
+import { Brain, TrendingUp, Calendar, Star, Target, AlertTriangle, CheckCircle, XCircle, Download, Upload, Trash2, Play, Eye } from 'lucide-react';
 import storage from '../utils/storage';
-import marketDataService from '../services/marketData';
 
-const AIAgents = ({ trades = [], onTradeUpdated }) => {
+const AIAgents = ({ trades, onTradeUpdated }) => {
   const [tradePlans, setTradePlans] = useState([]);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [isReviewing, setIsReviewing] = useState(false);
-  const [aiResults, setAiResults] = useState({});
-  const [filterStatus, setFilterStatus] = useState('all'); // all, pending, reviewed, approved, rejected
-  const [apiStatus, setApiStatus] = useState(null);
+  const [selectedDate, setSelectedDate] = useState('all');
   const [expandedDates, setExpandedDates] = useState(new Set());
+  const [showAIAnalysisModal, setShowAIAnalysisModal] = useState(false);
+  const [selectedDateForAI, setSelectedDateForAI] = useState('');
+  const [aiAnalysisText, setAiAnalysisText] = useState('');
+  const [showAIReviewModal, setShowAIReviewModal] = useState(false);
+  const [selectedPlanForReview, setSelectedPlanForReview] = useState(null);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [exportDateFilter, setExportDateFilter] = useState('all');
 
   useEffect(() => {
-    // Initialize storage and load trade plans
-    const initializeAndLoad = async () => {
-      try {
-        await storage.init(); // Ensure database is initialized
-        await loadTradePlans();
-        
-        // Update API status
-        setApiStatus(marketDataService.getApiStatus());
-      } catch (error) {
-        console.error('Error initializing storage:', error);
-        // Still try to load from old system
-        await loadTradePlans();
-      }
-    };
-    
-    initializeAndLoad();
-    
-    // Update API status every 30 seconds
-    const interval = setInterval(() => {
-      setApiStatus(marketDataService.getApiStatus());
-    }, 30000);
-    
-    return () => clearInterval(interval);
-  }, [trades]);
+    loadTradePlans();
+  }, []);
 
   const loadTradePlans = async () => {
     try {
-      // Get trade plans from both new AI system and old settings system
-      const [aiPlans, oldPlans] = await Promise.all([
-        storage.loadTradePlans().catch((error) => {
-          console.log('AI system not ready yet, using empty array:', error.message);
-          return [];
-        }),
-        storage.getAllSettings().then(settings => settings.tradePlans || []).catch(() => [])
-      ]);
-      
-      // Combine and deduplicate plans
-      const allPlans = [...aiPlans];
-      
-      // Add old plans that don't exist in new system
-      oldPlans.forEach(oldPlan => {
-        const exists = allPlans.some(plan => plan.id === oldPlan.id);
-        if (!exists) {
-          // Convert old plan format to new format
-          const convertedPlan = {
-            ...oldPlan,
-            status: oldPlan.status || 'pending',
-            direction: oldPlan.direction || (oldPlan.setup?.toLowerCase().includes('short') ? 'SELL' : 'BUY'),
-            targets: oldPlan.targets || [],
-            thesis: oldPlan.thesis || oldPlan.tradePlan || '',
-            trigger: oldPlan.trigger || oldPlan.entryPrice,
-            riskAmount: oldPlan.riskAmount || (oldPlan.calculations?.riskAmount || 0),
-            positionSize: oldPlan.positionSize || (oldPlan.calculations?.positionSize || 0)
-          };
-          allPlans.push(convertedPlan);
-        }
-      });
-      
-      console.log('Loaded trade plans:', allPlans);
-      setTradePlans(allPlans);
+      const plans = await storage.loadSetting('tradePlans') || [];
+      setTradePlans(plans);
     } catch (error) {
       console.error('Error loading trade plans:', error);
       setTradePlans([]);
     }
   };
 
-  // Reload and re-evaluate all trade plans with new approval logic
-  const reloadAndReevaluatePlans = async () => {
+  // Group plans by date
+  const getGroupedTradePlans = () => {
+    const grouped = tradePlans.reduce((groups, plan) => {
+      const dateString = plan.createdAt || plan.plannedDate || new Date().toISOString();
+      const date = new Date(dateString).toLocaleDateString('de-DE', { 
+        day: 'numeric', 
+        month: 'numeric', 
+        year: 'numeric' 
+      });
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(plan);
+      return groups;
+    }, {});
+    
+    return grouped;
+  };
+
+  // Get sorted dates
+  const getSortedDates = () => {
+    const grouped = getGroupedTradePlans();
+    return Object.keys(grouped).sort((a, b) => {
+      const [dayA, monthA, yearA] = a.split('.');
+      const [dayB, monthB, yearB] = b.split('.');
+      return new Date(yearB, monthB - 1, dayB) - new Date(yearA, monthA - 1, dayA);
+    });
+  };
+
+  // Toggle date group expansion
+  const toggleDateGroup = (date) => {
+    setExpandedDates(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(date)) {
+        newSet.delete(date);
+      } else {
+        newSet.add(date);
+      }
+      return newSet;
+    });
+  };
+
+  // Extract AI ranking from analysis text
+  const extractAIRanking = (plan) => {
+    if (!plan.aiAnalysis) return 0;
+    
+    // If we have structured data, use it
+    if (plan.aiAnalysisStructured && plan.aiAnalysisStructured.overallRanking) {
+      const rankingMatch = plan.aiAnalysisStructured.overallRanking.match(/(\d+(?:\.\d+)?)\/10/);
+      return rankingMatch ? parseFloat(rankingMatch[1]) : 0;
+    }
+    
+    const lines = plan.aiAnalysis.split('\n');
+    const symbol = plan.symbol;
+    
+    // First try to find "Overall Ranking:" (new format)
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (line.startsWith('Overall Ranking:')) {
+        const scoreMatch = line.match(/(\d+(?:\.\d+)?)\/10/);
+        return scoreMatch ? parseFloat(scoreMatch[1]) : 0;
+      }
+    }
+    
+    // Fallback to old format: look for symbol-specific ranking
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (line.startsWith('PLAN') && line.includes(symbol)) {
+        // Find the ranking for this specific symbol
+        for (let j = i; j < lines.length; j++) {
+          const rankingLine = lines[j].trim();
+          if (rankingLine.startsWith('Ranking:')) {
+            const scoreMatch = rankingLine.match(/(\d+(?:\.\d+)?)\/10/);
+            return scoreMatch ? parseFloat(scoreMatch[1]) : 0;
+          }
+        }
+      }
+    }
+    return 0;
+  };
+
+  // Export trade plans to text file for AI analysis
+  const exportTradePlansForAI = () => {
+    // Filter plans based on selected date
+    let plansToExport = tradePlans;
+    if (exportDateFilter !== 'all') {
+      plansToExport = tradePlans.filter(plan => {
+        const planDate = new Date(plan.createdAt).toLocaleDateString('de-DE', { 
+          day: 'numeric', 
+          month: 'numeric', 
+          year: 'numeric' 
+        });
+        return planDate === exportDateFilter;
+      });
+    }
+
+    if (plansToExport.length === 0) {
+      alert('No trade plans to export for the selected date');
+      return;
+    }
+
+    let exportText = `TRADE PLANS EXPORT FOR AI ANALYSIS
+Generated on: ${new Date().toLocaleString('de-DE')}
+Export Date: ${exportDateFilter === 'all' ? 'All Dates' : exportDateFilter}
+Total Plans: ${plansToExport.length}
+
+${'='.repeat(80)}
+
+`;
+
+    plansToExport.forEach((plan, index) => {
+      const planCalculations = plan.calculations || {};
+      const sharesToBuy = planCalculations.sharesNeeded || 0;
+      
+      exportText += `PLAN ${index + 1}: ${plan.symbol} - ${plan.direction || 'LONG'}
+${'='.repeat(50)}
+
+BASIC INFO:
+- Symbol: ${plan.symbol}
+- Direction: ${plan.direction || 'LONG'}
+- Setup: ${plan.setup || 'No Setup'}
+- Ranking: ${plan.ranking || 'Not Rated'}/10
+- Created: ${new Date(plan.createdAt).toLocaleDateString('de-DE')}
+
+ENTRY & RISK:
+- Entry Price: $${parseFloat(plan.entryPrice).toFixed(2)}
+- Stop Loss: ${plan.stopLoss ? `$${parseFloat(plan.stopLoss).toFixed(2)}` : 'Not Set'}
+- Position Size: ${plan.positionSizePercent}% of portfolio
+- Shares to Buy: ${sharesToBuy.toLocaleString()}
+- Position Value: $${planCalculations.actualPositionSize ? planCalculations.actualPositionSize.toLocaleString() : 'N/A'}
+
+TRADE PLAN & ANALYSIS:
+${plan.tradePlan || 'No trade plan provided'}
+
+FAILURE REASONS:
+${plan.failureReasons || 'No failure reasons provided'}
+
+COMPANY ANALYSIS:
+${plan.companyAnalysis || 'No company analysis provided'}
+
+CHECKLIST ITEMS:
+${plan.checklist && plan.checklist.length > 0 ? plan.checklist.join('\n- ') : 'No checklist items'}
+
+${'='.repeat(80)}
+
+`;
+    });
+
+    // Create and download the file
+    const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const dateSuffix = exportDateFilter === 'all' ? 'all_dates' : exportDateFilter.replace(/\./g, '-');
+    link.setAttribute('download', `trade_plans_export_${dateSuffix}_${new Date().toISOString().split('T')[0]}.txt`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    console.log(`Trade plans exported for AI analysis: ${plansToExport.length} plans for ${exportDateFilter === 'all' ? 'all dates' : exportDateFilter}`);
+  };
+
+  // Handle AI analysis result input
+  const handleAIAnalysisInput = (e) => {
+    setAiAnalysisResult(e.target.value);
+  };
+
+  // Parse AI analysis and match to specific trade plans
+  const parseAndSaveAIAnalysis = async () => {
+    if (!aiAnalysisResult.trim()) {
+      alert('Please enter AI analysis result');
+      return;
+    }
+
     try {
-      console.log('Reloading and re-evaluating trade plans...');
-      
-      // Get trade plans from both systems
-      const [aiPlans, oldPlans] = await Promise.all([
-        storage.loadTradePlans().catch((error) => {
-          console.log('AI system not ready yet, using empty array:', error.message);
-          return [];
-        }),
-        storage.getAllSettings().then(settings => settings.tradePlans || []).catch(() => [])
-      ]);
-      
-      // Combine and deduplicate plans
-      const allPlans = [...aiPlans];
-      
-      // Add old plans that don't exist in new system
-      oldPlans.forEach(oldPlan => {
-        const exists = allPlans.some(plan => plan.id === oldPlan.id);
-        if (!exists) {
-          // Convert old plan format to new format
-          const convertedPlan = {
-            ...oldPlan,
-            status: oldPlan.status || 'pending',
-            direction: oldPlan.direction || (oldPlan.setup?.toLowerCase().includes('short') ? 'SELL' : 'BUY'),
-            targets: oldPlan.targets || [],
-            thesis: oldPlan.thesis || oldPlan.tradePlan || '',
-            trigger: oldPlan.trigger || oldPlan.entryPrice,
-            riskAmount: oldPlan.riskAmount || (oldPlan.calculations?.riskAmount || 0),
-            positionSize: oldPlan.positionSize || (oldPlan.calculations?.positionSize || 0)
-          };
-          allPlans.push(convertedPlan);
+      const analysisText = aiAnalysisResult.trim();
+      const updatedPlans = [...tradePlans];
+      let analysisCount = 0;
+
+      // Split the analysis into individual plan analyses
+      const planAnalyses = analysisText.split(/(?=Symbol:)/).filter(part => part.trim());
+
+      planAnalyses.forEach(planAnalysis => {
+        // Extract symbol from the analysis
+        const symbolMatch = planAnalysis.match(/Symbol:\s*([A-Z]+)/);
+        if (symbolMatch) {
+          const symbol = symbolMatch[1];
+          
+          // Find matching trade plan
+          const planIndex = updatedPlans.findIndex(plan => 
+            plan.symbol && plan.symbol.toUpperCase() === symbol.toUpperCase()
+          );
+
+          if (planIndex !== -1) {
+            // Extract structured data from the analysis
+            const structuredAnalysis = extractStructuredAnalysis(planAnalysis);
+            
+            // Update the plan with structured analysis
+            updatedPlans[planIndex] = {
+              ...updatedPlans[planIndex],
+              aiAnalysis: planAnalysis.trim(),
+              aiAnalysisStructured: structuredAnalysis
+            };
+            analysisCount++;
+          }
         }
       });
-      
-      // Reset all plans to pending status
-      const resetPlans = allPlans.map(plan => ({
-            ...plan,
-        status: 'pending',
-        aiReview: null,
-        approvalStatus: 'pending'
-      }));
-      
-      // Save reset plans
-      await Promise.all([
-        storage.saveSetting('tradePlans', resetPlans).catch(() => {}),
-        storage.updateSetting('tradePlans', resetPlans).catch(() => {})
-      ]);
-      
-      setTradePlans(resetPlans);
-      console.log('Trade plans reset and ready for re-evaluation');
-      } catch (error) {
-      console.error('Error reloading trade plans:', error);
-    }
-  };
 
-  // Reset trade plan status
-  const resetTradePlanStatus = async (planId) => {
-    try {
-      const updatedPlans = tradePlans.map(plan => 
-        plan.id === planId 
-          ? { ...plan, status: 'pending', aiReview: null, approvalStatus: 'pending' }
-          : plan
-      );
-      
-      // Update both storage systems
-      await Promise.all([
-        storage.saveSetting('tradePlans', updatedPlans).catch(() => {}),
-        storage.updateSetting('tradePlans', updatedPlans).catch(() => {})
-      ]);
-      
+      await storage.saveSetting('tradePlans', updatedPlans);
       setTradePlans(updatedPlans);
-      console.log(`Trade plan ${planId} status reset`);
-    } catch (error) {
-      console.error('Error resetting trade plan status:', error);
-    }
-  };
-
-  // Execute trade plan
-  const executeTradePlan = async (plan) => {
-    try {
-      // Save executed plan to localStorage for Trade Entry component
-      const executedPlan = {
-        ...plan,
-        executedAt: new Date().toISOString(),
-        status: 'executed'
-      };
+      setAiAnalysisResult('');
       
-      localStorage.setItem('executedTradePlan', JSON.stringify(executedPlan));
-      
-      // Update plan status
-      const updatedPlans = tradePlans.map(p => 
-        p.id === plan.id ? { ...p, status: 'executed' } : p
-      );
-      
-      await Promise.all([
-        storage.saveSetting('tradePlans', updatedPlans).catch(() => {}),
-        storage.updateSetting('tradePlans', updatedPlans).catch(() => {})
-      ]);
-      
-      setTradePlans(updatedPlans);
-      
-      // Automatically navigate to Trade Entry
-      window.location.hash = '#trade-entry';
-    } catch (error) {
-      console.error('Error executing trade plan:', error);
-      alert('Fehler beim Ausführen des Trade Plans: ' + error.message);
-    }
-  };
-
-  // AI Agent Review System
-  const runAIReview = async (plan) => {
-    setIsReviewing(true);
-    
-    // Simulate AI agents reviewing the trade plan
-    const aiAgents = [
-      { name: 'Technical Analysis Agent', weight: 0.25 },
-      { name: 'Risk Management Agent', weight: 0.20 },
-      { name: 'Market Sentiment Agent', weight: 0.20 },
-      { name: 'Fundamental Analysis Agent', weight: 0.15 },
-      { name: 'Volatility Assessment Agent', weight: 0.10 },
-      { name: 'Timing Optimization Agent', weight: 0.10 }
-    ];
-    
-    const results = {};
-    let totalScore = 0;
-    
-    // Generate ratings between 7-10 for each agent
-    aiAgents.forEach(agent => {
-      const rating = Math.floor(Math.random() * 4) + 7; // Random between 7-10
-      const weightedScore = rating * agent.weight;
-      totalScore += weightedScore;
-      
-      results[agent.name] = {
-        rating,
-        weightedScore,
-        feedback: generateAIFeedback(agent.name, rating)
-      };
-    });
-    
-    const overallRating = Math.round(totalScore * 10) / 10;
-    const isApproved = overallRating >= 7.0;
-    
-    const reviewResult = {
-      planId: plan.id,
-      timestamp: new Date().toISOString(),
-      agents: results,
-      overallRating,
-      isApproved,
-      status: isApproved ? 'approved' : 'rejected'
-    };
-    
-    setAiResults(prev => ({
-      ...prev,
-      [plan.id]: reviewResult
-    }));
-    
-    // Update plan status
-    const updatedPlans = tradePlans.map(p => 
-      p.id === plan.id ? { ...p, status: reviewResult.status, aiReview: reviewResult } : p
-    );
-    
-    setTradePlans(updatedPlans);
-    
-    // Save updated plans
-    try {
-      await Promise.all([
-        storage.saveSetting('tradePlans', updatedPlans).catch(() => {}),
-        storage.updateSetting('tradePlans', updatedPlans).catch(() => {})
-      ]);
-    } catch (error) {
-      console.error('Error saving AI review results:', error);
-    }
-    
-    setIsReviewing(false);
-  };
-  
-  // Generate AI feedback based on agent and rating
-  const generateAIFeedback = (agentName, rating) => {
-    const feedbacks = {
-      'Technical Analysis Agent': [
-        'Strong technical setup with clear support/resistance levels',
-        'Good trend alignment and momentum indicators',
-        'Mixed technical signals, some concerns about volume',
-        'Weak technical foundation, multiple red flags'
-      ],
-      'Risk Management Agent': [
-        'Excellent risk-reward ratio and position sizing',
-        'Good stop-loss placement and risk controls',
-        'Acceptable risk parameters, could be optimized',
-        'Risk management needs improvement'
-      ],
-      'Market Sentiment Agent': [
-        'Positive market sentiment and institutional flow',
-        'Neutral sentiment with balanced positioning',
-        'Mixed sentiment signals, proceed with caution',
-        'Negative sentiment, unfavorable market conditions'
-      ],
-      'Fundamental Analysis Agent': [
-        'Strong fundamentals support the trade thesis',
-        'Solid fundamental backdrop for the position',
-        'Mixed fundamental factors, some concerns',
-        'Weak fundamentals, trade thesis questionable'
-      ],
-      'Volatility Assessment Agent': [
-        'Optimal volatility for the strategy',
-        'Good volatility profile for entry',
-        'Moderate volatility, adjust position size',
-        'High volatility, consider reducing exposure'
-      ],
-      'Timing Optimization Agent': [
-        'Perfect timing for entry, optimal conditions',
-        'Good timing, favorable market conditions',
-        'Acceptable timing, some room for improvement',
-        'Poor timing, consider waiting for better setup'
-      ]
-    };
-    
-    const agentFeedbacks = feedbacks[agentName] || ['Analysis completed'];
-    const index = Math.min(rating - 7, agentFeedbacks.length - 1);
-    return agentFeedbacks[index];
-  };
-
-  // Filter plans by status
-  const filteredPlans = tradePlans.filter(plan => {
-    if (filterStatus === 'all') return true;
-    return plan.status === filterStatus;
-  });
-
-  // Group plans by date
-  const groupedPlans = filteredPlans.reduce((groups, plan) => {
-      const date = new Date(plan.createdAt || plan.date || Date.now()).toLocaleDateString('de-DE', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(plan);
-    return groups;
-      }, {});
-
-  // Toggle date expansion
-  const toggleDateExpansion = (date) => {
-    const newExpanded = new Set(expandedDates);
-    if (newExpanded.has(date)) {
-      newExpanded.delete(date);
-    } else {
-      newExpanded.add(date);
-    }
-    setExpandedDates(newExpanded);
-  };
-
-  const renderTradePlans = () => {
-    if (!tradePlans || tradePlans.length === 0) {
-      return (
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-          No trade plans available
-        </div>
-      );
-    }
-
-    // Sort trade plans by ranking (highest first) and then by date
-    const sortedPlans = [...tradePlans].sort((a, b) => {
-      // First sort by ranking (highest first)
-      const rankingA = a.ranking || 0;
-      const rankingB = b.ranking || 0;
-      if (rankingA !== rankingB) {
-        return rankingB - rankingA;
+      if (analysisCount > 0) {
+        alert(`AI analysis saved to ${analysisCount} trade plan(s)!`);
+      } else {
+        alert('No matching trade plans found for the provided analysis.');
       }
-      // Then sort by date (newest first)
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-
-    return (
-      <div style={{ display: 'grid', gap: '1rem' }}>
-        {sortedPlans.map(plan => (
-          <div key={plan.id} style={{
-            backgroundColor: '#1e293b',
-            border: '1px solid #334155',
-            borderRadius: '0.5rem',
-            padding: '1rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <span style={{ fontWeight: '600', color: '#f8fafc' }}>
-                  {plan.symbol}
-                </span>
-                <span style={{ 
-                  padding: '0.25rem 0.5rem', 
-                  backgroundColor: plan.direction === 'LONG' ? '#10b981' : '#ef4444',
-                  color: '#ffffff',
-                  borderRadius: '0.25rem',
-                  fontSize: '0.75rem',
-                  fontWeight: '500'
-                }}>
-                  {plan.direction || 'LONG'}
-                </span>
-                {plan.ranking && (
-                  <span style={{ 
-                    color: '#fbbf24', 
-                    fontWeight: '600',
-                    fontSize: '0.875rem'
-                  }}>
-                    ⭐ {plan.ranking}/10
-                  </span>
-                )}
-                {plan.setupQuality && (
-                  <span style={{ 
-                    color: '#10b981', 
-                    fontWeight: '600',
-                    fontSize: '0.875rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
-                  }}>
-                    🎯 {plan.setupQuality}/10
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
-                Entry: ${plan.entryPrice} | Stop: ${plan.stopLoss} | Target: ${plan.takeProfit}
-              </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                {plan.setup && `Setup: ${plan.setup}`} | Created: {new Date(plan.createdAt).toLocaleDateString()}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                onClick={() => executeTradePlan(plan)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#3b82f6',
-                  border: 'none',
-                  borderRadius: '0.25rem',
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500'
-                }}
-              >
-                Execute
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    } catch (error) {
+      console.error('Error saving AI analysis:', error);
+      alert('Error saving AI analysis');
+    }
   };
+
+  // Extract structured data from AI analysis
+  const extractStructuredAnalysis = (analysisText) => {
+    const structured = {
+      catalysts: '',
+      sectorTheme: '',
+      fundamentals: '',
+      technical: '',
+      planStructure: '',
+      overallRanking: '',
+      catalystsRating: '',
+      sectorRating: '',
+      fundamentalsRating: '',
+      technicalRating: '',
+      planStructureRating: ''
+    };
+
+    const lines = analysisText.split('\n');
+    let currentSection = '';
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (line.startsWith('Catalysts:')) {
+        currentSection = 'catalysts';
+        structured.catalysts = line.replace('Catalysts:', '').trim();
+      } else if (line.startsWith('Sector/Theme:')) {
+        currentSection = 'sectorTheme';
+        structured.sectorTheme = line.replace('Sector/Theme:', '').trim();
+      } else if (line.startsWith('Fundamentals:')) {
+        currentSection = 'fundamentals';
+        structured.fundamentals = line.replace('Fundamentals:', '').trim();
+      } else if (line.startsWith('Technical:')) {
+        currentSection = 'technical';
+        structured.technical = line.replace('Technical:', '').trim();
+      } else if (line.startsWith('Plan Structure:')) {
+        currentSection = 'planStructure';
+        structured.planStructure = line.replace('Plan Structure:', '').trim();
+             } else if (line.startsWith('Overall Ranking:')) {
+         currentSection = 'overallRanking';
+         structured.overallRanking = line.replace('Overall Ranking:', '').trim();
+       } else if (line.includes('Rating:') && line.includes('/10') && !line.startsWith('Overall Ranking:')) {
+        // Extract rating for current section
+        const ratingMatch = line.match(/Rating:\s*(\d+(?:\.\d+)?)\/10/);
+        if (ratingMatch) {
+          const rating = ratingMatch[1];
+          switch (currentSection) {
+            case 'catalysts':
+              structured.catalystsRating = rating;
+              break;
+            case 'sectorTheme':
+              structured.sectorRating = rating;
+              break;
+            case 'fundamentals':
+              structured.fundamentalsRating = rating;
+              break;
+            case 'technical':
+              structured.technicalRating = rating;
+              break;
+            case 'planStructure':
+              structured.planStructureRating = rating;
+              break;
+          }
+        }
+      } else if (currentSection && line && !line.startsWith('Symbol:') && !line.startsWith('Overall Ranking')) {
+        // Continue adding to current section
+        switch (currentSection) {
+          case 'catalysts':
+            structured.catalysts += ' ' + line;
+            break;
+          case 'sectorTheme':
+            structured.sectorTheme += ' ' + line;
+            break;
+          case 'fundamentals':
+            structured.fundamentals += ' ' + line;
+            break;
+          case 'technical':
+            structured.technical += ' ' + line;
+            break;
+          case 'planStructure':
+            structured.planStructure += ' ' + line;
+            break;
+          case 'overallRanking':
+            structured.overallRanking += ' ' + line;
+            break;
+        }
+      }
+    }
+
+    return structured;
+  };
+
+  // Save AI analysis to trade plans (legacy function for backward compatibility)
+  const saveAIAnalysis = async () => {
+    await parseAndSaveAIAnalysis();
+  };
+
+  // Calculate combined ranking
+  const getCombinedRanking = (plan) => {
+    const userRanking = parseFloat(plan.ranking) || 0;
+    const aiRanking = extractAIRanking(plan);
+    
+    if (userRanking > 0 && aiRanking > 0) {
+      return ((userRanking + aiRanking) / 2).toFixed(1);
+    } else if (userRanking > 0) {
+      return userRanking;
+    } else if (aiRanking > 0) {
+      return aiRanking;
+    }
+    return 0;
+  };
+
+  // Get AI-only ranking for display in AI Agents
+  const getAIRanking = (plan) => {
+    const aiRanking = extractAIRanking(plan);
+    return aiRanking > 0 ? aiRanking : 0;
+  };
+
+  // Get ranking color
+  const getRankingColor = (score) => {
+    if (score >= 7) return '#10b981'; // Green
+    if (score >= 6) return '#3b82f6'; // Blue
+    if (score >= 5) return '#f59e0b'; // Yellow
+    return '#ef4444'; // Red
+  };
+
+  // Handle Load Plan
+  const handleLoadPlan = (plan) => {
+    // Navigate to Trade Planning with the plan loaded
+    if (onTradeUpdated) {
+      onTradeUpdated(plan);
+    }
+  };
+
+  // Handle Execute Plan
+  const handleExecutePlan = (plan) => {
+    // Create a trade from the plan
+    const newTrade = {
+      id: Date.now().toString(),
+      symbol: plan.symbol,
+      side: plan.direction === 'SHORT' ? 'SELL' : 'BUY',
+      quantity: plan.calculations?.sharesNeeded || 0,
+      entryPrice: plan.entryPrice,
+      entryDate: new Date().toISOString().split('T')[0],
+      status: 'open',
+      notes: `Executed from trade plan: ${plan.setup || 'No setup'}`,
+      stopLoss: plan.stopLoss,
+      takeProfit: plan.takeProfit
+    };
+
+    if (onTradeUpdated) {
+      onTradeUpdated(newTrade);
+    }
+  };
+
+  // Handle Delete Plan
+  const handleDeletePlan = async (planId) => {
+    if (window.confirm('Are you sure you want to delete this trade plan?')) {
+      try {
+        const updatedPlans = tradePlans.filter(plan => plan.id !== planId);
+        await storage.saveSetting('tradePlans', updatedPlans);
+        setTradePlans(updatedPlans);
+      } catch (error) {
+        console.error('Error deleting trade plan:', error);
+        alert('Error deleting trade plan. Please try again.');
+      }
+    }
+  };
+
+  // Handle AI Review
+  const handleAIReview = (plan) => {
+    setSelectedPlanForReview(plan);
+    setShowAIReviewModal(true);
+  };
+
+  // Extract AI analysis data for review
+  const extractAIAnalysisData = (plan) => {
+    if (!plan.aiAnalysis) return null;
+
+    // If we have structured data, use it
+    if (plan.aiAnalysisStructured) {
+      return {
+        catalysts: plan.aiAnalysisStructured.catalysts,
+        sectorTheme: plan.aiAnalysisStructured.sectorTheme,
+        fundamentals: plan.aiAnalysisStructured.fundamentals,
+        technical: plan.aiAnalysisStructured.technical,
+        planStructure: plan.aiAnalysisStructured.planStructure,
+        ranking: plan.aiAnalysisStructured.overallRanking,
+        catalystsRating: plan.aiAnalysisStructured.catalystsRating,
+        sectorRating: plan.aiAnalysisStructured.sectorRating,
+        fundamentalsRating: plan.aiAnalysisStructured.fundamentalsRating,
+        technicalRating: plan.aiAnalysisStructured.technicalRating,
+        planStructureRating: plan.aiAnalysisStructured.planStructureRating
+      };
+    }
+
+    // Fallback to old parsing method for backward compatibility
+    const lines = plan.aiAnalysis.split('\n');
+    const symbol = plan.symbol;
+    let catalysts = '';
+    let sectorTheme = '';
+    let fundamentals = '';
+    let technical = '';
+    let planStructure = '';
+    let ranking = '';
+    let currentSection = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (line.startsWith('PLAN') && line.includes(symbol)) {
+        // Find sections for this specific symbol
+        for (let j = i; j < lines.length; j++) {
+          const sectionLine = lines[j].trim();
+          
+          if (sectionLine.startsWith('Catalysts:')) {
+            currentSection = 'catalysts';
+            catalysts = sectionLine.replace('Catalysts:', '').trim();
+          } else if (sectionLine.startsWith('Sector/Theme:')) {
+            currentSection = 'sectorTheme';
+            sectorTheme = sectionLine.replace('Sector/Theme:', '').trim();
+          } else if (sectionLine.startsWith('Fundamentals:')) {
+            currentSection = 'fundamentals';
+            fundamentals = sectionLine.replace('Fundamentals:', '').trim();
+          } else if (sectionLine.startsWith('Technical:')) {
+            currentSection = 'technical';
+            technical = sectionLine.replace('Technical:', '').trim();
+          } else if (sectionLine.startsWith('Plan Structure:')) {
+            currentSection = 'planStructure';
+            planStructure = sectionLine.replace('Plan Structure:', '').trim();
+          } else if (sectionLine.startsWith('Ranking:')) {
+            currentSection = 'ranking';
+            ranking = sectionLine.replace('Ranking:', '').trim();
+          } else if (currentSection && sectionLine && !sectionLine.startsWith('PLAN') && !sectionLine.startsWith('Relative Ranking') && !sectionLine.startsWith('✅')) {
+            // Continue adding to current section
+            switch (currentSection) {
+              case 'catalysts':
+                catalysts += ' ' + sectionLine;
+                break;
+              case 'sectorTheme':
+                sectorTheme += ' ' + sectionLine;
+                break;
+              case 'fundamentals':
+                fundamentals += ' ' + sectionLine;
+                break;
+              case 'technical':
+                technical += ' ' + sectionLine;
+                break;
+              case 'planStructure':
+                planStructure += ' ' + sectionLine;
+                break;
+              case 'ranking':
+                ranking += ' ' + sectionLine;
+                break;
+            }
+          }
+        }
+        break;
+      }
+    }
+    
+    return { catalysts, sectorTheme, fundamentals, technical, planStructure, ranking };
+  };
+
+  const groupedPlans = getGroupedTradePlans();
+  const sortedDates = getSortedDates();
 
   return (
     <div style={{
@@ -462,860 +548,706 @@ const AIAgents = ({ trades = [], onTradeUpdated }) => {
             AI-Powered Trade Analysis & Execution
           </p>
         </div>
-        </div>
-        
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {/* Reload Button */}
-          <button
-            onClick={reloadAndReevaluatePlans}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#3b82f6',
-              border: 'none',
-              borderRadius: '0.5rem',
-              color: '#f8fafc',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem'
-            }}
-            title="AI-Bewertungen zurücksetzen für neue Bewertung"
-          >
-            <RefreshCw size={16} />
-            Reload
-          </button>
-          
-          {/* API Status */}
-          {apiStatus && (
-            <div style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: apiStatus.remainingCalls > 0 ? '#10b981' : '#ef4444',
-              borderRadius: '0.5rem',
-              color: '#f8fafc',
-              fontSize: '0.75rem',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem'
-            }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: apiStatus.remainingCalls > 0 ? '#f8fafc' : '#f8fafc' }}></div>
-              API: {apiStatus.remainingCalls}/5 calls
-            </div>
-          )}
-          
-          <button
-            onClick={() => setFilterStatus('all')}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: filterStatus === 'all' ? '#10b981' : 'transparent',
-              border: `1px solid ${filterStatus === 'all' ? '#10b981' : '#475569'}`,
-              borderRadius: '0.5rem',
-              color: filterStatus === 'all' ? '#f8fafc' : '#94a3b8',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500'
-            }}
-          >
-            Alle
-          </button>
-          <button
-            onClick={() => setFilterStatus('pending')}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: filterStatus === 'pending' ? '#10b981' : 'transparent',
-              border: `1px solid ${filterStatus === 'pending' ? '#10b981' : '#475569'}`,
-              borderRadius: '0.5rem',
-              color: filterStatus === 'pending' ? '#f8fafc' : '#94a3b8',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500'
-            }}
-          >
-            Ausstehend
-          </button>
-          <button
-            onClick={() => setFilterStatus('approved')}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: filterStatus === 'approved' ? '#10b981' : 'transparent',
-              border: `1px solid ${filterStatus === 'approved' ? '#10b981' : '#475569'}`,
-              borderRadius: '0.5rem',
-              color: filterStatus === 'approved' ? '#f8fafc' : '#94a3b8',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500'
-            }}
-          >
-            Genehmigt
-          </button>
-          <button
-            onClick={() => setFilterStatus('rejected')}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: filterStatus === 'rejected' ? '#10b981' : 'transparent',
-              border: `1px solid ${filterStatus === 'rejected' ? '#10b981' : '#475569'}`,
-              borderRadius: '0.5rem',
-              color: filterStatus === 'rejected' ? '#f8fafc' : '#94a3b8',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: '500'
-            }}
-          >
-            Abgelehnt
-          </button>
       </div>
 
-      {/* Trade Plans Overview */}
+      {/* Trade Plans by Date */}
       <div style={{
         backgroundColor: '#1e293b',
-        borderRadius: '0.75rem',
-        padding: '1.5rem',
-        marginBottom: '2rem',
-        border: '1px solid #334155'
+        borderRadius: '0.5rem',
+        border: '1px solid #334155',
+        padding: '1.5rem'
       }}>
-        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
-          Trade Plans ({filteredPlans.length})
-        </h3>
-        
-        {filteredPlans.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                  <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1.5rem'
+          }}>
+            <h2 style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#f8fafc',
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <Target size={20} />
+              Trade Plans by Date
+            </h2>
+            
+            {/* Export Controls */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem'
+            }}>
+              {/* Date Filter for Export */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <label style={{
+                  fontSize: '0.75rem',
+                  color: '#94a3b8',
+                  fontWeight: '500'
+                }}>
+                  Export Date:
+                </label>
+                <select
+                  value={exportDateFilter}
+                  onChange={(e) => setExportDateFilter(e.target.value)}
+                  style={{
+                    padding: '0.375rem 0.75rem',
+                    backgroundColor: '#334155',
+                    border: '1px solid #475569',
+                    borderRadius: '0.375rem',
+                    color: '#f8fafc',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="all">All Dates</option>
+                  {sortedDates.map(date => (
+                    <option key={date} value={date}>
+                      {date}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Export Button */}
+              <button
+                onClick={exportTradePlansForAI}
+                disabled={tradePlans.length === 0}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: tradePlans.length > 0 ? '#10b981' : '#64748b',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  color: '#ffffff',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: tradePlans.length > 0 ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                📄 Export for AI
+              </button>
+            </div>
+          </div>
+
+        {sortedDates.length === 0 ? (
+          <div style={{
+            textAlign: 'center',
+            padding: '3rem',
+            color: '#94a3b8'
+          }}>
             <Brain size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-            <p>Keine Trade Plans gefunden.</p>
-            <p style={{ fontSize: '0.875rem' }}>Erstellen Sie Trade Plans in der Trade Planning Sektion.</p>
+            <p style={{ margin: 0, fontSize: '1rem' }}>
+              No trade plans found. Create plans in Trade Planning first.
+            </p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {Object.entries(groupedPlans).map(([date, plans]) => (
-              <div key={date}>
-                {/* Date Header - Clickable */}
-                <div 
-                  onClick={() => toggleDateExpansion(date)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '1rem 1.5rem',
-                    backgroundColor: '#334155',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #475569',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#475569';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#334155';
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <Calendar size={20} color="#10b981" />
-                    <h4 style={{ 
-                      fontSize: '1.125rem', 
-                      fontWeight: '600', 
+            {sortedDates.map(date => {
+              const plansForDate = groupedPlans[date];
+              
+              return (
+                <div key={date} style={{
+                  backgroundColor: '#334155',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #475569',
+                  overflow: 'hidden'
+                }}>
+                  {/* Date Header */}
+                  <div
+                    onClick={() => toggleDateGroup(date)}
+                    style={{
+                      padding: '1rem',
+                      backgroundColor: '#475569',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <h3 style={{
                       margin: 0,
+                      fontSize: '1rem',
+                      fontWeight: '600',
                       color: '#f8fafc'
                     }}>
-                      {date}
-                    </h4>
+                      {date} ({plansForDate.length} plans)
+                    </h3>
                     <span style={{
-                      padding: '0.25rem 0.5rem',
-                      backgroundColor: '#475569',
-                      borderRadius: '0.25rem',
-                      fontSize: '0.75rem',
-                      color: '#94a3b8'
+                      fontSize: '0.875rem',
+                      color: '#cbd5e1'
                     }}>
-                      {plans.length} {plans.length === 1 ? 'Trade Plan' : 'Trade Plans'}
+                      {expandedDates.has(date) ? '▼' : '▶'}
                     </span>
                   </div>
-                  
-                  {/* Expand/Collapse Icon */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    color: '#94a3b8',
-                    fontSize: '1.25rem',
-                    fontWeight: 'bold',
-                    transition: 'transform 0.2s ease'
-                  }}>
-                    {expandedDates.has(date) ? '−' : '+'}
-                  </div>
-                </div>
-                
-                {/* Trade Plans for this date - Collapsible */}
-                {expandedDates.has(date) && (
-                  <div style={{ 
-                    display: 'grid', 
-                    gap: '1rem',
-                    marginTop: '1rem',
-                    paddingLeft: '1rem',
-                    borderLeft: '2px solid #475569'
-                  }}>
-                    {plans
-                      .sort((a, b) => {
-                        // Sort by ranking (highest first), then by setup quality, then by creation date
-                        const rankingA = a.ranking || 0;
-                        const rankingB = b.ranking || 0;
-                        const setupQualityA = a.setupQuality || 0;
-                        const setupQualityB = b.setupQuality || 0;
-                        
-                        // First sort by ranking
-                        if (rankingA !== rankingB) {
-                          return rankingB - rankingA;
-                        }
-                        // Then sort by setup quality
-                        if (setupQualityA !== setupQualityB) {
-                          return setupQualityB - setupQualityA;
-                        }
-                        // Finally sort by date
-                        return new Date(b.createdAt) - new Date(a.createdAt);
-                      })
-                      .map(plan => (
-              <div key={plan.id} style={{
-                backgroundColor: '#334155',
-                borderRadius: '0.5rem',
-                padding: '1rem',
-                        border: '1px solid #475569'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <span style={{ 
-                              fontSize: '1.125rem', 
-                              fontWeight: '600', 
-                              color: '#f8fafc' 
+
+                  {/* Plans List */}
+                  {expandedDates.has(date) && (
+                    <div style={{ padding: '1rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {plansForDate.map(plan => {
+                          const planCalculations = plan.calculations || {};
+                          const sharesToBuy = planCalculations.sharesNeeded || 0;
+                          const combinedRanking = getCombinedRanking(plan);
+                          const aiRanking = extractAIRanking(plan);
+                          
+                          return (
+                            <div key={plan.id} style={{
+                              backgroundColor: '#1e293b',
+                              border: '1px solid #475569',
+                              borderRadius: '0.5rem',
+                              padding: '0.75rem',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
                             }}>
-                              {plan.symbol}
-                            </span>
-                            <span style={{ 
-                              padding: '0.25rem 0.5rem', 
-                              backgroundColor: plan.direction === 'LONG' ? '#10b981' : '#ef4444',
-                              color: '#ffffff',
-                              borderRadius: '0.25rem',
-                              fontSize: '0.75rem',
-                              fontWeight: '500'
-                            }}>
-                              {plan.direction || 'LONG'}
-                            </span>
-                            {plan.ranking && (
-                              <span style={{ 
-                                color: '#fbbf24', 
-                                fontWeight: '600',
-                                fontSize: '0.875rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.25rem'
-                              }}>
-                                ⭐ {plan.ranking}/10
-                              </span>
-                            )}
-                            {plan.setupQuality && (
-                              <span style={{ 
-                                color: '#10b981', 
-                                fontWeight: '600',
-                                fontSize: '0.875rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.25rem'
-                              }}>
-                                🎯 {plan.setupQuality}/10
-                              </span>
-                            )}
-                          </div>
-                          {/* Status and Ranking */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-                            {/* AI Rating Badge */}
-                            {aiResults[plan.id] && (
-                              <div style={{
-                                padding: '0.25rem 0.75rem',
-                                borderRadius: '9999px',
-                                fontSize: '0.875rem',
-                                fontWeight: '700',
-                                backgroundColor: aiResults[plan.id].isApproved ? '#10b981' : '#ef4444',
-                                color: '#ffffff',
-                                textAlign: 'center',
-                                minWidth: '60px'
-                              }}>
-                                {aiResults[plan.id].overallRating}/10
+                              <div style={{ flex: 1 }}>
+                                <div style={{ 
+                                  fontWeight: '600', 
+                                  color: '#f8fafc',
+                                  fontSize: '1rem',
+                                  marginBottom: '0.25rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem'
+                                }}>
+                                  <span>{plan.symbol} - {plan.direction || 'LONG'} - {plan.setup || 'No Setup'}</span>
+                                  {(() => {
+                                    const combinedRanking = getCombinedRanking(plan);
+                                    if (combinedRanking > 0) {
+                                      return (
+                                        <span style={{
+                                          color: '#ffffff',
+                                          backgroundColor: getRankingColor(combinedRanking),
+                                          padding: '0.25rem 0.5rem',
+                                          borderRadius: '0.25rem',
+                                          fontSize: '0.75rem',
+                                          fontWeight: '600'
+                                        }}>
+                                          ⭐ {combinedRanking}/10
+                                        </span>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
+                                </div>
+                                <div style={{ 
+                                  fontSize: '0.875rem', 
+                                  color: '#94a3b8',
+                                  marginBottom: '0.125rem'
+                                }}>
+                                  Entry: ${parseFloat(plan.entryPrice).toFixed(2)} | Shares: {sharesToBuy.toLocaleString()} | Size: {plan.positionSizePercent}%
+                                </div>
+                                <div style={{ 
+                                  fontSize: '0.75rem', 
+                                  color: '#64748b'
+                                }}>
+                                  Created: {new Date(plan.createdAt).toLocaleDateString('de-DE', { 
+                                    day: 'numeric', 
+                                    month: 'numeric', 
+                                    year: 'numeric' 
+                                  })}
+                                </div>
                               </div>
-                            )}
-                            
-                            {/* Status Badge */}
-                            <div style={{
-                              padding: '0.25rem 0.75rem',
-                              borderRadius: '9999px',
-                              fontSize: '0.75rem',
-                              fontWeight: '600',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                              ...(plan.status === 'approved' ? {
-                                backgroundColor: '#10b981',
-                                color: '#ffffff'
-                              } : plan.status === 'rejected' ? {
-                                backgroundColor: '#ef4444',
-                                color: '#ffffff'
-                              } : plan.status === 'executed' ? {
-                                backgroundColor: '#3b82f6',
-                                color: '#ffffff'
-                              } : {
-                                backgroundColor: '#f59e0b',
-                                color: '#ffffff'
-                              })
-                            }}>
-                              {plan.status}
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                  onClick={() => handleLoadPlan(plan)}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    backgroundColor: '#059669',
+                                    border: 'none',
+                                    borderRadius: '0.25rem',
+                                    color: '#f8fafc',
+                                    cursor: 'pointer',
+                                    fontSize: '0.75rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                  }}
+                                >
+                                  <Download size={12} />
+                                  Load
+                                </button>
+                                <button
+                                  onClick={() => handleExecutePlan(plan)}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    backgroundColor: '#3b82f6',
+                                    border: 'none',
+                                    borderRadius: '0.25rem',
+                                    color: '#f8fafc',
+                                    cursor: 'pointer',
+                                    fontSize: '0.75rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                  }}
+                                >
+                                  <Play size={12} />
+                                  Execute
+                                </button>
+                                {plan.aiAnalysis && (
+                                  <button
+                                    onClick={() => handleAIReview(plan)}
+                                    style={{
+                                      padding: '0.5rem 1rem',
+                                      backgroundColor: '#8b5cf6',
+                                      border: 'none',
+                                      borderRadius: '0.25rem',
+                                      color: '#f8fafc',
+                                      cursor: 'pointer',
+                                      fontSize: '0.75rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.25rem'
+                                    }}
+                                  >
+                                    <Eye size={12} />
+                                    AI Review
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeletePlan(plan.id)}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    backgroundColor: '#dc2626',
+                                    border: 'none',
+                                    borderRadius: '0.25rem',
+                                    color: '#f8fafc',
+                                    cursor: 'pointer',
+                                    fontSize: '0.75rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                  }}
+                                >
+                                  <Trash2 size={12} />
+                                  Delete
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                        
-                        {/* Plan Details */}
-                        {plan.thesis && (
-                          <div style={{ marginBottom: '1rem' }}>
-                            <h5 style={{
-                              fontSize: '0.875rem',
-                              fontWeight: '600',
-                              color: '#94a3b8',
-                              marginBottom: '0.5rem'
-                            }}>
-                              Thesis
-                            </h5>
-                            <p style={{
-                              fontSize: '0.875rem',
-                         color: '#f8fafc',
-                              lineHeight: '1.5',
-                              margin: 0
-                       }}>
-                              {plan.thesis}
-                            </p>
-                       </div>
-                     )}
-                     
-                        {/* Action Buttons */}
-                        <div style={{
-                          display: 'flex',
-                          gap: '0.5rem',
-                          flexWrap: 'wrap'
-                        }}>
-                          {plan.status === 'approved' && (
-                       <button
-                              onClick={() => executeTradePlan(plan)}
-                         style={{
-                                padding: '0.5rem 1rem',
-                                backgroundColor: '#10b981',
-                           border: 'none',
-                                borderRadius: '0.375rem',
-                                color: '#ffffff',
-                           cursor: 'pointer',
-                                fontSize: '0.875rem',
-                           fontWeight: '500',
-                           display: 'flex',
-                           alignItems: 'center',
-                           gap: '0.25rem'
-                         }}
-                       >
-                              <Play size={16} />
-                         Execute
-                       </button>
-                     )}
-                     
-                          {plan.status === 'executed' && (
-                       <button
-                              onClick={() => resetTradePlanStatus(plan.id)}
-                         style={{
-                                padding: '0.5rem 1rem',
-                                backgroundColor: '#f59e0b',
-                           border: 'none',
-                                borderRadius: '0.375rem',
-                                color: '#ffffff',
-                                cursor: 'pointer',
-                                fontSize: '0.875rem',
-                           fontWeight: '500',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.25rem'
-                         }}
-                       >
-                              <RefreshCw size={16} />
-                              Reset
-                       </button>
-                     )}
-                     
-                     <button
-                       onClick={() => runAIReview(plan)}
-                       disabled={isReviewing}
-                       style={{
-                         padding: '0.5rem 1rem',
-                         backgroundColor: isReviewing ? '#64748b' : '#3b82f6',
-                         border: 'none',
-                         borderRadius: '0.375rem',
-                         color: '#ffffff',
-                         cursor: isReviewing ? 'not-allowed' : 'pointer',
-                         fontSize: '0.875rem',
-                         fontWeight: '500',
-                         display: 'flex',
-                         alignItems: 'center',
-                         gap: '0.25rem'
-                       }}
-                     >
-                            {isReviewing ? <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Brain size={16} />}
-                            {isReviewing ? 'Evaluating...' : 'Evaluate'}
-                     </button>
-                     
-                     {/* AI Review Button - only show if evaluation exists */}
-                     {aiResults[plan.id] && (
-                       <button
-                         onClick={() => setSelectedPlan(plan)}
-                         style={{
-                           padding: '0.5rem 1rem',
-                           backgroundColor: '#10b981',
-                           border: 'none',
-                           borderRadius: '0.375rem',
-                           color: '#ffffff',
-                           cursor: 'pointer',
-                           fontSize: '0.875rem',
-                           fontWeight: '500',
-                           display: 'flex',
-                           alignItems: 'center',
-                           gap: '0.25rem'
-                         }}
-                       >
-                         <MessageSquare size={16} />
-                         AI Review
-                       </button>
-                     )}
-                   </div>
-              </div>
-            ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* AI Review Dashboard Modal */}
-      {selectedPlan && (
+      {/* AI Review Modal */}
+      {showAIReviewModal && selectedPlanForReview && (
         <div style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
           display: 'flex',
-          justifyContent: 'center',
           alignItems: 'center',
+          justifyContent: 'center',
           zIndex: 1000
         }}>
           <div style={{
-            backgroundColor: '#0f172a',
-            borderRadius: '0.75rem',
+            backgroundColor: '#1e293b',
+            borderRadius: '0.5rem',
+            border: '1px solid #334155',
             padding: '2rem',
-            maxWidth: '1200px',
-            width: '95%',
-            maxHeight: '95vh',
-            overflow: 'auto',
-            border: '1px solid #334155'
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
           }}>
-            {/* Header */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '2rem',
-              paddingBottom: '1rem',
-              borderBottom: '1px solid #334155'
+              marginBottom: '1.5rem'
             }}>
-              <div>
-                <h2 style={{
-                  fontSize: '2rem',
-                  fontWeight: '700',
-                  color: '#f8fafc',
-                  margin: '0 0 0.5rem 0'
-                }}>
-                  🤖 AI Review Dashboard
-                </h2>
-                <p style={{
-                  fontSize: '1.125rem',
-                  color: '#94a3b8',
-                  margin: 0
-                }}>
-                  {selectedPlan.symbol} - {selectedPlan.setup || 'Setup'} Analysis
-                </p>
-              </div>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: '#f8fafc',
+                margin: 0
+              }}>
+                🤖 AI Review - {selectedPlanForReview.symbol}
+              </h2>
               <button
-                onClick={() => setSelectedPlan(null)}
+                onClick={() => setShowAIReviewModal(false)}
                 style={{
                   background: 'none',
                   border: 'none',
                   color: '#94a3b8',
                   cursor: 'pointer',
-                  padding: '0.5rem',
-                  fontSize: '2rem'
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
                 }}
               >
-                ✕
+                ×
               </button>
             </div>
 
-            {/* Main Content Grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '2rem',
-              marginBottom: '2rem'
-            }}>
-              {/* Left Column - Trade Plan Details */}
-              <div style={{
-                backgroundColor: '#1e293b',
-                padding: '1.5rem',
-                borderRadius: '0.75rem',
-                border: '1px solid #334155'
-              }}>
-                <h3 style={{
-                  fontSize: '1.5rem',
-                  fontWeight: '600',
-                  color: '#f8fafc',
-                  marginBottom: '1.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}>
-                  📋 Trade Plan Details
-                </h3>
-                
-                <div style={{
-                  display: 'grid',
-                  gap: '1rem'
-                }}>
-                  <div>
-                    <label style={{
-                      fontSize: '0.875rem',
-                      color: '#94a3b8',
-                      fontWeight: '500',
-                      display: 'block',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Symbol & Setup
-                    </label>
-                    <div style={{
-                      fontSize: '1.125rem',
-                      color: '#f8fafc',
+            {/* Gesamt-Rating */}
+            {(() => {
+              const combinedRanking = getCombinedRanking(selectedPlanForReview);
+              
+              if (combinedRanking > 0) {
+                return (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    marginBottom: '1.5rem',
+                    padding: '0.75rem',
+                    backgroundColor: '#1e293b',
+                    borderRadius: '0.375rem',
+                    border: '2px solid #fbbf24'
+                  }}>
+                    <span style={{
+                      color: '#fbbf24',
                       fontWeight: '600',
-                      padding: '0.75rem',
-                      backgroundColor: '#334155',
-                      borderRadius: '0.5rem'
+                      fontSize: '1rem'
                     }}>
-                      {selectedPlan.symbol} - {selectedPlan.setup || 'Setup'}
-                    </div>
+                      ⭐ Gesamt-Rating:
+                    </span>
+                    <span style={{
+                      color: '#ffffff',
+                      backgroundColor: getRankingColor(combinedRanking),
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.375rem',
+                      fontSize: '1rem',
+                      fontWeight: '600'
+                    }}>
+                      {combinedRanking}/10
+                    </span>
                   </div>
-                  
-                  <div>
-                    <label style={{
-                      fontSize: '0.875rem',
-                      color: '#94a3b8',
-                      fontWeight: '500',
-                      display: 'block',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Direction
-                    </label>
-                    <div style={{
-                      fontSize: '1.125rem',
-                      color: '#f8fafc',
-                      fontWeight: '600',
-                      padding: '0.75rem',
-                      backgroundColor: '#334155',
-                      borderRadius: '0.5rem'
-                    }}>
-                      {selectedPlan.direction || 'N/A'}
-                    </div>
+                );
+              }
+              return null;
+            })()}
+
+            {(() => {
+              const aiData = extractAIAnalysisData(selectedPlanForReview);
+              
+              if (!aiData) {
+                return (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '2rem',
+                    color: '#94a3b8'
+                  }}>
+                    <Brain size={32} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                    <p>No AI analysis available for this trade plan.</p>
                   </div>
-                  
-                  {selectedPlan.entryPrice && (
+                );
+              }
+
+              return (
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  {aiData.catalysts && (
                     <div>
-                      <label style={{
-                        fontSize: '0.875rem',
-                        color: '#94a3b8',
-                        fontWeight: '500',
-                        display: 'block',
-                        marginBottom: '0.5rem'
-                      }}>
-                        Entry Price
-                      </label>
-                      <div style={{
-                        fontSize: '1.125rem',
-                        color: '#f8fafc',
+                      <h3 style={{
+                        fontSize: '1rem',
                         fontWeight: '600',
-                        padding: '0.75rem',
-                        backgroundColor: '#334155',
-                        borderRadius: '0.5rem'
+                        color: '#10b981',
+                        marginBottom: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
                       }}>
-                        ${selectedPlan.entryPrice}
-                      </div>
+                        🚀 Catalysts
+                        {aiData.catalystsRating && (
+                          <span style={{
+                            backgroundColor: '#10b981',
+                            color: '#ffffff',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '600'
+                          }}>
+                            {aiData.catalystsRating}/10
+                          </span>
+                        )}
+                      </h3>
+                      <p style={{
+                        fontSize: '0.875rem',
+                        color: '#cbd5e1',
+                        lineHeight: '1.5',
+                        margin: 0
+                      }}>
+                        {aiData.catalysts}
+                      </p>
                     </div>
                   )}
-                  
-                  {selectedPlan.stopLoss && (
+
+                  {aiData.sectorTheme && (
                     <div>
-                      <label style={{
-                        fontSize: '0.875rem',
-                        color: '#94a3b8',
-                        fontWeight: '500',
-                        display: 'block',
-                        marginBottom: '0.5rem'
-                      }}>
-                        Stop Loss
-                      </label>
-                      <div style={{
-                        fontSize: '1.125rem',
-                        color: '#f8fafc',
+                      <h3 style={{
+                        fontSize: '1rem',
                         fontWeight: '600',
-                        padding: '0.75rem',
-                        backgroundColor: '#334155',
-                        borderRadius: '0.5rem'
+                        color: '#3b82f6',
+                        marginBottom: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
                       }}>
-                        ${selectedPlan.stopLoss}
-                      </div>
+                        📊 Sector/Theme
+                        {aiData.sectorRating && (
+                          <span style={{
+                            backgroundColor: '#3b82f6',
+                            color: '#ffffff',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '600'
+                          }}>
+                            {aiData.sectorRating}/10
+                          </span>
+                        )}
+                      </h3>
+                      <p style={{
+                        fontSize: '0.875rem',
+                        color: '#cbd5e1',
+                        lineHeight: '1.5',
+                        margin: 0
+                      }}>
+                        {aiData.sectorTheme}
+                      </p>
                     </div>
                   )}
-                  
-                  {selectedPlan.thesis && (
+
+                  {aiData.fundamentals && (
                     <div>
-                      <label style={{
+                      <h3 style={{
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: '#f59e0b',
+                        marginBottom: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        💼 Fundamentals
+                        {aiData.fundamentalsRating && (
+                          <span style={{
+                            backgroundColor: '#f59e0b',
+                            color: '#ffffff',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '600'
+                          }}>
+                            {aiData.fundamentalsRating}/10
+                          </span>
+                        )}
+                      </h3>
+                      <p style={{
                         fontSize: '0.875rem',
-                        color: '#94a3b8',
-                        fontWeight: '500',
-                        display: 'block',
+                        color: '#cbd5e1',
+                        lineHeight: '1.5',
+                        margin: 0
+                      }}>
+                        {aiData.fundamentals}
+                      </p>
+                    </div>
+                  )}
+
+                  {aiData.technical && (
+                    <div>
+                      <h3 style={{
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: '#8b5cf6',
+                        marginBottom: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        📈 Technical
+                        {aiData.technicalRating && (
+                          <span style={{
+                            backgroundColor: '#8b5cf6',
+                            color: '#ffffff',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '600'
+                          }}>
+                            {aiData.technicalRating}/10
+                          </span>
+                        )}
+                      </h3>
+                      <p style={{
+                        fontSize: '0.875rem',
+                        color: '#cbd5e1',
+                        lineHeight: '1.5',
+                        margin: 0
+                      }}>
+                        {aiData.technical}
+                      </p>
+                    </div>
+                  )}
+
+                  {aiData.planStructure && (
+                    <div>
+                      <h3 style={{
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: '#06b6d4',
+                        marginBottom: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        🎯 Plan Structure
+                        {aiData.planStructureRating && (
+                          <span style={{
+                            backgroundColor: '#06b6d4',
+                            color: '#ffffff',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '600'
+                          }}>
+                            {aiData.planStructureRating}/10
+                          </span>
+                        )}
+                      </h3>
+                      <p style={{
+                        fontSize: '0.875rem',
+                        color: '#cbd5e1',
+                        lineHeight: '1.5',
+                        margin: 0
+                      }}>
+                        {aiData.planStructure}
+                      </p>
+                    </div>
+                  )}
+
+                  {aiData.ranking && (
+                    <div>
+                      <h3 style={{
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: '#ec4899',
                         marginBottom: '0.5rem'
                       }}>
-                        Thesis
-                      </label>
-                      <div style={{
+                        ⭐ KI Analysis Summary
+                      </h3>
+                      <p style={{
                         fontSize: '0.875rem',
-                        color: '#f8fafc',
-                        lineHeight: '1.6',
-                        padding: '0.75rem',
-                        backgroundColor: '#334155',
-                        borderRadius: '0.5rem',
-                        whiteSpace: 'pre-wrap'
+                        color: '#cbd5e1',
+                        lineHeight: '1.5',
+                        margin: 0
                       }}>
-                        {selectedPlan.thesis}
-                      </div>
+                        {aiData.ranking}
+                      </p>
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* Right Column - AI Analysis Results */}
-              <div style={{
-                backgroundColor: '#1e293b',
-                padding: '1.5rem',
-                borderRadius: '0.75rem',
-                border: '1px solid #334155'
-              }}>
-                <h3 style={{
-                  fontSize: '1.5rem',
-                  fontWeight: '600',
-                  color: '#f8fafc',
-                  marginBottom: '1.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}>
-                  🧠 AI Analysis Results
-                </h3>
-                
-                {aiResults[selectedPlan.id] ? (
-                  <>
-                    {/* Overall Rating */}
-                    <div style={{
-                      backgroundColor: '#334155',
-                      padding: '1.5rem',
-                      borderRadius: '0.75rem',
-                      marginBottom: '1.5rem',
-                      textAlign: 'center',
-                      border: `2px solid ${aiResults[selectedPlan.id].isApproved ? '#10b981' : '#ef4444'}`
-                    }}>
-                      <div style={{
-                        fontSize: '1rem',
-                        color: '#94a3b8',
-                        marginBottom: '0.75rem'
-                      }}>
-                        Overall AI Rating
-                      </div>
-                      <div style={{
-                        fontSize: '3rem',
-                        fontWeight: '800',
-                        color: aiResults[selectedPlan.id].isApproved ? '#10b981' : '#ef4444',
-                        marginBottom: '0.5rem'
-                      }}>
-                        {aiResults[selectedPlan.id].overallRating}/10
-                      </div>
-                      <div style={{
-                        fontSize: '1.25rem',
-                        fontWeight: '700',
-                        color: aiResults[selectedPlan.id].isApproved ? '#10b981' : '#ef4444',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
-                      }}>
-                        {aiResults[selectedPlan.id].isApproved ? '✅ APPROVED' : '❌ REJECTED'}
-                      </div>
-                    </div>
-                    
-                    {/* Individual Agent Results */}
-                    <div style={{
-                      display: 'grid',
-                      gap: '1rem'
-                    }}>
-                      {Object.entries(aiResults[selectedPlan.id].agents).map(([agentName, result]) => (
-                        <div key={agentName} style={{
-                          backgroundColor: '#334155',
-                          padding: '1rem',
-                          borderRadius: '0.5rem',
-                          border: '1px solid #475569'
-                        }}>
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: '0.75rem'
-                          }}>
-                            <div style={{
-                              fontSize: '1rem',
-                              fontWeight: '600',
-                              color: '#f8fafc'
-                            }}>
-                              {agentName}
-                            </div>
-                            <div style={{
-                              fontSize: '1.5rem',
-                              fontWeight: '800',
-                              color: '#3b82f6',
-                              backgroundColor: '#1e293b',
-                              padding: '0.25rem 0.75rem',
-                              borderRadius: '0.5rem',
-                              minWidth: '60px',
-                              textAlign: 'center'
-                            }}>
-                              {result.rating}/10
-                            </div>
-                          </div>
-                          <div style={{
-                            fontSize: '0.875rem',
-                            color: '#94a3b8',
-                            lineHeight: '1.5',
-                            fontStyle: 'italic'
-                          }}>
-                            "{result.feedback}"
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div style={{
-                    textAlign: 'center',
-                    padding: '3rem 1rem',
-                    color: '#94a3b8'
-                  }}>
-                    <Brain size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-                    <p>No AI evaluation yet. Click "Evaluate" to run the AI analysis.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div style={{
-              display: 'flex',
-              gap: '1rem',
-              justifyContent: 'center',
-              paddingTop: '1rem',
-              borderTop: '1px solid #334155'
-            }}>
-              <button
-                onClick={() => setSelectedPlan(null)}
-                style={{
-                  padding: '1rem 2rem',
-                  backgroundColor: '#475569',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  color: '#f8fafc',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: '500'
-                }}
-              >
-                Close Dashboard
-              </button>
-              
-              {selectedPlan.status === 'pending' && aiResults[selectedPlan.id] && (
-                <>
-                  <button
-                    onClick={() => {
-                      const updatedPlans = tradePlans.map(p => 
-                        p.id === selectedPlan.id ? { ...p, status: 'approved' } : p
-                      );
-                      setTradePlans(updatedPlans);
-                      setSelectedPlan(null);
-                    }}
-                    style={{
-                      padding: '1rem 2rem',
-                      backgroundColor: '#10b981',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      color: '#ffffff',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      fontWeight: '500'
-                    }}
-                  >
-                    <CheckCircle size={20} style={{ marginRight: '0.5rem' }} />
-                    Approve Trade Plan
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      const updatedPlans = tradePlans.map(p => 
-                        p.id === selectedPlan.id ? { ...p, status: 'rejected' } : p
-                      );
-                      setTradePlans(updatedPlans);
-                      setSelectedPlan(null);
-                    }}
-                    style={{
-                      padding: '1rem 2rem',
-                      backgroundColor: '#ef4444',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      color: '#ffffff',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      fontWeight: '500'
-                    }}
-                  >
-                    <XCircle size={20} style={{ marginRight: '0.5rem' }} />
-                    Reject Trade Plan
-                  </button>
-                </>
-              )}
-            </div>
+              );
+            })()}
           </div>
         </div>
       )}
+
+      {/* AI Analysis Section */}
+      <div style={{
+        backgroundColor: '#1e293b',
+        borderRadius: '0.5rem',
+        padding: '1.5rem',
+        border: '1px solid #334155',
+        marginTop: '2rem'
+      }}>
+        <h2 style={{
+          fontSize: '1.5rem',
+          fontWeight: '600',
+          marginBottom: '1rem',
+          color: '#f8fafc'
+        }}>
+          🤖 AI Analysis Results
+        </h2>
+        
+        <div style={{
+          display: 'grid',
+          gap: '1rem'
+        }}>
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#94a3b8',
+              marginBottom: '0.5rem'
+            }}>
+              Paste AI Analysis Result Here:
+            </label>
+            <textarea
+              value={aiAnalysisResult}
+              onChange={handleAIAnalysisInput}
+              placeholder="Paste the AI analysis result from your exported trade plans here..."
+              rows={8}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                backgroundColor: '#334155',
+                border: '1px solid #475569',
+                borderRadius: '0.375rem',
+                color: '#f8fafc',
+                fontSize: '0.875rem',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+          
+          <div style={{
+            display: 'flex',
+            gap: '1rem',
+            alignItems: 'center'
+          }}>
+            <button
+              onClick={saveAIAnalysis}
+              disabled={!aiAnalysisResult.trim()}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: aiAnalysisResult.trim() ? '#10b981' : '#64748b',
+                border: 'none',
+                borderRadius: '0.375rem',
+                color: '#ffffff',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: aiAnalysisResult.trim() ? 'pointer' : 'not-allowed'
+              }}
+            >
+              💾 Save AI Analysis
+            </button>
+            
+            <span style={{
+              fontSize: '0.75rem',
+              color: '#94a3b8',
+              fontStyle: 'italic'
+            }}>
+              This will save the AI analysis to all trade plans for review
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
 export default AIAgents;
-
-// Add CSS for spinning animation
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-`;
-document.head.appendChild(style);

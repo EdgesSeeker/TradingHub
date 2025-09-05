@@ -7,16 +7,22 @@ import TradePlanning from './components/TradePlanning';
 import CompanyInfo from './components/CompanyInfo';
 import SystemOverview from './components/SystemOverview';
 import TradingRoutine from './components/TradingRoutine';
+import WeeklyTask from './components/WeeklyTask';
+import SectorDashboard from './components/SectorDashboard';
 import BookOfTruth from './components/BookOfTruth';
 import DailyReview from './components/DailyReview';
 import WeeklyReview from './components/WeeklyReview';
 import MonthlyReview from './components/MonthlyReview';
 import YearlyReview from './components/YearlyReview';
 import AIAgents from './components/AIAgents';
+import AIAgentPlansOverview from './components/AIAgentPlansOverview';
+import TopOps from './components/TopOps';
+import Best100ChartsStudy from './components/Best100ChartsStudy';
 import TradingMetrics from './components/TradingMetrics';
 import Trash from './components/Trash';
 import Settings from './components/Settings';
 import ChartAnalysis from './components/ChartAnalysis';
+import MarketMonitor from './components/MarketMonitor';
 // import TradingLogExport from './components/TradingLogExport';
 import storage from './utils/storage';
 import './styles/dashboard.css';
@@ -223,6 +229,10 @@ function App() {
           return (
             <TradingRoutine />
           );
+        case 'weekly-task':
+          return (
+            <WeeklyTask />
+          );
         case 'trade-planning':
           return (
             <TradePlanning onNavigate={setActiveTab} />
@@ -234,6 +244,14 @@ function App() {
         case 'portfolio':
           return (
             <Portfolio trades={filteredTrades} onTradeDeleted={handleTradeDeleted} onTradeUpdated={handleTradeAdded} onNavigate={setActiveTab} />
+          );
+        case 'market-monitor':
+          return (
+            <MarketMonitor />
+          );
+        case 'sector-dashboard':
+          return (
+            <SectorDashboard />
           );
         case 'profit-taking':
           return (
@@ -262,6 +280,19 @@ function App() {
         case 'ai-agents':
           return (
             <AIAgents trades={trades} onTradeUpdated={handleTradeAdded} />
+          );
+        case 'ai-agent-plans-overview':
+          return (
+            <AIAgentPlansOverview />
+          );
+        case 'top-ops':
+          return (
+            <TopOps />
+          );
+        case 'best-100-charts-study':
+          console.log('🎯 Rendering Best100ChartsStudy component');
+          return (
+            <Best100ChartsStudy />
           );
         case 'trading-metrics':
           return (

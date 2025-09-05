@@ -345,10 +345,10 @@ const ChartAnalysis = ({ trades, onNavigate }) => {
                              color: '#f8fafc',
                              fontSize: '0.875rem',
                              marginBottom: '0.125rem'
-                           }}>
-                             {plan.symbol} - {plan.direction || 'LONG'} - {plan.setup || 'No Setup'}
-                             {plan.ranking && <span style={{ color: '#fbbf24', marginLeft: '0.25rem' }}>⭐ {plan.ranking}/10</span>}
-                           </div>
+                                                       }}>
+                              {plan.symbol} - {plan.direction || 'LONG'} - {plan.setup || 'No Setup'}
+                              {plan.ranking && <span style={{ color: '#fbbf24', marginLeft: '0.25rem' }}>⭐ {plan.ranking}/10</span>}
+                            </div>
                            <div style={{ 
                              fontSize: '0.75rem', 
                              color: '#94a3b8',

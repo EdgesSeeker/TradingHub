@@ -77,6 +77,23 @@ const NewTradeEntry = ({ onTradeAdded, openTrades }) => {
     'Clear and easily definable daily trend line'
   ];
 
+  // Pre-Trade Entry Checklist (from Trade Planning)
+  const preTradeChecklist = [
+    'Market trend determined (Green/Yellow/Red)',
+    'Volume > 30 million',
+    'ADR > 5%',
+    'Sector verified as "hot"',
+    'Stock moved approx. +30% in last 30 days',
+    'Linear pullback & undercut/reclaim of 10/20 SMA',
+    'At least 1 surf day above 10/20 SMA',
+    'Clear daily trendline visible in chart',
+    'Setup type precisely chosen (e.g., Breakout, SMA Touch)',
+    'Position size calculated properly for equity and risk (max 2%)',
+    'Stop loss logically defined (below structure)',
+    'Mental Game: Do I have rational reasons for this trade? (yes=1/no=0)',
+    'Pre-trade screenshot taken for documentation'
+  ];
+
   // Helper function to try multiple CORS proxy services
   const fetchWithProxy = async (url, symbol) => {
     const proxyServices = [
@@ -140,22 +157,33 @@ const NewTradeEntry = ({ onTradeAdded, openTrades }) => {
       if (planData) {
         try {
           const plan = JSON.parse(planData);
+          console.log('Loading plan data:', plan);
+          
+          // Calculate quantity from plan calculations if available
+          let quantity = '';
+          if (plan.calculations && plan.calculations.sharesNeeded) {
+            quantity = plan.calculations.sharesNeeded.toString();
+          }
+          
           setTrade(prev => ({
             ...prev,
             symbol: plan.symbol || '',
+            side: plan.direction === 'SHORT' ? 'SELL' : 'BUY', // Convert direction to side
             setup: plan.setup || '',
             entryPrice: plan.entryPrice || '',
             stopLoss: plan.stopLoss || '',
+            quantity: quantity,
+            notes: plan.tradePlan || '',
+            aptr14: plan.aptr14 || '',
             triggerUsed: plan.triggerUsed || false,
             triggerNotes: plan.triggerNotes || '',
             ruleAdherence: plan.ruleAdherence,
             ruleAdherenceNotes: plan.ruleAdherenceNotes || '',
             tradeGrade: plan.tradeGrade || '',
             psychology: plan.psychology || {
-              ruleCompliance: 0,
-              emotionControl: 0,
+              ruleCompliance: 7,
+              emotionControl: 7,
             },
-            notes: plan.tradePlan || '',
             checklist: plan.checklist || [],
             screenshots: {
               preTrade: plan.screenshotPre || '',
@@ -163,6 +191,8 @@ const NewTradeEntry = ({ onTradeAdded, openTrades }) => {
               postTrade: ''
             }
           }));
+          
+          console.log('Plan data loaded successfully');
           // Clear the plan data from localStorage
           localStorage.removeItem('executedTradePlan');
         } catch (error) {
@@ -1794,6 +1824,137 @@ const NewTradeEntry = ({ onTradeAdded, openTrades }) => {
                 }}>
                   {formatCurrency(settings.portfolioValue)}
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Pre-Trade Entry Checklist */}
+          <div style={{
+            backgroundColor: '#1e293b',
+            padding: '1.5rem',
+            borderRadius: '0.5rem',
+            border: '1px solid #334155',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            height: 'fit-content'
+          }}>
+            <h3 style={{
+              fontSize: '1.125rem',
+              fontWeight: '600',
+              marginBottom: '1rem',
+              color: '#f8fafc',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              ✅ Pre-Trade Entry Checklist
+            </h3>
+            
+            <div style={{
+              backgroundColor: '#334155',
+              border: '1px solid #475569',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              maxHeight: '400px',
+              overflowY: 'auto'
+            }}>
+              {preTradeChecklist.map((item, index) => (
+                <div key={index} style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  marginBottom: '0.75rem',
+                  cursor: 'pointer',
+                  padding: '0.5rem',
+                  backgroundColor: (trade.checklist || []).includes(item) ? '#10b98120' : 'transparent',
+                  borderRadius: '0.25rem',
+                  border: (trade.checklist || []).includes(item) ? '1px solid #10b981' : '1px solid transparent',
+                  transition: 'all 0.2s ease'
+                }} onClick={() => handleChecklistChange(item)}>
+                  <input
+                    type="checkbox"
+                    checked={(trade.checklist || []).includes(item)}
+                    onChange={() => handleChecklistChange(item)}
+                    style={{
+                      marginRight: '0.75rem',
+                      width: '1rem',
+                      height: '1rem',
+                      cursor: 'pointer',
+                      marginTop: '0.125rem',
+                      flexShrink: 0
+                    }}
+                  />
+                  <span style={{
+                    fontSize: '0.875rem',
+                    color: '#f8fafc',
+                    cursor: 'pointer',
+                    lineHeight: '1.4',
+                    flex: 1
+                  }}>
+                    <span style={{
+                      fontWeight: '600',
+                      color: '#3b82f6',
+                      marginRight: '0.5rem'
+                    }}>
+                      {index + 1}.
+                    </span>
+                    {item}
+                  </span>
+                </div>
+              ))}
+              
+              <div style={{
+                marginTop: '1rem',
+                padding: '0.75rem',
+                backgroundColor: '#1e293b',
+                borderRadius: '0.375rem',
+                border: '1px solid #475569'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '0.5rem'
+                }}>
+                  <span style={{
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    color: '#f8fafc'
+                  }}>
+                    Checklist Progress
+                  </span>
+                  <span style={{
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    color: (trade.checklist || []).length >= 10 ? '#10b981' : 
+                           (trade.checklist || []).length >= 7 ? '#f59e0b' : '#ef4444'
+                  }}>
+                    {(trade.checklist || []).length}/{preTradeChecklist.length}
+                  </span>
+                </div>
+                <div style={{
+                  width: '100%',
+                  height: '6px',
+                  backgroundColor: '#334155',
+                  borderRadius: '3px',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    width: `${((trade.checklist || []).length / preTradeChecklist.length) * 100}%`,
+                    height: '100%',
+                    backgroundColor: (trade.checklist || []).length >= 10 ? '#10b981' : 
+                                   (trade.checklist || []).length >= 7 ? '#f59e0b' : '#ef4444',
+                    transition: 'width 0.3s ease'
+                  }} />
+                </div>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: '#94a3b8',
+                  marginTop: '0.5rem',
+                  textAlign: 'center'
+                }}>
+                  {(trade.checklist || []).length >= 10 ? '✅ Ready to trade!' : 
+                   (trade.checklist || []).length >= 7 ? '⚠️ Almost ready' : 
+                   '❌ Review checklist items'}
+                </div>
               </div>
             </div>
           </div>

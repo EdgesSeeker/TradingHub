@@ -157,6 +157,9 @@ const CompanyInfo = () => {
       await storage.saveSetting('companyAnalyses', updatedAnalyses);
       setSavedAnalyses(updatedAnalyses);
       
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('companyAnalysisUpdated'));
+      
       // Clear form
       setSymbol('');
       setCompanyAnalysis('');
@@ -195,6 +198,9 @@ const CompanyInfo = () => {
       setSelectedAnalysis(updatedAnalysis);
       setIsEditing(false);
       
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('companyAnalysisUpdated'));
+      
       alert('Company analysis updated successfully!');
     } catch (error) {
       console.error('Error updating analysis:', error);
@@ -213,6 +219,9 @@ const CompanyInfo = () => {
       const updatedAnalyses = savedAnalyses.filter(analysis => analysis.id !== analysisId);
       await storage.saveSetting('companyAnalyses', updatedAnalyses);
       setSavedAnalyses(updatedAnalyses);
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('companyAnalysisUpdated'));
       
       if (selectedAnalysis && selectedAnalysis.id === analysisId) {
         setSelectedAnalysis(null);
@@ -255,9 +264,7 @@ const CompanyInfo = () => {
     setIsEditing(true);
   };
 
-  const handleEditAnalysis = () => {
-    setIsEditing(true);
-  };
+
 
   const handleCancelEdit = () => {
     if (selectedAnalysis) {
@@ -537,36 +544,33 @@ const CompanyInfo = () => {
               paddingBottom: '1rem',
               borderBottom: '1px solid #334155'
             }}>
-              <h2 style={{
-                fontSize: '1.25rem',
-                fontWeight: '600',
-                color: '#f8fafc',
-                margin: 0
-              }}>
-                {selectedAnalysis ? `${selectedAnalysis.symbol} Analysis` : 'New Analysis'}
-              </h2>
-              
-              {selectedAnalysis && selectedAnalysis.id !== 'new' && !isEditing && (
-                <button
-                  onClick={handleEditAnalysis}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    backgroundColor: '#475569',
-                    border: 'none',
-                    borderRadius: '0.375rem',
-                    color: '#ffffff',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}
-                >
-                  <Edit size={16} />
-                  Edit
-                </button>
-              )}
+                             <h2 style={{
+                 fontSize: '1.25rem',
+                 fontWeight: '600',
+                 color: '#f8fafc',
+                 margin: 0
+               }}>
+                 VERB Analysis
+               </h2>
+               
+                               {selectedAnalysis && selectedAnalysis.id !== 'new' && !isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => setShowTextInput(!showTextInput)}
+                    style={{
+                      background: 'none',
+                      border: '1px solid #3b82f6',
+                      color: '#3b82f6',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.375rem',
+                      backgroundColor: showTextInput ? '#1e3a8a' : 'transparent'
+                    }}
+                  >
+                    {showTextInput ? 'Hide Text Input' : 'Show Text Input'}
+                  </button>
+                )}
             </div>
 
             {selectedAnalysis === null && !isEditing ? (
@@ -689,19 +693,9 @@ const CompanyInfo = () => {
                   )}
                 </div>
 
-                {/* Structured View */}
-                {companyAnalysis.trim() && (
-                  <div style={{ marginTop: '1rem' }}>
-                    <h3 style={{
-                      fontSize: '1rem',
-                      fontWeight: '600',
-                      color: '#f8fafc',
-                      marginBottom: '1rem',
-                      borderBottom: '1px solid #334155',
-                      paddingBottom: '0.5rem'
-                    }}>
-                      📊 Structured Analysis View
-                    </h3>
+                                 {/* Structured View */}
+                 {companyAnalysis.trim() && (
+                   <div style={{ marginTop: '1rem' }}>
                     
                     <div style={{ display: 'grid', gap: '1rem' }}>
                       {/* Company Name & Hashtags */}

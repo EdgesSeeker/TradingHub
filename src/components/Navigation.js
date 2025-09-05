@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
-import { BarChart3, Briefcase, BookOpen, Calendar, Settings, ArrowLeft, Plus, TrendingDown, Target, Brain, BarChart, Zap, Clock, Trash2, ChevronDown, FileText, Building2, TrendingUp } from 'lucide-react';
+import { BarChart3, Briefcase, BookOpen, Calendar, Settings, ArrowLeft, Plus, TrendingDown, Target, Brain, BarChart, Zap, Clock, Trash2, ChevronDown, FileText, Building2, TrendingUp, Star, Rocket, Activity, CheckSquare, Layers } from 'lucide-react';
 
 const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, children, renderContent }) => {
   const [reviewsDropdownOpen, setReviewsDropdownOpen] = useState(false);
+  const [setupStudyDropdownOpen, setSetupStudyDropdownOpen] = useState(false);
   
-      const tabs = [
-      { id: 'portfolio', label: 'Dashboard', icon: Briefcase },
-      { id: 'chart-analysis', label: 'Chart Analysis', icon: TrendingUp },
-      { id: 'system-overview', label: 'System Overview', icon: Zap },
+        const tabs = [
+    { id: 'portfolio', label: 'Dashboard', icon: Briefcase },
+    { id: 'market-monitor', label: 'Market Monitor', icon: Activity },
+    { id: 'sector-dashboard', label: 'Sector Dashboard', icon: Layers },
+    { id: 'chart-analysis', label: 'Chart Analysis', icon: TrendingUp },
+    { id: 'system-overview', label: 'System Overview', icon: Zap },
     { id: 'trading-routine', label: 'Trading Routine', icon: Clock },
+    { id: 'weekly-task', label: 'Weekly Task', icon: CheckSquare },
     { id: 'trade-planning', label: 'Trade Planning', icon: Target },
     { id: 'company-info', label: 'Company Info', icon: Building2 },
     { id: 'ai-agents', label: 'AI Agents', icon: Brain },
+    { id: 'ai-agent-plans-overview', label: 'AI Plans Overview', icon: Star },
+    { id: 'setup-study', label: 'Setup Study', icon: Rocket, hasDropdown: true },
     { id: 'trade-entry', label: 'Trade Entry', icon: Plus },
     { id: 'profit-taking', label: 'Profit Taking', icon: TrendingDown },
     { id: 'book-of-truth', label: 'Book of Truth', icon: BookOpen },
@@ -28,11 +34,22 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
     { id: 'yearly-review', label: 'Yearly Review', icon: Target }
   ];
 
+  const setupStudySubTabs = [
+    { id: 'top-ops', label: 'Best Opportunities Study', icon: Rocket },
+    { id: 'best-100-charts-study', label: 'Best 100 Charts Study', icon: BarChart3 }
+  ];
+
   const getCurrentPageTitle = () => {
     // Check if it's a review sub-tab first
     const currentReviewTab = reviewSubTabs.find(tab => tab.id === activeTab);
     if (currentReviewTab) {
       return currentReviewTab.label;
+    }
+    
+    // Check if it's a setup study sub-tab
+    const currentSetupStudyTab = setupStudySubTabs.find(tab => tab.id === activeTab);
+    if (currentSetupStudyTab) {
+      return currentSetupStudyTab.label;
     }
     
     // Then check main tabs
@@ -49,19 +66,34 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
   ];
 
   return (
-    <div style={{
-      display: 'flex',
-      height: '100vh',
-      backgroundColor: '#0f172a'
-    }}>
-      {/* Sidebar */}
-      <aside style={{
-        width: '280px',
-        backgroundColor: '#1e293b',
-        borderRight: '1px solid #334155',
-        padding: '1rem 0',
-        overflowY: 'auto'
+    <>
+      <style>
+        {`
+          .sidebar-hidden-scrollbar {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+          }
+          .sidebar-hidden-scrollbar::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+          }
+        `}
+      </style>
+      <div style={{
+        display: 'flex',
+        height: '100vh',
+        backgroundColor: '#0f172a'
       }}>
+      {/* Sidebar */}
+      <aside 
+        className="sidebar-hidden-scrollbar"
+        style={{
+          width: '280px',
+          backgroundColor: '#1e293b',
+          borderRight: '1px solid #334155',
+          padding: '1rem 0',
+          overflowY: 'auto'
+        }}
+      >
         {/* Logo */}
         <div style={{
           padding: '1rem 1.5rem',
@@ -97,13 +129,29 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
           {tabs.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id || 
-              (tab.hasDropdown && reviewSubTabs.some(subTab => activeTab === subTab.id));
+              (tab.hasDropdown && (
+                (tab.id === 'reviews' && reviewSubTabs.some(subTab => activeTab === subTab.id)) ||
+                (tab.id === 'setup-study' && setupStudySubTabs.some(subTab => activeTab === subTab.id))
+              ));
             
             if (tab.hasDropdown) {
+              const isReviewsTab = tab.id === 'reviews';
+              const isSetupStudyTab = tab.id === 'setup-study';
+              const dropdownOpen = isReviewsTab ? reviewsDropdownOpen : (isSetupStudyTab ? setupStudyDropdownOpen : false);
+              const subTabs = isReviewsTab ? reviewSubTabs : (isSetupStudyTab ? setupStudySubTabs : []);
+              
               return (
                 <div key={tab.id}>
                   <button
-                    onClick={() => setReviewsDropdownOpen(!reviewsDropdownOpen)}
+                    onClick={() => {
+                      if (isReviewsTab) {
+                        setReviewsDropdownOpen(!reviewsDropdownOpen);
+                        setSetupStudyDropdownOpen(false); // Close other dropdown
+                      } else if (isSetupStudyTab) {
+                        setSetupStudyDropdownOpen(!setupStudyDropdownOpen);
+                        setReviewsDropdownOpen(false); // Close other dropdown
+                      }
+                    }}
                     style={{
                       width: '100%',
                       display: 'flex',
@@ -132,26 +180,35 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
                     <ChevronDown 
                       size={16} 
                       style={{ 
-                        transform: reviewsDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                         transition: 'transform 0.2s'
                       }} 
                     />
                   </button>
                   
                   {/* Dropdown Menu */}
-                  {reviewsDropdownOpen && (
+                  {dropdownOpen && (
                     <div style={{
                       marginLeft: '1rem',
                       marginBottom: '0.25rem'
                     }}>
-                      {reviewSubTabs.map(subTab => {
+                      {subTabs.map(subTab => {
                         const SubIcon = subTab.icon;
                         const isSubActive = activeTab === subTab.id;
                         
                         return (
                           <button
                             key={subTab.id}
-                            onClick={() => onTabChange(subTab.id)}
+                            onClick={() => {
+                              console.log('🔄 Navigation: Clicking on subTab:', subTab.id);
+                              onTabChange(subTab.id);
+                              // Close dropdown after selection
+                              if (isReviewsTab) {
+                                setReviewsDropdownOpen(false);
+                              } else if (isSetupStudyTab) {
+                                setSetupStudyDropdownOpen(false);
+                              }
+                            }}
                             style={{
                               width: '100%',
                               display: 'flex',
@@ -272,7 +329,8 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
           {renderContent ? renderContent() : children}
         </div>
       </main>
-    </div>
+      </div>
+    </>
   );
 };
 

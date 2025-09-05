@@ -817,38 +817,7 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
 
 
 
-            {/* Open Positions */}
-            <div style={{
-              backgroundColor: '#1e293b',
-              padding: '1.5rem',
-              borderRadius: '0.5rem',
-              border: '1px solid #334155',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-            }}>
-              <h3 style={{
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                color: '#94a3b8',
-                marginBottom: '0.5rem'
-              }}>
-                Open Positions
-              </h3>
-              <p style={{
-                fontSize: '1.5rem',
-                fontWeight: '600',
-                color: '#f8fafc',
-                marginBottom: '0.5rem',
-                fontFamily: 'Geist Mono, monospace'
-              }}>
-                {openTrades.length}
-              </p>
-              <span style={{
-                fontSize: '0.875rem',
-                color: '#94a3b8'
-              }}>
-                Total exposure: {trades.length > 0 ? ((openTrades.length / trades.length) * 100).toFixed(1) : 0}%
-              </span>
-            </div>
+
           </div>
         </div>
 
