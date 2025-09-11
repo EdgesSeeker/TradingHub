@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Brain, TrendingUp, Calendar, Star, Target, AlertTriangle, CheckCircle, XCircle, Download, Upload, Trash2, Play, Eye } from 'lucide-react';
 import storage from '../utils/storage';
 
-const AIAgents = ({ trades, onTradeUpdated }) => {
+const AIAgents = ({ trades, onTradeUpdated, onNavigate }) => {
   const [tradePlans, setTradePlans] = useState([]);
   const [selectedDate, setSelectedDate] = useState('all');
   const [expandedDates, setExpandedDates] = useState(new Set());
@@ -532,22 +532,51 @@ ${'='.repeat(80)}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '1rem',
+        justifyContent: 'space-between',
         marginBottom: '2rem',
         padding: '1rem',
         backgroundColor: '#1e293b',
         borderRadius: '0.5rem',
         border: '1px solid #334155'
       }}>
-        <Brain style={{ width: '2rem', height: '2rem', color: '#3b82f6' }} />
-        <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
-            AI Agents
-          </h1>
-          <p style={{ margin: '0.5rem 0 0 0', color: '#94a3b8', fontSize: '0.875rem' }}>
-            AI-Powered Trade Analysis & Execution
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <Brain style={{ width: '2rem', height: '2rem', color: '#3b82f6' }} />
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
+              AI Agents
+            </h1>
+            <p style={{ margin: '0.5rem 0 0 0', color: '#94a3b8', fontSize: '0.875rem' }}>
+              AI-Powered Trade Analysis & Execution
+            </p>
+          </div>
         </div>
+        {onNavigate && (
+          <button
+            onClick={() => onNavigate('trading-routine')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#3b82f6',
+              border: 'none',
+              borderRadius: '0.375rem',
+              color: '#ffffff',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#2563eb';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#3b82f6';
+            }}
+          >
+            ← Zurück zur Routine
+          </button>
+        )}
       </div>
 
       {/* Trade Plans by Date */}

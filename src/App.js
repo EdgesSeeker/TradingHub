@@ -19,6 +19,7 @@ import AIAgentPlansOverview from './components/AIAgentPlansOverview';
 import TopOps from './components/TopOps';
 import Best100ChartsStudy from './components/Best100ChartsStudy';
 import TradingMetrics from './components/TradingMetrics';
+import TradingEquityCurve from './components/TradingEquityCurve';
 import Trash from './components/Trash';
 import Settings from './components/Settings';
 import ChartAnalysis from './components/ChartAnalysis';
@@ -219,7 +220,7 @@ function App() {
       switch (activeTab) {
         case 'trade-entry':
           return (
-            <NewTradeEntry onTradeAdded={handleTradeAdded} openTrades={openTrades} />
+            <NewTradeEntry onTradeAdded={handleTradeAdded} openTrades={openTrades} onNavigate={setActiveTab} />
           );
         case 'system-overview':
           return (
@@ -227,7 +228,7 @@ function App() {
           );
         case 'trading-routine':
           return (
-            <TradingRoutine />
+            <TradingRoutine onNavigate={setActiveTab} />
           );
         case 'weekly-task':
           return (
@@ -279,7 +280,7 @@ function App() {
           );
         case 'ai-agents':
           return (
-            <AIAgents trades={trades} onTradeUpdated={handleTradeAdded} />
+            <AIAgents trades={trades} onTradeUpdated={handleTradeAdded} onNavigate={setActiveTab} />
           );
         case 'ai-agent-plans-overview':
           return (
@@ -297,6 +298,10 @@ function App() {
         case 'trading-metrics':
           return (
             <TradingMetrics trades={trades} settings={{ portfolioValue: 100000 }} />
+          );
+        case 'trading-equity-curve':
+          return (
+            <TradingEquityCurve trades={trades} onTradeUpdated={handleTradeAdded} onNavigate={setActiveTab} />
           );
         case 'trash':
           return (

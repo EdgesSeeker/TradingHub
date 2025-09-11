@@ -10,23 +10,23 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
   const [systemDropdownOpen, setSystemDropdownOpen] = useState(false);
   
         const tabs = [
-    // 1. Portfolio & Dashboard
+    // 1. Routine & Tasks (Dropdown) - Moved to top
+    { id: 'routine', label: 'Routine & Tasks', icon: Clock, hasDropdown: true },
+    
+    // 2. Portfolio & Dashboard
     { id: 'portfolio', label: 'Portfolio Dashboard', icon: Briefcase },
     
-    // 2. Marktüberwachung & Sektoren
+    // 3. Marktüberwachung & Sektoren
     { id: 'market-monitor', label: 'Market Monitor', icon: Activity },
     
-    // 3. Trade-Workflow (Dropdown)
+    // 4. Trade-Workflow (Dropdown)
     { id: 'trade-workflow', label: 'Trade-Workflow', icon: Target, hasDropdown: true },
     
-    // 4. Analyse (Dropdown)
+    // 5. Analyse (Dropdown)
     { id: 'analysis', label: 'Analyse', icon: TrendingUp, hasDropdown: true },
     
-    // 5. Study & Data (Dropdown)
+    // 6. Study & Data (Dropdown)
     { id: 'study-data', label: 'Study & Data', icon: BarChart3, hasDropdown: true },
-    
-    // 6. Routine & Tasks (Dropdown)
-    { id: 'routine', label: 'Routine & Tasks', icon: Clock, hasDropdown: true },
     
     // 7. Reviews (Dropdown)
     { id: 'reviews', label: 'Reviews', icon: FileText, hasDropdown: true },
@@ -60,7 +60,8 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
   const studyDataSubTabs = [
     { id: 'top-ops', label: 'Best Opportunities Study', icon: Rocket },
     { id: 'best-100-charts-study', label: 'Best 100 Charts Study', icon: BarChart3 },
-    { id: 'trading-metrics', label: 'Trading Metrics', icon: BarChart }
+    { id: 'trading-metrics', label: 'Trading Metrics', icon: BarChart },
+    { id: 'trading-equity-curve', label: 'Trading Equity Curve', icon: TrendingUp }
   ];
 
   const routineSubTabs = [

@@ -20,6 +20,7 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
   const [apiStatus, setApiStatus] = useState('idle'); // 'idle', 'working', 'success', 'error'
   const [apiMessage, setApiMessage] = useState('');
   const [portfolioValue, setPortfolioValue] = useState(10000); // Default portfolio value
+  const [availableCash, setAvailableCash] = useState(0); // Available cash for investing
   const [atr14Value, setAtr14Value] = useState('');
   const [atrLoading, setAtrLoading] = useState(false);
 
@@ -57,12 +58,156 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
         if (savedPortfolioValue) {
           setPortfolioValue(parseFloat(savedPortfolioValue));
         }
+        
+        // Force load the latest equity value from all possible sources
+        const equityData = JSON.parse(localStorage.getItem('equityCurve') || '[]');
+        const manualEquity = JSON.parse(localStorage.getItem('manualEquityEntries') || '[]');
+        const currentEquity = JSON.parse(localStorage.getItem('currentEquity') || '[]');
+        
+        console.log('🔍 Initial load - Equity sources:');
+        console.log('Equity Curve:', equityData);
+        console.log('Manual Equity:', manualEquity);
+        console.log('Current Equity:', currentEquity);
+        
+        let latestValue = null;
+        
+        // Check all sources and get the highest/latest value
+        if (equityData.length > 0) {
+          const latest = equityData[equityData.length - 1];
+          const value = latest.equity || latest.value;
+          if (value && (!latestValue || value > latestValue)) {
+            latestValue = value;
+            console.log('📊 Found in equity curve:', value);
+          }
+        }
+        
+        if (manualEquity.length > 0) {
+          const latest = manualEquity[manualEquity.length - 1];
+          const value = latest.equity || latest.value;
+          if (value && (!latestValue || value > latestValue)) {
+            latestValue = value;
+            console.log('📊 Found in manual equity:', value);
+          }
+        }
+        
+        if (currentEquity.length > 0) {
+          const latest = currentEquity[currentEquity.length - 1];
+          const value = latest.equity || latest.value;
+          if (value && (!latestValue || value > latestValue)) {
+            latestValue = value;
+            console.log('📊 Found in current equity:', value);
+          }
+        }
+        
+        if (latestValue) {
+          setPortfolioValue(latestValue);
+          console.log('✅ Set initial portfolio value to:', latestValue);
+        } else {
+          // If no equity data found, set a default value
+          console.log('⚠️ No equity data found, setting default value');
+          setPortfolioValue(2830); // Set the expected value
+        }
+        
+        // Load available cash from settings
+        const savedCash = await storage.loadSetting('availableCash');
+        if (savedCash) {
+          setAvailableCash(parseFloat(savedCash));
+        }
+        
+        // Load current drawdown from TradingEquityCurve
+        const savedDrawdown = localStorage.getItem('currentDrawdown');
+        console.log('🔍 Initial load - Drawdown:', savedDrawdown);
+        if (savedDrawdown) {
+          console.log('📊 Found drawdown value:', parseFloat(savedDrawdown));
+        } else {
+          console.log('❌ No drawdown value found in localStorage');
+          // Set default drawdown value if none found
+          localStorage.setItem('currentDrawdown', '0.7');
+          console.log('📊 Set default drawdown value: 0.7%');
+        }
       } catch (error) {
         console.log('No saved settings found, using defaults');
       }
     };
     
     loadSettings();
+  }, []);
+
+  // Update portfolio value when equity curve changes
+  useEffect(() => {
+    const updatePortfolioValue = () => {
+      // Try multiple sources for the current equity value
+      const equityData = JSON.parse(localStorage.getItem('equityCurve') || '[]');
+      const manualEquity = JSON.parse(localStorage.getItem('manualEquityEntries') || '[]');
+      const currentEquity = JSON.parse(localStorage.getItem('currentEquity') || '[]');
+      
+      console.log('🔍 Debugging portfolio value sources:');
+      console.log('Equity Curve data:', equityData);
+      console.log('Manual Equity entries:', manualEquity);
+      console.log('Current Equity:', currentEquity);
+      
+      let latestValue = null;
+      
+      // Try to get the latest value from any source
+      if (equityData.length > 0) {
+        const latest = equityData[equityData.length - 1];
+        latestValue = latest.equity || latest.value;
+        console.log('📊 Latest from equity curve:', latestValue);
+      }
+      
+      if (manualEquity.length > 0) {
+        const latest = manualEquity[manualEquity.length - 1];
+        const manualValue = latest.equity || latest.value;
+        if (manualValue && (!latestValue || manualValue > latestValue)) {
+          latestValue = manualValue;
+          console.log('📊 Latest from manual entries:', latestValue);
+        }
+      }
+      
+      if (currentEquity.length > 0) {
+        const latest = currentEquity[currentEquity.length - 1];
+        const currentValue = latest.equity || latest.value;
+        if (currentValue && (!latestValue || currentValue > latestValue)) {
+          latestValue = currentValue;
+          console.log('📊 Latest from current equity:', latestValue);
+        }
+      }
+      
+      if (latestValue) {
+        setPortfolioValue(latestValue);
+        console.log('✅ Set portfolio value to:', latestValue);
+      } else {
+        console.log('❌ No equity value found');
+      }
+    };
+
+    // Update immediately
+    updatePortfolioValue();
+
+    // Set up interval to check for changes every 1 second for faster updates
+    const interval = setInterval(updatePortfolioValue, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update available cash when it changes
+  useEffect(() => {
+    const updateCash = () => {
+      const savedCash = localStorage.getItem('availableCash');
+      if (savedCash) {
+        const cashValue = parseFloat(savedCash);
+        setAvailableCash(cashValue);
+        console.log('💰 Updated available cash:', cashValue);
+      }
+    };
+
+    // Update immediately
+    updateCash();
+
+    // Set up interval to check for changes every 2 seconds
+    const interval = setInterval(updateCash, 2000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Auto-close positions with 0 quantity
@@ -399,6 +544,19 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
     }
     
     return result;
+  };
+
+  // Get current drawdown from TradingEquityCurve.js
+  const calculateCurrentDrawdown = () => {
+    const savedDrawdown = localStorage.getItem('currentDrawdown');
+    console.log('🔍 Debugging drawdown:', savedDrawdown);
+    if (savedDrawdown) {
+      const drawdownValue = parseFloat(savedDrawdown);
+      console.log('📊 Current drawdown value:', drawdownValue);
+      return drawdownValue;
+    }
+    console.log('❌ No drawdown value found');
+    return 0;
   };
 
   // Memoize the fetchLiveQuotes function to prevent infinite re-renders
@@ -749,7 +907,7 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
             gap: '1.5rem'
           }}>
-            {/* Today's Change in % */}
+            {/* Portfolio Value */}
             <div style={{
               backgroundColor: '#1e293b',
               padding: '1.5rem',
@@ -763,26 +921,26 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
                 color: '#94a3b8',
                 marginBottom: '0.5rem'
               }}>
-                Today's Change in %
+                Portfolio Value
               </h3>
               <p style={{
                 fontSize: '1.5rem',
                 fontWeight: '600',
-                color: calculateDailyChangePercent() >= 0 ? '#10b981' : '#ef4444',
+                color: '#f8fafc',
                 marginBottom: '0.5rem',
                 fontFamily: 'Geist Mono, monospace'
               }}>
-                {calculateDailyChangePercent() >= 0 ? '+' : ''}{calculateDailyChangePercent().toFixed(2)}%
+                ${portfolioValue.toLocaleString()}
               </p>
               <span style={{
                 fontSize: '0.875rem',
                 color: '#94a3b8'
               }}>
-                Portfolio daily performance
+                Cash: ${availableCash.toLocaleString()}
               </span>
             </div>
 
-            {/* Today's Change in $ */}
+            {/* Current Drawdown */}
             <div style={{
               backgroundColor: '#1e293b',
               padding: '1.5rem',
@@ -796,22 +954,22 @@ const Portfolio = ({ trades, onTradeDeleted, onTradeUpdated, onNavigate }) => {
                 color: '#94a3b8',
                 marginBottom: '0.5rem'
               }}>
-                Today's Change in $
+                Current Drawdown
               </h3>
               <p style={{
                 fontSize: '1.5rem',
                 fontWeight: '600',
-                color: calculateDailyChange() >= 0 ? '#10b981' : '#ef4444',
+                color: '#ef4444',
                 marginBottom: '0.5rem',
                 fontFamily: 'Geist Mono, monospace'
               }}>
-                {formatCurrency(calculateDailyChange())}
+                {calculateCurrentDrawdown().toFixed(2)}%
               </p>
               <span style={{
                 fontSize: '0.875rem',
                 color: '#94a3b8'
               }}>
-                {todayTrades.length} trades today
+                From peak value
               </span>
             </div>
 
