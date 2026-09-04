@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Journal - QR Code</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 20px;
+        }
+        .qr-code {
+            margin: 20px 0;
+        }
+        .url {
+            background: #334155;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .instructions {
+            text-align: left;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Trading Journal PWA</h1>
+        <p>Scanne den QR-Code mit deinem Handy:</p>
+        
+        <div class="qr-code">
+            <div id="qrcode"></div>
+        </div>
+        
+        <div class="url">
+            <strong>Oder gehe direkt zu:</strong><br>
+            <span id="url">http://192.168.0.61:3001</span>
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 Anleitung:</h3>
+            <div class="step">
+                <strong>1.</strong> Scanne den QR-Code mit deiner Handy-Kamera
+            </div>
+            <div class="step">
+                <strong>2.</strong> Oder tippe die URL manuell in den Browser ein
+            </div>
+            <div class="step">
+                <strong>3.</strong> Klicke auf "App installieren" in der Navigation
+            </div>
+            <div class="step">
+                <strong>4.</strong> Folge den Installations-Anweisungen
+            </div>
+            <div class="step">
+                <strong>5.</strong> Die App erscheint auf deinem Startbildschirm!
+            </div>
+        </div>
+        
+        <button onclick="copyUrl()" style="
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        ">📋 URL kopieren</button>
+        
+        <button onclick="openApp()" style="
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        ">🚀 App öffnen</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        const url = 'http://192.168.0.61:3001';
+        
+        // Generate QR Code
+        QRCode.toCanvas(document.getElementById('qrcode'), url, {
+            width: 200,
+            height: 200,
+            color: {
+                dark: '#ffffff',
+                light: '#000000'
+            }
+        }, function (error) {
+            if (error) console.error(error);
+            console.log('QR Code generated successfully!');
+        });
+        
+        function copyUrl() {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('URL wurde in die Zwischenablage kopiert!');
+            });
+        }
+        
+        function openApp() {
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>

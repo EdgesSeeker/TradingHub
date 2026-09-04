@@ -9,7 +9,7 @@ import {
   Clock,
   AlertCircle,
   Calendar,
-  Target
+  List
 } from 'lucide-react';
 import storage from '../utils/storage';
 
@@ -18,11 +18,8 @@ const WeeklyTask = () => {
   const [editingTask, setEditingTask] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTask, setNewTask] = useState({
-    subproject: '',
-    status: 'Not Started',
-    goal: '',
-    nextStep: '',
-    notes: ''
+    taskName: '',
+    status: 'Not Started'
   });
 
   // Load tasks from storage
@@ -52,8 +49,8 @@ const WeeklyTask = () => {
 
   // Add new task
   const handleAddTask = async () => {
-    if (!newTask.subproject.trim() || !newTask.goal.trim()) {
-      alert('Subproject and Goal are required!');
+    if (!newTask.taskName.trim()) {
+      alert('Task name is required!');
       return;
     }
 
@@ -69,11 +66,8 @@ const WeeklyTask = () => {
     await saveTasks(updatedTasks);
     
     setNewTask({
-      subproject: '',
-      status: 'Not Started',
-      goal: '',
-      nextStep: '',
-      notes: ''
+      taskName: '',
+      status: 'Not Started'
     });
     setShowAddForm(false);
   };
@@ -173,7 +167,7 @@ const WeeklyTask = () => {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Calendar size={32} color="white" />
+              <List size={32} color="white" />
             </div>
             <h1 style={{
               fontSize: '3rem',
@@ -191,7 +185,7 @@ const WeeklyTask = () => {
             color: '#94a3b8',
             margin: 0
           }}>
-            Manage your weekly tasks and track progress
+            Simple weekly task management - just add your tasks and track progress
           </p>
         </div>
 
@@ -342,13 +336,13 @@ const WeeklyTask = () => {
               alignItems: 'center',
               gap: '0.5rem'
             }}>
-              <Target size={20} />
+              <List size={20} />
               Add New Task
             </h3>
             
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
+              gridTemplateColumns: '2fr 1fr',
               gap: '1rem',
               marginBottom: '1.5rem'
             }}>
@@ -360,13 +354,13 @@ const WeeklyTask = () => {
                   color: '#f8fafc',
                   marginBottom: '0.5rem'
                 }}>
-                  Subproject *
+                  Task Name *
                 </label>
                 <input
                   type="text"
-                  value={newTask.subproject}
-                  onChange={(e) => setNewTask({...newTask, subproject: e.target.value})}
-                  placeholder="e.g., Trading Journal"
+                  value={newTask.taskName}
+                  onChange={(e) => setNewTask({...newTask, taskName: e.target.value})}
+                  placeholder="e.g., Review trading journal entries"
                   style={{
                     width: '100%',
                     padding: '0.75rem',
@@ -407,88 +401,6 @@ const WeeklyTask = () => {
                   <option value="Done">Done</option>
                 </select>
               </div>
-            </div>
-            
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                color: '#f8fafc',
-                marginBottom: '0.5rem'
-              }}>
-                Goal *
-              </label>
-              <input
-                type="text"
-                value={newTask.goal}
-                onChange={(e) => setNewTask({...newTask, goal: e.target.value})}
-                placeholder="e.g., Create a complete trading journal"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  backgroundColor: '#334155',
-                  border: '1px solid #475569',
-                  borderRadius: '0.5rem',
-                  color: '#f8fafc',
-                  fontSize: '0.875rem'
-                }}
-              />
-            </div>
-            
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                color: '#f8fafc',
-                marginBottom: '0.5rem'
-              }}>
-                Next Step
-              </label>
-              <input
-                type="text"
-                value={newTask.nextStep}
-                onChange={(e) => setNewTask({...newTask, nextStep: e.target.value})}
-                placeholder="e.g., Sector Site"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  backgroundColor: '#334155',
-                  border: '1px solid #475569',
-                  borderRadius: '0.5rem',
-                  color: '#f8fafc',
-                  fontSize: '0.875rem'
-                }}
-              />
-            </div>
-            
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                color: '#f8fafc',
-                marginBottom: '0.5rem'
-              }}>
-                Notes
-              </label>
-              <textarea
-                value={newTask.notes}
-                onChange={(e) => setNewTask({...newTask, notes: e.target.value})}
-                placeholder="Additional notes..."
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  backgroundColor: '#334155',
-                  border: '1px solid #475569',
-                  borderRadius: '0.5rem',
-                  color: '#f8fafc',
-                  fontSize: '0.875rem',
-                  resize: 'vertical'
-                }}
-              />
             </div>
             
             <div style={{
@@ -589,7 +501,7 @@ const WeeklyTask = () => {
                       color: '#f8fafc',
                       borderRight: '1px solid #475569'
                     }}>
-                      Subproject
+                      Task Name
                     </th>
                     <th style={{
                       padding: '1rem',
@@ -600,36 +512,6 @@ const WeeklyTask = () => {
                       borderRight: '1px solid #475569'
                     }}>
                       Status
-                    </th>
-                    <th style={{
-                      padding: '1rem',
-                      textAlign: 'left',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#f8fafc',
-                      borderRight: '1px solid #475569'
-                    }}>
-                      Goal
-                    </th>
-                    <th style={{
-                      padding: '1rem',
-                      textAlign: 'left',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#f8fafc',
-                      borderRight: '1px solid #475569'
-                    }}>
-                      Next Step
-                    </th>
-                    <th style={{
-                      padding: '1rem',
-                      textAlign: 'left',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#f8fafc',
-                      borderRight: '1px solid #475569'
-                    }}>
-                      Notes
                     </th>
                     <th style={{
                       padding: '1rem',
@@ -654,7 +536,7 @@ const WeeklyTask = () => {
                         color: '#f8fafc',
                         fontWeight: '500'
                       }}>
-                        {task.subproject}
+                        {task.taskName}
                       </td>
                       <td style={{
                         padding: '1rem',
@@ -678,32 +560,6 @@ const WeeklyTask = () => {
                             {task.status}
                           </span>
                         </div>
-                      </td>
-                      <td style={{
-                        padding: '1rem',
-                        borderRight: '1px solid #334155',
-                        fontSize: '0.875rem',
-                        color: '#f8fafc'
-                      }}>
-                        {task.goal}
-                      </td>
-                      <td style={{
-                        padding: '1rem',
-                        borderRight: '1px solid #334155',
-                        fontSize: '0.875rem',
-                        color: '#f8fafc'
-                      }}>
-                        {task.nextStep}
-                      </td>
-                      <td style={{
-                        padding: '1rem',
-                        borderRight: '1px solid #334155',
-                        fontSize: '0.875rem',
-                        color: '#94a3b8',
-                        maxWidth: '200px',
-                        wordWrap: 'break-word'
-                      }}>
-                        {task.notes}
                       </td>
                       <td style={{
                         padding: '1rem',
@@ -770,7 +626,7 @@ const WeeklyTask = () => {
               borderRadius: '1rem',
               border: '1px solid #334155',
               width: '90%',
-              maxWidth: '600px',
+              maxWidth: '500px',
               maxHeight: '90vh',
               overflowY: 'auto'
             }}>
@@ -789,7 +645,7 @@ const WeeklyTask = () => {
               
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                gridTemplateColumns: '2fr 1fr',
                 gap: '1rem',
                 marginBottom: '1.5rem'
               }}>
@@ -801,12 +657,12 @@ const WeeklyTask = () => {
                     color: '#f8fafc',
                     marginBottom: '0.5rem'
                   }}>
-                    Subproject
+                    Task Name
                   </label>
                   <input
                     type="text"
-                    value={editingTask.subproject}
-                    onChange={(e) => setEditingTask({...editingTask, subproject: e.target.value})}
+                    value={editingTask.taskName}
+                    onChange={(e) => setEditingTask({...editingTask, taskName: e.target.value})}
                     style={{
                       width: '100%',
                       padding: '0.75rem',
@@ -847,85 +703,6 @@ const WeeklyTask = () => {
                     <option value="Done">Done</option>
                   </select>
                 </div>
-              </div>
-              
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: '#f8fafc',
-                  marginBottom: '0.5rem'
-                }}>
-                  Goal
-                </label>
-                <input
-                  type="text"
-                  value={editingTask.goal}
-                  onChange={(e) => setEditingTask({...editingTask, goal: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    backgroundColor: '#334155',
-                    border: '1px solid #475569',
-                    borderRadius: '0.5rem',
-                    color: '#f8fafc',
-                    fontSize: '0.875rem'
-                  }}
-                />
-              </div>
-              
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: '#f8fafc',
-                  marginBottom: '0.5rem'
-                }}>
-                  Next Step
-                </label>
-                <input
-                  type="text"
-                  value={editingTask.nextStep}
-                  onChange={(e) => setEditingTask({...editingTask, nextStep: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    backgroundColor: '#334155',
-                    border: '1px solid #475569',
-                    borderRadius: '0.5rem',
-                    color: '#f8fafc',
-                    fontSize: '0.875rem'
-                  }}
-                />
-              </div>
-              
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: '#f8fafc',
-                  marginBottom: '0.5rem'
-                }}>
-                  Notes
-                </label>
-                <textarea
-                  value={editingTask.notes}
-                  onChange={(e) => setEditingTask({...editingTask, notes: e.target.value})}
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    backgroundColor: '#334155',
-                    border: '1px solid #475569',
-                    borderRadius: '0.5rem',
-                    color: '#f8fafc',
-                    fontSize: '0.875rem',
-                    resize: 'vertical'
-                  }}
-                />
               </div>
               
               <div style={{

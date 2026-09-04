@@ -1,0 +1,33 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#0f172a"/>
+  
+  <!-- Chart lines -->
+  <path d="M80 350 L150 300 L220 320 L290 280 L360 310 L430 250" 
+        stroke="#10b981" stroke-width="8" fill="none" stroke-linecap="round"/>
+  
+  <!-- Data points -->
+  <circle cx="80" cy="350" r="6" fill="#10b981"/>
+  <circle cx="150" cy="300" r="6" fill="#10b981"/>
+  <circle cx="220" cy="320" r="6" fill="#10b981"/>
+  <circle cx="290" cy="280" r="6" fill="#10b981"/>
+  <circle cx="360" cy="310" r="6" fill="#10b981"/>
+  <circle cx="430" cy="250" r="6" fill="#10b981"/>
+  
+  <!-- Dollar sign -->
+  <text x="256" y="200" font-family="Arial, sans-serif" font-size="120" font-weight="bold" 
+        text-anchor="middle" fill="#3b82f6">$</text>
+  
+  <!-- Trading elements -->
+  <!-- Bull (up arrow) -->
+  <path d="M120 120 L140 100 L160 120 L150 120 L150 140 L130 140 L130 120 Z" fill="#10b981"/>
+  
+  <!-- Bear (down arrow) -->
+  <path d="M350 120 L330 100 L310 120 L320 120 L320 140 L340 140 L340 120 Z" fill="#ef4444"/>
+  
+  <!-- Portfolio icon -->
+  <rect x="200" y="400" width="112" height="80" rx="8" fill="#1e293b" stroke="#374151" stroke-width="2"/>
+  <rect x="220" y="420" width="72" height="40" fill="#3b82f6" opacity="0.3"/>
+  <text x="256" y="450" font-family="Arial, sans-serif" font-size="16" font-weight="bold" 
+        text-anchor="middle" fill="#ffffff">P</text>
+</svg>

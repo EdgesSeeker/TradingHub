@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Daten Wiederherstellung</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .backup-item { padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; }
+        .backup-item:hover { background: #e9f5ff; cursor: pointer; }
+        .restore-btn { background: #4CAF50; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+        .restore-btn:hover { background: #45a049; }
+        .success { color: #4CAF50; font-weight: bold; }
+        .error { color: #f44336; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Trading Journal - Daten Wiederherstellung</h1>
+        <p>Prüfe verfügbare Backups und stelle deine Daten wieder her:</p>
+        
+        <div id="backups-list"></div>
+        <div id="status"></div>
+        
+        <script>
+            // Backups im localStorage finden
+            function findBackups() {
+                const backups = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('backup_')) {
+                        try {
+                            const data = JSON.parse(localStorage.getItem(key));
+                            backups.push({
+                                key: key,
+                                date: key.replace('backup_', ''),
+                                trades: data.trades ? data.trades.length : 0,
+                                settings: data.settings ? data.settings.length : 0,
+                                journal: data.journal ? data.journal.length : 0
+                            });
+                        } catch (e) {
+                            console.error('Fehler beim Parsen von Backup:', key, e);
+                        }
+                    }
+                }
+                return backups.sort((a, b) => b.date.localeCompare(a.date));
+            }
+            
+            // Backups anzeigen
+            function displayBackups() {
+                const backups = findBackups();
+                const container = document.getElementById('backups-list');
+                
+                if (backups.length === 0) {
+                    container.innerHTML = '<p class="error">❌ Keine Backups gefunden!</p>';
+                    return;
+                }
+                
+                container.innerHTML = '<h3>Verfügbare Backups:</h3>';
+                backups.forEach(backup => {
+                    const div = document.createElement('div');
+                    div.className = 'backup-item';
+                    div.innerHTML = `
+                        <strong>${backup.date}</strong><br>
+                        Trades: ${backup.trades} | Einstellungen: ${backup.settings} | Journal: ${backup.journal}<br>
+                        <button class="restore-btn" onclick="restoreBackup('${backup.key}')">
+                            🔄 Wiederherstellen
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            
+            // Backup wiederherstellen
+            function restoreBackup(backupKey) {
+                try {
+                    const backupData = localStorage.getItem(backupKey);
+                    if (!backupData) {
+                        showStatus('Backup nicht gefunden!', 'error');
+                        return;
+                    }
+                    
+                    // Daten in die aktuelle IndexedDB schreiben
+                    const data = JSON.parse(backupData);
+                    
+                    // IndexedDB öffnen und Daten wiederherstellen
+                    const request = indexedDB.open('TradingJournalDB', 6);
+                    request.onsuccess = function() {
+                        const db = request.result;
+                        const transaction = db.transaction(['trades', 'settings', 'journal'], 'readwrite');
+                        
+                        // Trades wiederherstellen
+                        if (data.trades && data.trades.length > 0) {
+                            const tradesStore = transaction.objectStore('trades');
+                            data.trades.forEach(trade => {
+                                tradesStore.put(trade);
+                            });
+                        }
+                        
+                        // Settings wiederherstellen
+                        if (data.settings && data.settings.length > 0) {
+                            const settingsStore = transaction.objectStore('settings');
+                            data.settings.forEach(setting => {
+                                settingsStore.put(setting);
+                            });
+                        }
+                        
+                        // Journal wiederherstellen
+                        if (data.journal && data.journal.length > 0) {
+                            const journalStore = transaction.objectStore('journal');
+                            data.journal.forEach(entry => {
+                                journalStore.put(entry);
+                            });
+                        }
+                        
+                        transaction.oncomplete = function() {
+                            showStatus(`✅ Backup erfolgreich wiederhergestellt!<br>
+                                Trades: ${data.trades ? data.trades.length : 0}<br>
+                                Einstellungen: ${data.settings ? data.settings.length : 0}<br>
+                                Journal: ${data.journal ? data.journal.length : 0}`, 'success');
+                        };
+                        
+                        transaction.onerror = function() {
+                            showStatus('❌ Fehler beim Wiederherstellen des Backups!', 'error');
+                        };
+                    };
+                    
+                    request.onerror = function() {
+                        showStatus('❌ Fehler beim Öffnen der Datenbank!', 'error');
+                    };
+                    
+                } catch (error) {
+                    showStatus('❌ Fehler: ' + error.message, 'error');
+                }
+            }
+            
+            function showStatus(message, type) {
+                const status = document.getElementById('status');
+                status.innerHTML = `<div class="${type}">${message}</div>`;
+            }
+            
+            // Seite laden
+            displayBackups();
+        </script>
+    </div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

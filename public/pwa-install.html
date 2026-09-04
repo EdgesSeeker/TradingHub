@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Journal PWA - Installation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #3b82f6, #10b981);
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #3b82f6, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: #94a3b8;
+            font-size: 16px;
+        }
+        
+        .features {
+            margin: 30px 0;
+        }
+        
+        .feature {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: #3b82f6;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 20px;
+        }
+        
+        .feature-text {
+            flex: 1;
+        }
+        
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .feature-desc {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        
+        .instructions {
+            margin: 30px 0;
+        }
+        
+        .instruction {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 12px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .instruction-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #3b82f6;
+        }
+        
+        .instruction-steps {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .instruction-steps li {
+            margin: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .instruction-steps li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        .device-tabs {
+            display: flex;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 5px;
+        }
+        
+        .device-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .device-tab.active {
+            background: #3b82f6;
+        }
+        
+        .device-content {
+            display: none;
+        }
+        
+        .device-content.active {
+            display: block;
+        }
+        
+        .cta-button {
+            background: linear-gradient(135deg, #3b82f6, #10b981);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin: 20px 0;
+            transition: all 0.3s;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .back-button {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .status.installed {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            color: #10b981;
+        }
+        
+        .status.not-installed {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">📊</div>
+            <h1>Trading Journal Pro</h1>
+            <p class="subtitle">Installiere die App für die beste Trading-Erfahrung</p>
+        </div>
+        
+        <div class="status" id="installStatus">
+            <div id="statusText">Prüfe Installation...</div>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">📱</div>
+                <div class="feature-text">
+                    <div class="feature-title">App-ähnliche Erfahrung</div>
+                    <div class="feature-desc">Läuft wie eine native App auf deinem Gerät</div>
+                </div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-text">
+                    <div class="feature-title">Offline-Funktionalität</div>
+                    <div class="feature-desc">Funktioniert auch ohne Internetverbindung</div>
+                </div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🔔</div>
+                <div class="feature-text">
+                    <div class="feature-title">Push-Benachrichtigungen</div>
+                    <div class="feature-desc">Erinnerungen für deine Trading-Routine</div>
+                </div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🚀</div>
+                <div class="feature-text">
+                    <div class="feature-title">Schneller Zugriff</div>
+                    <div class="feature-desc">Direkt vom Startbildschirm aus starten</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>📱 Installation auf deinem Gerät:</h3>
+            
+            <div class="device-tabs">
+                <div class="device-tab active" onclick="showDevice('mobile')">📱 Handy</div>
+                <div class="device-tab" onclick="showDevice('desktop')">💻 Desktop</div>
+            </div>
+            
+            <div id="mobile" class="device-content active">
+                <div class="instruction">
+                    <div class="instruction-title">Android (Chrome/Samsung Internet)</div>
+                    <ol class="instruction-steps">
+                        <li>Öffne die Trading Journal Website</li>
+                        <li>Tippe auf das Menü (3 Punkte oben rechts)</li>
+                        <li>Wähle "Zur Startseite hinzufügen" oder "App installieren"</li>
+                        <li>Bestätige die Installation</li>
+                        <li>Die App erscheint auf deinem Startbildschirm</li>
+                    </ol>
+                </div>
+                
+                <div class="instruction">
+                    <div class="instruction-title">iPhone/iPad (Safari)</div>
+                    <ol class="instruction-steps">
+                        <li>Öffne die Trading Journal Website in Safari</li>
+                        <li>Tippe auf das Teilen-Symbol (Quadrat mit Pfeil)</li>
+                        <li>Wähle "Zum Home-Bildschirm"</li>
+                        <li>Bestätige mit "Hinzufügen"</li>
+                        <li>Die App erscheint auf deinem Home-Bildschirm</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div id="desktop" class="device-content">
+                <div class="instruction">
+                    <div class="instruction-title">Chrome/Edge (Windows/Mac/Linux)</div>
+                    <ol class="instruction-steps">
+                        <li>Öffne die Trading Journal Website</li>
+                        <li>Suche nach dem Installations-Symbol in der Adressleiste</li>
+                        <li>Klicke auf "Installieren" oder "App installieren"</li>
+                        <li>Bestätige die Installation</li>
+                        <li>Die App öffnet sich in einem eigenen Fenster</li>
+                    </ol>
+                </div>
+                
+                <div class="instruction">
+                    <div class="instruction-title">Firefox</div>
+                    <ol class="instruction-steps">
+                        <li>Öffne die Trading Journal Website</li>
+                        <li>Klicke auf das Menü (3 Striche oben rechts)</li>
+                        <li>Wähle "Diese Seite als App installieren"</li>
+                        <li>Bestätige die Installation</li>
+                        <li>Die App wird in deinen Anwendungen verfügbar</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+        
+        <button class="cta-button" id="installButton" onclick="installApp()" style="display: none;">
+            📱 Jetzt installieren
+        </button>
+        
+        <a href="/" class="back-button">← Zurück zur App</a>
+    </div>
+
+    <script>
+        let deferredPrompt;
+        let isInstalled = false;
+        
+        // Check if app is already installed
+        function checkInstallationStatus() {
+            isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
+                         window.navigator.standalone === true;
+            
+            const statusDiv = document.getElementById('installStatus');
+            const statusText = document.getElementById('statusText');
+            const installButton = document.getElementById('installButton');
+            
+            if (isInstalled) {
+                statusDiv.className = 'status installed';
+                statusText.textContent = '✅ App ist bereits installiert!';
+                installButton.style.display = 'none';
+            } else {
+                statusDiv.className = 'status not-installed';
+                statusText.textContent = '📱 App ist noch nicht installiert';
+                if (deferredPrompt) {
+                    installButton.style.display = 'block';
+                }
+            }
+        }
+        
+        // Listen for install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('💾 Install prompt triggered');
+            e.preventDefault();
+            deferredPrompt = e;
+            checkInstallationStatus();
+        });
+        
+        // Listen for app installed
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ App installed successfully');
+            isInstalled = true;
+            checkInstallationStatus();
+        });
+        
+        // Install app
+        async function installApp() {
+            if (!deferredPrompt) {
+                alert('Installation nicht verfügbar. Bitte folge den manuellen Anweisungen oben.');
+                return;
+            }
+            
+            try {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                
+                if (outcome === 'accepted') {
+                    console.log('✅ User accepted install prompt');
+                } else {
+                    console.log('❌ User dismissed install prompt');
+                }
+                
+                deferredPrompt = null;
+                checkInstallationStatus();
+            } catch (error) {
+                console.error('❌ Install failed', error);
+            }
+        }
+        
+        // Device tab switching
+        function showDevice(device) {
+            // Update tabs
+            document.querySelectorAll('.device-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.device-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(device).classList.add('active');
+        }
+        
+        // Check installation status on load
+        window.addEventListener('load', checkInstallationStatus);
+        
+        // Check again after a short delay
+        setTimeout(checkInstallationStatus, 1000);
+    </script>
+</body>
+</html>

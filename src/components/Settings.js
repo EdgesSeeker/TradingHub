@@ -141,7 +141,7 @@ const Settings = () => {
               borderRadius: '0.5rem',
               border: '1px solid #334155'
             }}>
-              <Settings style={{ width: '2rem', height: '2rem', color: '#3b82f6' }} />
+              <SettingsIcon style={{ width: '2rem', height: '2rem', color: '#3b82f6' }} />
               <div>
                 <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#f8fafc' }}>
                   ⚙️ Einstellungen
@@ -481,4 +481,11 @@ const Settings = () => {
   );
 };
 
-export default Settings; 
+export default Settings;
+
+
+
+
+
+
+

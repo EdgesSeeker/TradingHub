@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, Briefcase, BookOpen, Calendar, Settings, ArrowLeft, Plus, TrendingDown, Target, Brain, BarChart, Zap, Clock, Trash2, ChevronDown, FileText, Building2, TrendingUp, Star, Rocket, Activity, CheckSquare, Layers } from 'lucide-react';
+import { BarChart3, Briefcase, BookOpen, Calendar, Settings, ArrowLeft, Plus, TrendingDown, Target, Brain, BarChart, Zap, Clock, Trash2, ChevronDown, FileText, Building2, TrendingUp, Star, Rocket, Activity, CheckSquare, Layers, Download, Upload, AlertTriangle } from 'lucide-react';
 
 const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, children, renderContent }) => {
   const [reviewsDropdownOpen, setReviewsDropdownOpen] = useState(false);
@@ -45,6 +45,7 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
   const tradeWorkflowSubTabs = [
     { id: 'trade-planning', label: 'Trade Planning', icon: Target },
     { id: 'trade-entry', label: 'Trade Entry', icon: Plus },
+    { id: 'trade-upload', label: 'Trade Upload', icon: Upload },
     { id: 'profit-taking', label: 'Profit Taking', icon: TrendingDown },
     { id: 'ai-agents', label: 'AI Agents', icon: Brain },
     { id: 'ai-agent-plans-overview', label: 'AI Plans Overview', icon: Star },
@@ -71,6 +72,10 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
 
   const systemSubTabs = [
     { id: 'system-overview', label: 'System Overview', icon: Zap },
+    { id: 'big-day-reset-checklist', label: 'Big Day Reset Checklist', icon: Target },
+    { id: 'backup-manager', label: 'Backup Manager', icon: Download },
+    { id: 'screenshot-manager', label: 'Screenshot Manager', icon: FileText },
+    { id: 'emergency-recovery', label: 'Emergency Recovery', icon: AlertTriangle },
     { id: 'trash', label: 'Papierkorb', icon: Trash2 },
     { id: 'settings', label: 'Einstellungen', icon: Settings }
   ];
@@ -380,6 +385,37 @@ const Navigation = ({ activeTab, onTabChange, dateRange, onDateRangeChange, chil
             );
           })}
         </nav>
+
+        {/* PWA Install Button */}
+        <div style={{
+          padding: '1rem 1.5rem',
+          borderTop: '1px solid #334155'
+        }}>
+          <button
+            onClick={() => window.open('/pwa-install.html', '_blank')}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.5rem',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              marginBottom: '1rem'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
+          >
+            <Download size={16} />
+            App installieren
+          </button>
+        </div>
 
         {/* Date Range Filter */}
         <div style={{

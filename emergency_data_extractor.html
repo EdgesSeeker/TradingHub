@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🚨 NOTFALL - Daten Extraktor</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .success { color: #4CAF50; font-weight: bold; }
+        .error { color: #f44336; font-weight: bold; }
+        .warning { color: #ff9800; font-weight: bold; }
+        .data-item { background: #f9f9f9; padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .btn { background: #4CAF50; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .btn:hover { background: #45a049; }
+        .btn-danger { background: #f44336; }
+        .btn-danger:hover { background: #da190b; }
+        pre { background: #f0f0f0; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 NOTFALL - Daten Extraktor</h1>
+        <p><strong>WICHTIG:</strong> Du hast 891 kB IndexedDB-Daten! Lass uns sie retten!</p>
+        
+        <div class="data-item">
+            <h3>Schritt 1: IndexedDB durchsuchen</h3>
+            <button class="btn" onclick="scanIndexedDB()">🔍 IndexedDB scannen</button>
+            <div id="scan-results"></div>
+        </div>
+        
+        <div class="data-item">
+            <h3>Schritt 2: Gefundene Daten anzeigen</h3>
+            <div id="data-display"></div>
+        </div>
+        
+        <div class="data-item">
+            <h3>Schritt 3: Daten exportieren</h3>
+            <button class="btn" onclick="exportData()">💾 Daten exportieren</button>
+            <button class="btn btn-danger" onclick="restoreData()">🔄 Daten wiederherstellen</button>
+            <div id="export-results"></div>
+        </div>
+        
+        <div id="status"></div>
+    </div>
+    
+    <script>
+        let foundData = {
+            trades: [],
+            settings: [],
+            journal: []
+        };
+        
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+        
+        function scanIndexedDB() {
+            const results = document.getElementById('scan-results');
+            results.innerHTML = '<p>Scanne IndexedDB...</p>';
+            
+            // Versuche verschiedene Datenbanknamen
+            const dbNames = ['TradingJournalDB', 'TradingJournal', 'trading-journal', 'TradingData'];
+            let found = 0;
+            
+            dbNames.forEach(dbName => {
+                const request = indexedDB.open(dbName);
+                request.onsuccess = function() {
+                    const db = request.result;
+                    const storeNames = Array.from(db.objectStoreNames);
+                    
+                    if (storeNames.length > 0) {
+                        found++;
+                        results.innerHTML += `<div class="data-item">
+                            <strong>✅ Datenbank gefunden:</strong> ${dbName}<br>
+                            <strong>Stores:</strong> ${storeNames.join(', ')}<br>
+                            <button class="btn" onclick="extractFromDB('${dbName}')">Daten extrahieren</button>
+                        </div>`;
+                    }
+                };
+                request.onerror = function() {
+                    // Datenbank existiert nicht
+                };
+            });
+            
+            setTimeout(() => {
+                if (found === 0) {
+                    results.innerHTML += '<div class="error">❌ Keine Datenbanken gefunden. Versuche manuell in den Entwicklertools!</div>';
+                }
+            }, 1000);
+        }
+        
+        function extractFromDB(dbName) {
+            const request = indexedDB.open(dbName);
+            request.onsuccess = function() {
+                const db = request.result;
+                const storeNames = Array.from(db.objectStoreNames);
+                
+                storeNames.forEach(storeName => {
+                    const transaction = db.transaction([storeName], 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const getAllRequest = store.getAll();
+                    
+                    getAllRequest.onsuccess = function() {
+                        const data = getAllRequest.result;
+                        if (data.length > 0) {
+                            showStatus(`✅ ${data.length} Einträge aus ${storeName} extrahiert!`, 'success');
+                            
+                            if (storeName === 'trades') {
+                                foundData.trades = data;
+                            } else if (storeName === 'settings') {
+                                foundData.settings = data;
+                            } else if (storeName === 'journal') {
+                                foundData.journal = data;
+                            }
+                            
+                            displayData();
+                        }
+                    };
+                });
+            };
+        }
+        
+        function displayData() {
+            const display = document.getElementById('data-display');
+            let html = '<h4>Gefundene Daten:</h4>';
+            
+            if (foundData.trades.length > 0) {
+                html += `<div class="data-item">
+                    <strong>Trades:</strong> ${foundData.trades.length}<br>
+                    <pre>${JSON.stringify(foundData.trades, null, 2).substring(0, 500)}...</pre>
+                </div>`;
+            }
+            
+            if (foundData.settings.length > 0) {
+                html += `<div class="data-item">
+                    <strong>Einstellungen:</strong> ${foundData.settings.length}<br>
+                    <pre>${JSON.stringify(foundData.settings, null, 2).substring(0, 500)}...</pre>
+                </div>`;
+            }
+            
+            if (foundData.journal.length > 0) {
+                html += `<div class="data-item">
+                    <strong>Journal:</strong> ${foundData.journal.length}<br>
+                    <pre>${JSON.stringify(foundData.journal, null, 2).substring(0, 500)}...</pre>
+                </div>`;
+            }
+            
+            display.innerHTML = html;
+        }
+        
+        function exportData() {
+            const data = {
+                trades: foundData.trades,
+                settings: foundData.settings,
+                journal: foundData.journal,
+                timestamp: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `trading-journal-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            
+            showStatus('✅ Daten exportiert!', 'success');
+        }
+        
+        function restoreData() {
+            if (foundData.trades.length === 0 && foundData.settings.length === 0 && foundData.journal.length === 0) {
+                showStatus('❌ Keine Daten zum Wiederherstellen gefunden!', 'error');
+                return;
+            }
+            
+            const request = indexedDB.open('TradingJournalDB', 6);
+            request.onsuccess = function() {
+                const db = request.result;
+                const transaction = db.transaction(['trades', 'settings', 'journal'], 'readwrite');
+                
+                if (foundData.trades.length > 0) {
+                    const tradesStore = transaction.objectStore('trades');
+                    foundData.trades.forEach(trade => tradesStore.put(trade));
+                }
+                
+                if (foundData.settings.length > 0) {
+                    const settingsStore = transaction.objectStore('settings');
+                    foundData.settings.forEach(setting => settingsStore.put(setting));
+                }
+                
+                if (foundData.journal.length > 0) {
+                    const journalStore = transaction.objectStore('journal');
+                    foundData.journal.forEach(entry => journalStore.put(entry));
+                }
+                
+                transaction.oncomplete = function() {
+                    showStatus(`✅ Daten erfolgreich wiederhergestellt!<br>
+                        Trades: ${foundData.trades.length}<br>
+                        Einstellungen: ${foundData.settings.length}<br>
+                        Journal: ${foundData.journal.length}`, 'success');
+                };
+            };
+        }
+        
+        // Automatisch scannen beim Laden
+        window.onload = function() {
+            scanIndexedDB();
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Erweiterte Daten Wiederherstellung</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px; }
+        .success { color: #4CAF50; font-weight: bold; }
+        .error { color: #f44336; font-weight: bold; }
+        .warning { color: #ff9800; font-weight: bold; }
+        .info { color: #2196F3; font-weight: bold; }
+        .data-item { background: #f9f9f9; padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .btn { background: #4CAF50; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .btn:hover { background: #45a049; }
+        .btn-danger { background: #f44336; }
+        .btn-danger:hover { background: #da190b; }
+        .btn-warning { background: #ff9800; }
+        .btn-warning:hover { background: #e68900; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Erweiterte Daten Wiederherstellung</h1>
+        <p>Prüfe alle möglichen Datenquellen und versuche deine Trades wiederherzustellen:</p>
+        
+        <div class="section">
+            <h3>1. IndexedDB Datenbanken prüfen</h3>
+            <button class="btn" onclick="checkIndexedDB()">🔍 IndexedDB prüfen</button>
+            <div id="indexeddb-results"></div>
+        </div>
+        
+        <div class="section">
+            <h3>2. LocalStorage prüfen</h3>
+            <button class="btn" onclick="checkLocalStorage()">🔍 LocalStorage prüfen</button>
+            <div id="localstorage-results"></div>
+        </div>
+        
+        <div class="section">
+            <h3>3. SessionStorage prüfen</h3>
+            <button class="btn" onclick="checkSessionStorage()">🔍 SessionStorage prüfen</button>
+            <div id="sessionstorage-results"></div>
+        </div>
+        
+        <div class="section">
+            <h3>4. Browser Cache prüfen</h3>
+            <button class="btn" onclick="checkBrowserCache()">🔍 Browser Cache prüfen</button>
+            <div id="cache-results"></div>
+        </div>
+        
+        <div class="section">
+            <h3>5. Gefundene Daten wiederherstellen</h3>
+            <div id="recovery-options"></div>
+        </div>
+        
+        <div class="section">
+            <h3>6. Notfall-Maßnahmen</h3>
+            <button class="btn btn-warning" onclick="resetDatabase()">🔄 Datenbank zurücksetzen</button>
+            <button class="btn btn-danger" onclick="clearAllData()">🗑️ Alle Daten löschen (VORSICHT!)</button>
+            <div id="emergency-results"></div>
+        </div>
+        
+        <div id="status"></div>
+    </div>
+    
+    <script>
+        let foundData = {
+            trades: [],
+            settings: [],
+            journal: [],
+            backups: []
+        };
+        
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+        
+        // IndexedDB prüfen
+        function checkIndexedDB() {
+            const results = document.getElementById('indexeddb-results');
+            results.innerHTML = '<p>Prüfe IndexedDB...</p>';
+            
+            const databases = ['TradingJournalDB', 'TradingJournal', 'trading-journal', 'TradingData'];
+            let found = 0;
+            
+            databases.forEach(dbName => {
+                const request = indexedDB.open(dbName);
+                request.onsuccess = function() {
+                    const db = request.result;
+                    const storeNames = Array.from(db.objectStoreNames);
+                    
+                    if (storeNames.length > 0) {
+                        found++;
+                        results.innerHTML += `<div class="data-item">
+                            <strong>Datenbank gefunden:</strong> ${dbName}<br>
+                            <strong>Stores:</strong> ${storeNames.join(', ')}<br>
+                            <button class="btn" onclick="extractFromDB('${dbName}')">Daten extrahieren</button>
+                        </div>`;
+                    }
+                };
+                request.onerror = function() {
+                    // Datenbank existiert nicht
+                };
+            });
+            
+            setTimeout(() => {
+                if (found === 0) {
+                    results.innerHTML += '<div class="error">❌ Keine IndexedDB Datenbanken gefunden</div>';
+                }
+            }, 1000);
+        }
+        
+        // LocalStorage prüfen
+        function checkLocalStorage() {
+            const results = document.getElementById('localstorage-results');
+            results.innerHTML = '<p>Prüfe LocalStorage...</p>';
+            
+            const keys = Object.keys(localStorage);
+            let found = 0;
+            
+            keys.forEach(key => {
+                if (key.includes('trade') || key.includes('backup') || key.includes('Trading') || key.includes('journal')) {
+                    found++;
+                    const value = localStorage.getItem(key);
+                    let preview = value.length > 100 ? value.substring(0, 100) + '...' : value;
+                    
+                    results.innerHTML += `<div class="data-item">
+                        <strong>Key:</strong> ${key}<br>
+                        <strong>Größe:</strong> ${value.length} Zeichen<br>
+                        <strong>Preview:</strong> ${preview}<br>
+                        <button class="btn" onclick="analyzeKey('${key}')">Analysieren</button>
+                    </div>`;
+                }
+            });
+            
+            if (found === 0) {
+                results.innerHTML += '<div class="error">❌ Keine relevanten Daten im LocalStorage gefunden</div>';
+            }
+        }
+        
+        // SessionStorage prüfen
+        function checkSessionStorage() {
+            const results = document.getElementById('sessionstorage-results');
+            results.innerHTML = '<p>Prüfe SessionStorage...</p>';
+            
+            const keys = Object.keys(sessionStorage);
+            let found = 0;
+            
+            keys.forEach(key => {
+                if (key.includes('trade') || key.includes('backup') || key.includes('Trading') || key.includes('journal')) {
+                    found++;
+                    const value = sessionStorage.getItem(key);
+                    let preview = value.length > 100 ? value.substring(0, 100) + '...' : value;
+                    
+                    results.innerHTML += `<div class="data-item">
+                        <strong>Key:</strong> ${key}<br>
+                        <strong>Größe:</strong> ${value.length} Zeichen<br>
+                        <strong>Preview:</strong> ${preview}<br>
+                        <button class="btn" onclick="analyzeKey('${key}', 'session')">Analysieren</button>
+                    </div>`;
+                }
+            });
+            
+            if (found === 0) {
+                results.innerHTML += '<div class="error">❌ Keine relevanten Daten im SessionStorage gefunden</div>';
+            }
+        }
+        
+        // Browser Cache prüfen
+        function checkBrowserCache() {
+            const results = document.getElementById('cache-results');
+            results.innerHTML = '<p>Prüfe Browser Cache...</p>';
+            
+            // Service Worker Cache prüfen
+            if ('caches' in window) {
+                caches.keys().then(cacheNames => {
+                    cacheNames.forEach(cacheName => {
+                        if (cacheName.includes('trading') || cacheName.includes('journal')) {
+                            results.innerHTML += `<div class="data-item">
+                                <strong>Cache gefunden:</strong> ${cacheName}<br>
+                                <button class="btn" onclick="checkCache('${cacheName}')">Cache prüfen</button>
+                            </div>`;
+                        }
+                    });
+                });
+            } else {
+                results.innerHTML += '<div class="error">❌ Cache API nicht verfügbar</div>';
+            }
+        }
+        
+        // Daten aus IndexedDB extrahieren
+        function extractFromDB(dbName) {
+            const request = indexedDB.open(dbName);
+            request.onsuccess = function() {
+                const db = request.result;
+                const storeNames = Array.from(db.objectStoreNames);
+                
+                storeNames.forEach(storeName => {
+                    const transaction = db.transaction([storeName], 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const getAllRequest = store.getAll();
+                    
+                    getAllRequest.onsuccess = function() {
+                        const data = getAllRequest.result;
+                        if (data.length > 0) {
+                            showStatus(`✅ ${data.length} Einträge aus ${storeName} extrahiert!`, 'success');
+                            
+                            if (storeName === 'trades') {
+                                foundData.trades = data;
+                            } else if (storeName === 'settings') {
+                                foundData.settings = data;
+                            } else if (storeName === 'journal') {
+                                foundData.journal = data;
+                            }
+                            
+                            updateRecoveryOptions();
+                        }
+                    };
+                });
+            };
+        }
+        
+        // Key analysieren
+        function analyzeKey(key, storage = 'local') {
+            const value = storage === 'session' ? sessionStorage.getItem(key) : localStorage.getItem(key);
+            
+            try {
+                const data = JSON.parse(value);
+                
+                if (Array.isArray(data)) {
+                    if (data.length > 0 && data[0].hasOwnProperty('symbol')) {
+                        foundData.trades = data;
+                        showStatus(`✅ ${data.length} Trades gefunden in ${key}!`, 'success');
+                    } else if (data.length > 0 && data[0].hasOwnProperty('key')) {
+                        foundData.settings = data;
+                        showStatus(`✅ ${data.length} Einstellungen gefunden in ${key}!`, 'success');
+                    }
+                } else if (data.trades) {
+                    foundData.trades = data.trades;
+                    foundData.settings = data.settings || [];
+                    foundData.journal = data.journal || [];
+                    showStatus(`✅ Vollständige Daten gefunden in ${key}!`, 'success');
+                }
+                
+                updateRecoveryOptions();
+            } catch (e) {
+                showStatus(`❌ Fehler beim Parsen von ${key}: ${e.message}`, 'error');
+            }
+        }
+        
+        // Wiederherstellungsoptionen aktualisieren
+        function updateRecoveryOptions() {
+            const options = document.getElementById('recovery-options');
+            let html = '<h4>Gefundene Daten:</h4>';
+            
+            if (foundData.trades.length > 0) {
+                html += `<div class="data-item">
+                    <strong>Trades:</strong> ${foundData.trades.length}<br>
+                    <button class="btn" onclick="restoreTrades()">Trades wiederherstellen</button>
+                </div>`;
+            }
+            
+            if (foundData.settings.length > 0) {
+                html += `<div class="data-item">
+                    <strong>Einstellungen:</strong> ${foundData.settings.length}<br>
+                    <button class="btn" onclick="restoreSettings()">Einstellungen wiederherstellen</button>
+                </div>`;
+            }
+            
+            if (foundData.journal.length > 0) {
+                html += `<div class="data-item">
+                    <strong>Journal:</strong> ${foundData.journal.length}<br>
+                    <button class="btn" onclick="restoreJournal()">Journal wiederherstellen</button>
+                </div>`;
+            }
+            
+            if (foundData.trades.length > 0 || foundData.settings.length > 0 || foundData.journal.length > 0) {
+                html += `<div class="data-item">
+                    <button class="btn" onclick="restoreAll()">🔄 ALLES wiederherstellen</button>
+                </div>`;
+            }
+            
+            options.innerHTML = html;
+        }
+        
+        // Trades wiederherstellen
+        function restoreTrades() {
+            if (foundData.trades.length === 0) return;
+            
+            const request = indexedDB.open('TradingJournalDB', 6);
+            request.onsuccess = function() {
+                const db = request.result;
+                const transaction = db.transaction(['trades'], 'readwrite');
+                const store = transaction.objectStore('trades');
+                
+                foundData.trades.forEach(trade => {
+                    store.put(trade);
+                });
+                
+                transaction.oncomplete = function() {
+                    showStatus(`✅ ${foundData.trades.length} Trades erfolgreich wiederhergestellt!`, 'success');
+                };
+            };
+        }
+        
+        // Alle Daten wiederherstellen
+        function restoreAll() {
+            const request = indexedDB.open('TradingJournalDB', 6);
+            request.onsuccess = function() {
+                const db = request.result;
+                const transaction = db.transaction(['trades', 'settings', 'journal'], 'readwrite');
+                
+                if (foundData.trades.length > 0) {
+                    const tradesStore = transaction.objectStore('trades');
+                    foundData.trades.forEach(trade => tradesStore.put(trade));
+                }
+                
+                if (foundData.settings.length > 0) {
+                    const settingsStore = transaction.objectStore('settings');
+                    foundData.settings.forEach(setting => settingsStore.put(setting));
+                }
+                
+                if (foundData.journal.length > 0) {
+                    const journalStore = transaction.objectStore('journal');
+                    foundData.journal.forEach(entry => journalStore.put(entry));
+                }
+                
+                transaction.oncomplete = function() {
+                    showStatus(`✅ Alle Daten erfolgreich wiederhergestellt!<br>
+                        Trades: ${foundData.trades.length}<br>
+                        Einstellungen: ${foundData.settings.length}<br>
+                        Journal: ${foundData.journal.length}`, 'success');
+                };
+            };
+        }
+        
+        // Datenbank zurücksetzen
+        function resetDatabase() {
+            if (confirm('Bist du sicher? Das wird die aktuelle Datenbank löschen!')) {
+                const deleteRequest = indexedDB.deleteDatabase('TradingJournalDB');
+                deleteRequest.onsuccess = function() {
+                    showStatus('✅ Datenbank zurückgesetzt! Lade die App neu.', 'success');
+                };
+            }
+        }
+        
+        // Alle Daten löschen
+        function clearAllData() {
+            if (confirm('VORSICHT! Das löscht ALLE Daten! Bist du wirklich sicher?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                const deleteRequest = indexedDB.deleteDatabase('TradingJournalDB');
+                deleteRequest.onsuccess = function() {
+                    showStatus('🗑️ Alle Daten gelöscht!', 'warning');
+                };
+            }
+        }
+        
+        // Automatisch alle Quellen prüfen
+        window.onload = function() {
+            checkIndexedDB();
+            checkLocalStorage();
+            checkSessionStorage();
+            checkBrowserCache();
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

@@ -106,6 +106,9 @@ const TradingEquityCurve = ({ trades, onTradeUpdated, onNavigate }) => {
         if (savedEquityLog) {
           setEquityLog(savedEquityLog);
         }
+        
+        // Migrate existing equity data to historical entries if needed
+        await migrateEquityData();
       } catch (error) {
         console.log('No saved settings found, using defaults');
       }
@@ -113,6 +116,264 @@ const TradingEquityCurve = ({ trades, onTradeUpdated, onNavigate }) => {
     
     loadSettings();
   }, []);
+
+  // Migrate existing equity data to historical entries
+  const migrateEquityData = async () => {
+    try {
+      // Check if we have equity curve data that needs to be migrated
+      const equityCurveData = localStorage.getItem('equityCurve');
+      const historicalData = localStorage.getItem('historicalEquityEntries');
+      
+      console.log('Migration check - equityCurve:', equityCurveData);
+      console.log('Migration check - historicalData:', historicalData);
+      
+      if (equityCurveData && (!historicalData || JSON.parse(historicalData).length === 0)) {
+        console.log('Migrating equity curve data to historical entries...');
+        const curveData = JSON.parse(equityCurveData);
+        
+        // Convert to historical format
+        const historicalEntries = curveData.map(entry => ({
+          date: entry.date,
+          equity: entry.equity || entry.value,
+          floatingEquity: entry.floatingEquity || entry.equity || entry.value,
+          realizedPnL: entry.realizedPnL || 0,
+          unrealizedPnL: entry.unrealizedPnL || 0,
+          closedTrades: entry.closedTrades || 0,
+          openTrades: entry.openTrades || 0,
+          dailyPnL: entry.dailyPnL || 0
+        }));
+        
+        // Save to historical entries
+        localStorage.setItem('historicalEquityEntries', JSON.stringify(historicalEntries));
+        console.log('Migrated', historicalEntries.length, 'equity entries');
+      }
+      
+      // Debug: Show all current data
+      console.log('Current localStorage data:');
+      console.log('- historicalEquityEntries:', localStorage.getItem('historicalEquityEntries'));
+      console.log('- currentEquity:', localStorage.getItem('currentEquity'));
+      console.log('- equityCurve:', localStorage.getItem('equityCurve'));
+    } catch (error) {
+      console.error('Error migrating equity data:', error);
+    }
+  };
+
+  // Debug function to repair equity data
+  const debugAndRepairEquityData = async () => {
+    console.log('🔧 Debugging and repairing equity data...');
+    
+    // Check all possible data sources
+    const historicalData = localStorage.getItem('historicalEquityEntries');
+    const currentEquity = localStorage.getItem('currentEquity');
+    const equityCurve = localStorage.getItem('equityCurve');
+    const equityLog = localStorage.getItem('equityLog');
+    
+    console.log('📊 Current data sources:');
+    console.log('- historicalEquityEntries:', historicalData);
+    console.log('- currentEquity:', currentEquity);
+    console.log('- equityCurve:', equityCurve);
+    console.log('- equityLog:', equityLog);
+    
+    // Check IndexedDB for equity data
+    try {
+      const portfolioValue = await storage.loadSetting('portfolioValue');
+      console.log('📊 Portfolio value from IndexedDB:', portfolioValue);
+      
+      // Check for equity log in IndexedDB
+      const equityLogFromDB = await storage.loadSetting('equityLog');
+      console.log('📊 Equity log from IndexedDB:', equityLogFromDB);
+      
+      if (equityLogFromDB && equityLogFromDB.length > 0) {
+        console.log('📝 Found equity log in IndexedDB with', equityLogFromDB.length, 'entries');
+        
+        // Extract all equity-related entries
+        const allEquityEntries = equityLogFromDB.filter(entry => 
+          entry.type === 'equity' || 
+          entry.type === 'historical_equity' || 
+          entry.type === 'total_cash' ||
+          (entry.note && entry.note.includes('Total Value'))
+        );
+        
+        console.log('📝 Found equity-related entries:', allEquityEntries.length);
+        console.log('📝 Entries:', allEquityEntries);
+        
+        if (allEquityEntries.length > 0) {
+          // Create historical entries from log
+          const historicalEntries = allEquityEntries.map(entry => {
+            let equityValue = entry.value;
+            let entryDate = entry.date;
+            
+            // Handle different entry types
+            if (entry.type === 'total_cash') {
+              equityValue = entry.totalValue || entry.value;
+            }
+            
+            return {
+              date: entryDate,
+              equity: parseFloat(equityValue),
+              floatingEquity: parseFloat(equityValue),
+              realizedPnL: entry.change || 0,
+              unrealizedPnL: 0,
+              closedTrades: 0,
+              openTrades: 0,
+              dailyPnL: entry.change || 0
+            };
+          });
+          
+          // Remove duplicates and sort
+          const uniqueEntries = [];
+          const seenDates = new Set();
+          
+          for (let i = historicalEntries.length - 1; i >= 0; i--) {
+            const entry = historicalEntries[i];
+            if (!seenDates.has(entry.date)) {
+              uniqueEntries.unshift(entry);
+              seenDates.add(entry.date);
+            }
+          }
+          
+          // Save to historical entries
+          localStorage.setItem('historicalEquityEntries', JSON.stringify(uniqueEntries));
+          console.log('✅ Repaired equity data from IndexedDB log:', uniqueEntries.length, 'entries');
+          console.log('Repaired entries:', uniqueEntries);
+          
+          alert(`✅ Equity-Daten aus IndexedDB repariert! ${uniqueEntries.length} Einträge gefunden und gespeichert.`);
+          window.location.reload();
+          return;
+        }
+      }
+      
+      if (portfolioValue) {
+        console.log('📊 Found portfolio value in IndexedDB:', portfolioValue);
+        
+        // Create a basic equity entry
+        const today = new Date().toISOString().split('T')[0];
+        const basicEntry = {
+          date: today,
+          equity: parseFloat(portfolioValue),
+          floatingEquity: parseFloat(portfolioValue),
+          realizedPnL: 0,
+          unrealizedPnL: 0,
+          closedTrades: 0,
+          openTrades: 0,
+          dailyPnL: 0
+        };
+        
+        // Save to historical entries
+        localStorage.setItem('historicalEquityEntries', JSON.stringify([basicEntry]));
+        console.log('✅ Created basic equity entry from portfolio value:', basicEntry);
+        
+        alert(`✅ Equity-Daten aus Portfolio-Wert erstellt: $${portfolioValue}`);
+        window.location.reload();
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking IndexedDB:', error);
+    }
+    
+    // Try to extract equity values from equity log
+    if (equityLog) {
+      try {
+        const logEntries = JSON.parse(equityLog);
+        const equityEntries = logEntries.filter(entry => 
+          entry.type === 'equity' || entry.type === 'historical_equity'
+        );
+        
+        console.log('📝 Found equity entries in log:', equityEntries.length);
+        
+        if (equityEntries.length > 0) {
+          // Create historical entries from log
+          const historicalEntries = equityEntries.map(entry => ({
+            date: entry.date,
+            equity: entry.value,
+            floatingEquity: entry.value,
+            realizedPnL: entry.change || 0,
+            unrealizedPnL: 0,
+            closedTrades: 0,
+            openTrades: 0,
+            dailyPnL: entry.change || 0
+          }));
+          
+          // Remove duplicates and sort
+          const uniqueEntries = [];
+          const seenDates = new Set();
+          
+          for (let i = historicalEntries.length - 1; i >= 0; i--) {
+            const entry = historicalEntries[i];
+            if (!seenDates.has(entry.date)) {
+              uniqueEntries.unshift(entry);
+              seenDates.add(entry.date);
+            }
+          }
+          
+          // Save to historical entries
+          localStorage.setItem('historicalEquityEntries', JSON.stringify(uniqueEntries));
+          console.log('✅ Repaired equity data from log:', uniqueEntries.length, 'entries');
+          console.log('Repaired entries:', uniqueEntries);
+          
+          alert(`✅ Equity-Daten repariert! ${uniqueEntries.length} Einträge gefunden und gespeichert.`);
+          window.location.reload();
+        } else {
+          alert('❌ Keine Equity-Daten gefunden. Bitte geben Sie zuerst einen Equity-Wert ein.');
+        }
+      } catch (error) {
+        console.error('Error repairing equity data:', error);
+        alert('❌ Fehler beim Reparieren der Equity-Daten: ' + error.message);
+      }
+    } else {
+      // If no data found, create some sample data for testing
+      const createSampleData = window.confirm('Keine Equity-Daten gefunden. Möchten Sie Beispieldaten erstellen?');
+      
+      if (createSampleData) {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const twoDaysAgo = new Date(today);
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+        
+        const sampleEntries = [
+          {
+            date: twoDaysAgo.toISOString().split('T')[0],
+            equity: 10000,
+            floatingEquity: 10000,
+            realizedPnL: 0,
+            unrealizedPnL: 0,
+            closedTrades: 0,
+            openTrades: 0,
+            dailyPnL: 0
+          },
+          {
+            date: yesterday.toISOString().split('T')[0],
+            equity: 10500,
+            floatingEquity: 10500,
+            realizedPnL: 500,
+            unrealizedPnL: 0,
+            closedTrades: 0,
+            openTrades: 0,
+            dailyPnL: 500
+          },
+          {
+            date: today.toISOString().split('T')[0],
+            equity: 10200,
+            floatingEquity: 10200,
+            realizedPnL: -300,
+            unrealizedPnL: 0,
+            closedTrades: 0,
+            openTrades: 0,
+            dailyPnL: -300
+          }
+        ];
+        
+        localStorage.setItem('historicalEquityEntries', JSON.stringify(sampleEntries));
+        console.log('✅ Created sample equity data:', sampleEntries);
+        
+        alert('✅ Beispieldaten erstellt! 3 Equity-Einträge wurden hinzugefügt.');
+        window.location.reload();
+      } else {
+        alert('❌ Keine Equity-Daten gefunden. Bitte geben Sie zuerst einen Equity-Wert ein.');
+      }
+    }
+  };
 
   // Generate simulated data for the last month
   const generateSimulatedData = () => {
@@ -219,6 +480,18 @@ const TradingEquityCurve = ({ trades, onTradeUpdated, onNavigate }) => {
       }
     }
     
+    // Check for equity curve data (legacy)
+    const equityCurveData = localStorage.getItem('equityCurve');
+    if (equityCurveData) {
+      try {
+        const curveData = JSON.parse(equityCurveData);
+        allEquityEntries.push(...curveData);
+        console.log('Loaded equity curve data:', curveData.length, 'entries');
+      } catch (error) {
+        console.error('Error parsing equity curve data:', error);
+      }
+    }
+    
     // Always add today's portfolio value as the most current entry
     const today = new Date().toISOString().split('T')[0];
     
@@ -243,17 +516,32 @@ const TradingEquityCurve = ({ trades, onTradeUpdated, onNavigate }) => {
     // Sort by date
     filteredEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
     
-    console.log('Total equity entries:', filteredEntries.length);
+    // Remove duplicates based on date (keep the latest entry for each date)
+    const uniqueEntries = [];
+    const seenDates = new Set();
+    
+    for (let i = filteredEntries.length - 1; i >= 0; i--) {
+      const entry = filteredEntries[i];
+      if (!seenDates.has(entry.date)) {
+        uniqueEntries.unshift(entry);
+        seenDates.add(entry.date);
+      }
+    }
+    
+    console.log('Total equity entries after deduplication:', uniqueEntries.length);
+    console.log('Equity entries:', uniqueEntries.map(e => ({ date: e.date, equity: e.equity })));
+    console.log('Raw historical data:', localStorage.getItem('historicalEquityEntries'));
+    console.log('Raw current equity data:', localStorage.getItem('currentEquity'));
     
     // If still no entries, return empty array (clean start)
-    if (filteredEntries.length === 0) {
+    if (uniqueEntries.length === 0) {
       return [];
     }
     
-    return filteredEntries.map(entry => ({
+    return uniqueEntries.map(entry => ({
       date: entry.date,
-      equity: entry.equity,
-      floatingEquity: entry.floatingEquity || entry.equity,
+      equity: entry.equity || entry.value,
+      floatingEquity: entry.floatingEquity || entry.equity || entry.value,
       realizedPnL: entry.realizedPnL || 0,
       unrealizedPnL: entry.unrealizedPnL || 0,
       closedTrades: entry.closedTrades || 0,
@@ -732,6 +1020,38 @@ const TradingEquityCurve = ({ trades, onTradeUpdated, onNavigate }) => {
     const updatedLog = [logEntry, ...equityLog].slice(0, 50); // Keep last 50 entries
     setEquityLog(updatedLog);
     
+    // Also save to historical equity entries for equity curve
+    if (type === 'equity' || type === 'historical_equity') {
+      const today = new Date().toISOString().split('T')[0];
+      const entryDate = additionalData.date || today;
+      
+      const existingHistorical = localStorage.getItem('historicalEquityEntries');
+      let historicalEntries = existingHistorical ? JSON.parse(existingHistorical) : [];
+      
+      // Remove any existing entry for this date
+      historicalEntries = historicalEntries.filter(entry => entry.date !== entryDate);
+      
+      // Add new entry
+      const equityEntry = {
+        date: entryDate,
+        equity: value,
+        floatingEquity: value,
+        realizedPnL: additionalData.change || 0,
+        unrealizedPnL: 0,
+        closedTrades: 0,
+        openTrades: 0,
+        dailyPnL: additionalData.change || 0
+      };
+      
+      historicalEntries.push(equityEntry);
+      historicalEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      // Save to storage
+      localStorage.setItem('historicalEquityEntries', JSON.stringify(historicalEntries));
+      console.log('Saved equity entry to historical data:', equityEntry);
+      console.log('Total historical entries now:', historicalEntries.length);
+    }
+    
     try {
       await storage.saveSetting('equityLog', updatedLog);
     } catch (error) {
@@ -764,6 +1084,32 @@ const TradingEquityCurve = ({ trades, onTradeUpdated, onNavigate }) => {
       await storage.saveSetting('currentEquity', currentEquityData);
       await storage.saveSetting('portfolioValue', equityValue);
       
+      // Also save to historical equity entries
+      const existingHistorical = localStorage.getItem('historicalEquityEntries');
+      let historicalEntries = existingHistorical ? JSON.parse(existingHistorical) : [];
+      
+      // Remove any existing entry for today
+      historicalEntries = historicalEntries.filter(entry => entry.date !== today);
+      
+      // Add new entry
+      const equityEntry = {
+        date: today,
+        equity: equityValue,
+        floatingEquity: equityValue,
+        realizedPnL: equityValue - portfolioValue,
+        unrealizedPnL: 0,
+        closedTrades: 0,
+        openTrades: 0,
+        dailyPnL: equityValue - portfolioValue
+      };
+      
+      historicalEntries.push(equityEntry);
+      historicalEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      // Save to storage
+      localStorage.setItem('historicalEquityEntries', JSON.stringify(historicalEntries));
+      console.log('Saved current equity to historical data:', equityEntry);
+      
       setPortfolioValue(equityValue);
       setCurrentEquityInput('');
       setShowEquityInput(false);
@@ -773,6 +1119,7 @@ const TradingEquityCurve = ({ trades, onTradeUpdated, onNavigate }) => {
         previousValue: portfolioValue,
         change: equityValue - portfolioValue
       });
+      
       
       alert(`✅ Aktueller Equity-Stand auf $${equityValue.toFixed(2)} gesetzt!`);
     } catch (error) {
@@ -889,6 +1236,7 @@ const TradingEquityCurve = ({ trades, onTradeUpdated, onNavigate }) => {
         note: `Historischer Equity-Stand für ${new Date(selectedDate).toLocaleDateString('de-DE')}`
       });
 
+      console.log('Historical equity saved. Total entries:', historicalEntries.length);
       alert(`✅ Historischer Equity-Stand für ${new Date(selectedDate).toLocaleDateString('de-DE')}: $${equityValue.toFixed(2)} gesetzt!`);
     } catch (error) {
       console.error('Error saving historical equity:', error);
@@ -1232,11 +1580,31 @@ const TradingEquityCurve = ({ trades, onTradeUpdated, onNavigate }) => {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem'
+                gap: '0.5rem',
+                marginRight: '0.5rem'
               }}
             >
               <TrendingUp style={{ width: '1rem', height: '1rem' }} />
               Simuliere Monat
+            </button>
+
+            <button
+              onClick={debugAndRepairEquityData}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#f59e0b',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.375rem',
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <Activity style={{ width: '1rem', height: '1rem' }} />
+              Equity reparieren
             </button>
 
 

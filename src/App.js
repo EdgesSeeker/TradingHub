@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import './styles/web.css';
+import './styles/mobile-pwa.css';
+import responsiveManager from './utils/responsive';
+import pwaManager from './utils/pwa';
 import Navigation from './components/Navigation';
+import MobileNavigation from './components/MobileNavigation';
 import NewTradeEntry from './components/NewTradeEntry';
 import Portfolio from './components/Portfolio';
 import ProfitTaking from './components/ProfitTaking';
@@ -24,14 +29,44 @@ import Trash from './components/Trash';
 import Settings from './components/Settings';
 import ChartAnalysis from './components/ChartAnalysis';
 import MarketMonitor from './components/MarketMonitor';
+import MarketMonitorMobile from './components/MarketMonitorMobile';
+import TradeUpload from './components/TradeUpload';
 // import TradingLogExport from './components/TradingLogExport';
 import storage from './utils/storage';
+import advancedStorage from './utils/advancedStorage';
+import BackupManager from './components/BackupManager';
+import ScreenshotManager from './components/ScreenshotManager';
+import EmergencyRecovery from './components/EmergencyRecovery';
+import BigDayResetChecklist from './components/BigDayResetChecklist';
 import './styles/dashboard.css';
 import './styles/trading-theme.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('portfolio');
+  // Load activeTab from localStorage or default to 'portfolio'
+  const [activeTab, setActiveTab] = useState(() => {
+    const savedTab = localStorage.getItem('activeTab');
+    return savedTab || 'portfolio';
+  });
+
+  // Force refresh cache for development
+  useEffect(() => {
+    // Clear any cached data that might cause issues
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🚀 App loaded - Cache cleared for development');
+    }
+  }, []);
+  
+  // Save activeTab to localStorage
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
+  
+  // Handle tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+  };
   const [trades, setTrades] = useState([]);
+  const [isMobile, setIsMobile] = useState(responsiveManager.isMobileDevice());
   const [dateRange, setDateRange] = useState('all');
   const [filteredTrades, setFilteredTrades] = useState([]);
   const [error, setError] = useState('');
@@ -83,24 +118,63 @@ function App() {
   // Load trades and PnL sales on component mount
   useEffect(() => {
     loadData();
-    
+  }, []);
+
+  // Additional useEffect for other setup
+  useEffect(() => {
     // Make backup functions globally available
     window.createBackup = createBackup;
     window.restoreFromBackup = restoreFromBackup;
     
+    // Setup PWA connection listeners
+    pwaManager.setupConnectionListeners();
+    
+    // Setup routine reminders
+    setupRoutineReminders();
+    
+    // Setup responsive breakpoint listener
+    const handleBreakpointChange = (event) => {
+      setIsMobile(event.detail.isMobile);
+    };
+    
+    window.addEventListener('breakpointChange', handleBreakpointChange);
+    
     return () => {
+      window.removeEventListener('breakpointChange', handleBreakpointChange);
       // Cleanup global functions
       delete window.createBackup;
       delete window.restoreFromBackup;
     };
   }, []);
+  
+  const setupRoutineReminders = () => {
+    // Send routine reminder at 9:00 AM every day
+    const now = new Date();
+    const reminderTime = new Date();
+    reminderTime.setHours(9, 0, 0, 0);
+    
+    // If it's past 9 AM today, set for tomorrow
+    if (now > reminderTime) {
+      reminderTime.setDate(reminderTime.getDate() + 1);
+    }
+    
+    const timeUntilReminder = reminderTime.getTime() - now.getTime();
+    
+    setTimeout(() => {
+      pwaManager.sendRoutineReminder();
+      // Set up daily recurring reminder
+      setInterval(() => {
+        pwaManager.sendRoutineReminder();
+      }, 24 * 60 * 60 * 1000); // 24 hours
+    }, timeUntilReminder);
+  };
 
   // Filter trades when date range changes
   useEffect(() => {
     if (!isLoading) {
       filterTrades();
     }
-  }, [trades, dateRange, isLoading, filterTrades]);
+  }, [trades, dateRange, isLoading]);
 
   const loadData = async () => {
     try {
@@ -109,6 +183,7 @@ function App() {
       
       // Initialize storage first
       await storage.init();
+      await advancedStorage.init();
       
       const loadedTrades = await storage.loadTrades();
       
@@ -226,6 +301,10 @@ function App() {
           return (
             <SystemOverview />
           );
+        case 'big-day-reset-checklist':
+          return (
+            <BigDayResetChecklist />
+          );
         case 'trading-routine':
           return (
             <TradingRoutine onNavigate={setActiveTab} />
@@ -247,7 +326,9 @@ function App() {
             <Portfolio trades={filteredTrades} onTradeDeleted={handleTradeDeleted} onTradeUpdated={handleTradeAdded} onNavigate={setActiveTab} />
           );
         case 'market-monitor':
-          return (
+          return isMobile ? (
+            <MarketMonitorMobile />
+          ) : (
             <MarketMonitor />
           );
         case 'sector-dashboard':
@@ -315,6 +396,22 @@ function App() {
           return (
             <ChartAnalysis trades={trades} onNavigate={setActiveTab} />
           );
+        case 'trade-upload':
+          return (
+            <TradeUpload onTradesImported={loadData} onNavigate={setActiveTab} />
+          );
+        case 'backup-manager':
+          return (
+            <BackupManager />
+          );
+        case 'screenshot-manager':
+          return (
+            <ScreenshotManager tradeId={null} />
+          );
+        case 'emergency-recovery':
+          return (
+            <EmergencyRecovery />
+          );
 
         default:
           return <Portfolio trades={filteredTrades} onTradeDeleted={handleTradeDeleted} onTradeUpdated={handleTradeAdded} onNavigate={setActiveTab} />;
@@ -334,13 +431,26 @@ function App() {
 
   return (
     <div style={{ backgroundColor: '#0f172a', color: '#f8fafc', fontFamily: 'Inter, sans-serif', height: '100vh' }}>
-      <Navigation 
-        activeTab={activeTab} 
-        onTabChange={setActiveTab}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        renderContent={renderContent}
-      />
+      {isMobile ? (
+        <MobileNavigation 
+          activeTab={activeTab} 
+          onTabChange={handleTabChange}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+        />
+      ) : (
+        <Navigation 
+          activeTab={activeTab} 
+          onTabChange={handleTabChange}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          renderContent={renderContent}
+        />
+      )}
+      
+      <div className={isMobile ? 'mobile-main-content' : 'web-main-content'}>
+        {isMobile ? renderContent() : null}
+      </div>
       
       {/* Error Display */}
       {error && (

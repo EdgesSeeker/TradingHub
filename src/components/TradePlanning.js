@@ -1351,6 +1351,7 @@ const TradePlanning = ({ onNavigate }) => {
               }}
             />
           </div>
+
         </div>
 
 
