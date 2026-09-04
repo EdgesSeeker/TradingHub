@@ -1,5 +1,8 @@
 // AI Analysis Service using Antropic API
-const ANTHROPIC_API_KEY = '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';
+// Der Schluessel gehoert nicht in den Code. Er kommt aus der Umgebung.
+// ACHTUNG: bei Create React App landet jede REACT_APP_-Variable im Bundle und ist
+// damit im Browser lesbar. Richtig waere ein eigener Server, der den Aufruf macht.
+const ANTHROPIC_API_KEY = process.env.REACT_APP_ANTHROPIC_API_KEY;
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
 // Enhanced local company analysis - no external API calls to avoid CORS issues
