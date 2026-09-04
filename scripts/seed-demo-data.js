@@ -57,7 +57,7 @@
     for (let i = 0; i < count; i++) {
       // 3 von 4 Trades regelkonform. Das ist die Aussage des Datensatzes:
       // die Regelbrueche kosten ueberproportional.
-      const followed = rnd() > 0.26;
+      const followed = rnd() > 0.18;
 
       const entry = new Date(today);
       entry.setDate(entry.getDate() - Math.floor((count - i) * 2.6) - Math.floor(rnd() * 3));
@@ -68,14 +68,17 @@
       const entryPrice = round(18 + rnd() * 320);
       const riskPct    = followed ? 0.008 + rnd() * 0.012 : 0.03 + rnd() * 0.02;
       const stopLoss   = round(entryPrice * (1 - (0.05 + rnd() * 0.04)));
-      const shares     = Math.max(1, Math.round((EQUITY * riskPct) / (entryPrice - stopLoss)));
+      const shares     = Math.max(1, Math.min(
+        Math.round((EQUITY * riskPct) / (entryPrice - stopLoss)),
+        Math.floor((EQUITY * 0.22) / entryPrice)   // kein Trade groesser als 22 Prozent des Depots
+      ));
 
       // Regelkonform: Erwartungswert positiv, Verluste am Stop begrenzt.
       // Regelbruch: haeufiger Verlust, und der Verlust laeuft weiter als geplant.
-      const win = followed ? rnd() > 0.42 : rnd() > 0.72;
+      const win = followed ? rnd() < 0.68 : rnd() < 0.25;
       const movePct = win
-        ? (followed ? 0.05 + rnd() * 0.18 : 0.03 + rnd() * 0.08)
-        : -(followed ? 0.04 + rnd() * 0.03 : 0.07 + rnd() * 0.11);
+        ? (followed ? 0.07 + rnd() * 0.16 : 0.02 + rnd() * 0.05)
+        : -(followed ? 0.03 + rnd() * 0.02 : 0.07 + rnd() * 0.05);
 
       const exitPrice = round(entryPrice * (1 + movePct));
       const commission = round(1.5 + rnd() * 3);
@@ -136,6 +139,56 @@
         broker: 'Demo'
       });
     }
+    // Fuenf offene Positionen. Ohne sie bleibt das Risiko-Dashboard leer:
+    // Portfolio-Risiko, Stop-Abdeckung und Open Heat rechnen nur auf status 'open'.
+    for (let i = 0; i < 5; i++) {
+      const entry = new Date(today);
+      entry.setDate(entry.getDate() - (2 + Math.floor(rnd() * 16)));
+      const entryPrice = round(24 + rnd() * 240);
+      const stopLoss   = round(entryPrice * (1 - (0.05 + rnd() * 0.03)));
+      const riskPct    = 0.009 + rnd() * 0.009;
+      const shares     = Math.max(1, Math.min(
+        Math.round((EQUITY * riskPct) / (entryPrice - stopLoss)),
+        Math.floor((EQUITY * 0.10) / entryPrice)   // offene Positionen klein halten
+      ));
+      const current    = round(entryPrice * (1 + (rnd() * 0.14 - 0.04)));
+
+      trades.push({
+        id: `demo_open_${entry.getTime()}_${i}`,
+        isDemo: true,
+        symbol: pick(SYMBOLS),
+        side: 'Long',
+        direction: 'Long',
+        setup: pick(SETUPS),
+        status: 'open',
+        entryDate: entry.toISOString().split('T')[0],
+        date: entry.toISOString().split('T')[0],
+        exitDate: null,
+        entryPrice,
+        exitPrice: null,
+        currentPrice: current,
+        stopLoss,
+        quantity: shares,
+        shares,
+        positionSize: round(entryPrice * shares),
+        aptr14: round(4 + rnd() * 7, 1),
+        pnl: round((current - entryPrice) * shares),
+        profit: round((current - entryPrice) * shares),
+        commission: 0,
+        ruleAdherence: true,
+        ruleCompliance: true,
+        ruleViolationReason: '',
+        checklist: CHECKLIST.slice(),
+        tradeGrade: 'A',
+        mentalGame: { rationalReasons: 1, note: 'Plan vor dem Einstieg geschrieben, Stop stand vorher fest.' },
+        setupNotes: 'Setup erfuellt alle Kriterien, Volumen und ADR im Rahmen.',
+        executionNotes: 'Laeuft, Stop nach Plan.',
+        notes: 'Demo-Daten, erfunden',
+        screenshots: [],
+        broker: 'Demo'
+      });
+    }
+
     return trades;
   }
 
@@ -148,6 +201,7 @@
   }
 
   async function write(rows) {
+    await removeDemo(true);   // erst alte Demo-Zeilen weg, damit ein zweiter Lauf nicht verdoppelt
     const db = await open();
     await new Promise((res, rej) => {
       const tx = db.transaction([STORE], 'readwrite');
@@ -156,10 +210,21 @@
       tx.oncomplete = res;
       tx.onerror = () => rej(tx.error);
     });
+    // Der Portfoliowert ist eine Einstellung, keine Ableitung aus den Trades.
+    // Ohne diese Zeile stehen alle Prozentangaben gegen den Standardwert 10.000.
+    if (db.objectStoreNames.contains('settings')) {
+      await new Promise((res, rej) => {
+        const tx = db.transaction(['settings'], 'readwrite');
+        tx.objectStore('settings').put({ key: 'portfolioValue', value: EQUITY });
+        tx.oncomplete = res;
+        tx.onerror = () => rej(tx.error);
+      });
+    }
     db.close();
+    try { localStorage.setItem('currentDrawdown', '4.2'); } catch (e) {}
   }
 
-  async function removeDemo() {
+  async function removeDemo(quiet) {
     const db = await open();
     const rows = await new Promise((res, rej) => {
       const r = db.transaction([STORE], 'readonly').objectStore(STORE).getAll();
@@ -175,7 +240,7 @@
       tx.onerror = () => rej(tx.error);
     });
     db.close();
-    console.log(`${demo.length} Demo-Trades entfernt. Seite neu laden.`);
+    if (!quiet) console.log(`${demo.length} Demo-Trades entfernt. Seite neu laden.`);
   }
 
   const trades = buildTrades();
