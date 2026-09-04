@@ -78,6 +78,12 @@ angezeigt wurden, obwohl sie auf 22 Prozent gedeckelt waren: gerechnet wurde
 gegen einen anderen Depotwert als den gesetzten. Ein Wert gehört an eine
 Stelle.
 
+**Vier Abhängigkeiten liegen ungenutzt in der `package.json`.** `date-fns`,
+`papaparse`, `xlsx` und `react-router-dom` sind installiert, aber in keiner
+Datei importiert. Das CSV-Lesen macht `TradeUpload.js` von Hand, und Routing
+gibt es keins, die Navigation läuft über einen State. Angefangen und dann
+anders gelöst, ohne aufzuräumen.
+
 ## Funktionen
 
 **Dashboard.** Trade-Eingabe von Hand, Teil- und Komplettverkäufe, dazu die
@@ -110,8 +116,9 @@ das nicht, dann rechnet die lokale Rückfallebene.
 
 ## Stack
 
-React 18, Recharts, Lucide, date-fns, eigenes CSS, IndexedDB, Anthropic-API
-für den Wochenbericht.
+React 18, Recharts und Chart.js für die Diagramme, Lucide für die Icons,
+eigenes CSS ohne Framework, IndexedDB als Speicher, Anthropic-API für den
+Wochenbericht.
 
 ## Demo-Daten
 
