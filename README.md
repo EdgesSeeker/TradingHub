@@ -66,6 +66,16 @@ aufruft, waere es eins.
 **Einzelne Komponenten sind zu gross geworden.** `TradingEquityCurve.js` hat
 ueber 4.000 Zeilen. Das ist gewachsen und nicht geschnitten.
 
+**Der Depotwert hat vier Quellen und keine gewinnt zuverlaessig.** Er steht als
+Einstellung in der IndexedDB, wird beim Laden aber aus drei localStorage-Listen
+ueberschrieben (`equityCurve`, `manualEquityEntries`, `currentEquity`, jeweils
+der hoechste Wert), und wenn keine davon etwas hergibt, faellt der Code auf eine
+fest verdrahtete Zahl zurueck. Alle Prozentangaben im Risiko-Dashboard haengen
+daran. Aufgefallen ist es, weil Positionsgroessen ueber 200 Prozent des Depots
+angezeigt wurden, obwohl sie auf 22 Prozent gedeckelt waren: gerechnet wurde
+gegen einen anderen Depotwert als den gesetzten. Ein Wert gehoert an eine
+Stelle.
+
 ## Funktionen
 
 **Dashboard.** Trade-Eingabe von Hand, Teil- und Komplettverkaeufe, dazu die
