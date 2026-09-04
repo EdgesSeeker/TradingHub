@@ -1,19 +1,30 @@
 # Trading Journal
 
-Ein Werkzeug, das mich an meine eigenen Regeln bindet. Gebaut 2025, weil ich
-sie unter Druck gebrochen habe und es hinterher nicht mehr wusste.
+Ein Trading-Journal, das die Qualitaet einer Entscheidung vom Ergebnis trennt.
+Gebaut 2025, damit ich messen kann, ob ich mich an mein eigenes System gehalten
+habe.
 
 ## Warum
 
-Ich habe Aktien gehandelt und dafuer klare Kriterien aufgeschrieben. Volumen
-ueber 30 Millionen, ADR ueber 5 Prozent, maximal 2 Prozent Risiko pro Position,
-Stop unter der Struktur. Auf dem Papier hielt ich mich daran. In der Praxis
-nicht, und im Nachhinein liess sich nicht mehr sagen, welcher Verlust aus einem
-schlechten Setup kam und welcher daraus, dass ich meine eigene Liste ignoriert
-habe.
+Ich handle Aktien, seit ich siebzehn bin. Irgendwann habe ich gemerkt, dass
+Bauchgefuehl nicht traegt. Man braucht klare Regeln, und man braucht ein System,
+das festhaelt, ob man ihnen gefolgt ist.
 
-Also habe ich die Liste in Software gegossen. Jeder Trade traegt seitdem ein
-Feld, ob die Regeln eingehalten wurden, und wenn nicht, warum. Das ist der Kern.
+Der Grund dafuer ist nicht Disziplin, sondern Messbarkeit. **Ein guter Trade
+kann ein Verlust-Trade sein.** Wenn ich mich an mein System gehalten habe und es
+geht trotzdem schief, war die Entscheidung richtig und ich aendere nichts. Wenn
+ich mich nicht daran gehalten habe und es geht gut, war es Glueck, und daraus
+lerne ich das Falsche. Ohne diese Trennung bewertet man jeden Trade nach dem
+Ausgang, und dann optimiert man auf Zufall.
+
+Deshalb traegt hier jeder Trade ein Feld, ob die Regeln eingehalten wurden, und
+wenn nicht, warum. Erst dadurch werden Anpassungen pruefbar: wenn ich das Risiko
+pro Position senke oder ein Setup streiche, sehe ich hinterher an den Zahlen, ob
+es gewirkt hat, statt es zu glauben.
+
+Die Kriterien selbst sind hart und nicht verhandelbar. Volumen ueber 30
+Millionen, ADR ueber 5 Prozent, maximal 2 Prozent Risiko pro Position, Stop
+unter der Struktur. Sie stehen als Pflicht-Checkliste vor der Eingabe.
 
 ## Was drin steckt
 
