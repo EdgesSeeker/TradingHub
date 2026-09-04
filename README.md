@@ -28,9 +28,10 @@ unter der Struktur. Sie stehen als Pflicht-Checkliste vor der Eingabe.
 
 ## Was drin steckt
 
-**Eine Checkliste vor jedem Einstieg.** Dreizehn Punkte mit harten Zahlen, kein
-Bauchgefuehl. Sie steht in `src/components/BookOfTruth.js` und laeuft vor der
-Eingabe, nicht danach.
+**Eine Checkliste vor jedem Einstieg.** Zwoelf Punkte mit harten Zahlen, kein
+Bauchgefuehl. Sie steht in `src/components/TradePlanning.js` und laeuft vor der
+Eingabe, nicht danach. Der Trade laesst sich auch mit unvollstaendiger Liste
+speichern, aber dann steht es in den Daten.
 
 **Regeltreue als Datenfeld.** `ruleAdherence` und `ruleViolationReason` liegen an
 jedem Trade. Damit ist die Frage "war das Pech oder war ich es" auswertbar statt
@@ -94,6 +95,20 @@ das nicht, dann rechnet die lokale Rueckfallebene.
 
 React 18, Recharts, Lucide, date-fns, eigenes CSS, IndexedDB, Anthropic-API
 fuer den Wochenbericht.
+
+## Demo-Daten
+
+Wer das Projekt frisch startet, sieht eine leere App. `scripts/seed-demo-data.js`
+schreibt 34 **erfundene** Trades in die IndexedDB: keine echten Positionen, keine
+echten Kurse.
+
+Der Datensatz ist so gebaut, dass er die Aussage oben zeigt. Die 21 Trades mit
+eingehaltenen Regeln stehen zusammen im Plus, die 13 Regelbrueche tragen den
+gesamten Verlust. Genau diese Trennung soll das Werkzeug sichtbar machen.
+
+App starten, F12 druecken, den Inhalt der Datei in die Console kopieren, Seite
+neu laden. Entfernen mit `seedDemoData.remove()`, das fasst nur Zeilen mit
+`isDemo: true` an.
 
 ## Lokal starten
 
