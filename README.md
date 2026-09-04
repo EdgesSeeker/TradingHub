@@ -33,6 +33,8 @@ Bauchgefuehl. Sie steht in `src/components/TradePlanning.js` und laeuft vor der
 Eingabe, nicht danach. Der Trade laesst sich auch mit unvollstaendiger Liste
 speichern, aber dann steht es in den Daten.
 
+![Trade Planning mit der Pflicht-Checkliste](docs/screenshots/trade-planning.png)
+
 **Regeltreue als Datenfeld.** `ruleAdherence` und `ruleViolationReason` liegen an
 jedem Trade. Damit ist die Frage "war das Pech oder war ich es" auswertbar statt
 Erinnerung.
@@ -91,6 +93,11 @@ von heute bis alles.
 
 **Wochenrueckblick.** Der KI-Bericht oben, plus eine lokale Auswertung als
 Rueckfallebene.
+
+**Sektor-Uebersicht.** Branchengruppen nach Woche, Monat, Quartal und Jahr, um
+zu sehen, wo ueberhaupt Bewegung ist, bevor ein einzelner Wert geprueft wird.
+
+![Sektor-Uebersicht](docs/screenshots/sector-dashboard.png)
 
 ## Wo die Daten liegen
 
